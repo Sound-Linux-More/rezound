@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
+# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
 
 # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
@@ -108,7 +108,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ./config/config.h
 CONFIG_CLEAN_FILES = 
-DIST_COMMON =  README ChangeLog Makefile.am Makefile.in aclocal.m4 \
+DIST_COMMON =  README Makefile.am Makefile.in aclocal.m4 \
 config/config.h.in config/stamp-h.in configure configure.in
 
 

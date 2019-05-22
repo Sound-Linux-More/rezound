@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
 
 # Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
@@ -10,8 +10,7 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-# vim:tw=78
-# $Id: Makefile.am,v 1.7 2002/06/25 21:52:45 ddurham Exp $
+# ReZound misc/Makefile.am Written by Anthony Ventimiglia
 
 
 # vim:tw=78
@@ -45,7 +44,7 @@ pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 
-top_builddir = ..
+top_builddir = ../..
 AUTOCONF = @AUTOCONF@
 
 INSTALL = @INSTALL@
@@ -88,7 +87,7 @@ AUTOHEADER = @AUTOHEADER@ -l config
 ACLOCAL = @ACLOCAL@ -I config/m4
 AUTOMAKE = @AUTOMAKE@ --foreign
 
-INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing/generated 	 -I$(top_srcdir)/src/PoolFile
+INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing 	 -I$(top_srcdir)/src/PoolFile 	 -I$(top_srcdir)/src/PoolFile/DiskTable
 
 
 CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
@@ -97,17 +96,13 @@ CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
 LDFLAGS = @LDFLAGS@
 
 # doc directory
-pkgdocdir = $(prefix)/doc/@PACKAGE@
+pkgdocdir = $(prefix)/doc/rezound
 
-pkgdoc_DATA =  		AUTHORS 		COPYING 		NEWS 		README_DOCS 		README 		FrontendFoxFeatures.txt
-
+EXTRA_DIST = $(top_srcdir)/src/images/*.gif
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_HEADER = ../config/config.h
+CONFIG_HEADER = ../../config/config.h
 CONFIG_CLEAN_FILES = 
-DATA =  $(pkgdoc_DATA)
-
-DIST_COMMON =  README AUTHORS COPYING INSTALL Makefile.am Makefile.in \
-NEWS
+DIST_COMMON =  Makefile.am Makefile.in
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -117,40 +112,27 @@ GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/config/am_include.mk
-	cd $(top_srcdir) && $(AUTOMAKE) --foreign --include-deps docs/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --foreign src/images/Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
-
-install-pkgdocDATA: $(pkgdoc_DATA)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(pkgdocdir)
-	@list='$(pkgdoc_DATA)'; for p in $$list; do \
-	  if test -f $(srcdir)/$$p; then \
-	    echo " $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(pkgdocdir)/$$p"; \
-	    $(INSTALL_DATA) $(srcdir)/$$p $(DESTDIR)$(pkgdocdir)/$$p; \
-	  else if test -f $$p; then \
-	    echo " $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdocdir)/$$p"; \
-	    $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdocdir)/$$p; \
-	  fi; fi; \
-	done
-
-uninstall-pkgdocDATA:
-	@$(NORMAL_UNINSTALL)
-	list='$(pkgdoc_DATA)'; for p in $$list; do \
-	  rm -f $(DESTDIR)$(pkgdocdir)/$$p; \
-	done
 tags: TAGS
 TAGS:
 
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = docs
+subdir = src/images
 
 distdir: $(DISTFILES)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(top_distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --foreign src/images/Makefile
+	$(mkinstalldirs) $(distdir)/$(top_srcdir)/src/images
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -172,20 +154,19 @@ installcheck: installcheck-am
 install-exec-am:
 install-exec: install-exec-am
 
-install-data-am: install-pkgdocDATA
+install-data-am:
 install-data: install-data-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 install: install-am
-uninstall-am: uninstall-pkgdocDATA
+uninstall-am:
 uninstall: uninstall-am
-all-am: Makefile $(DATA)
+all-am: Makefile
 all-redirect: all-am
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
 installdirs:
-	$(mkinstalldirs)  $(DESTDIR)$(pkgdocdir)
 
 
 mostlyclean-generic:
@@ -216,12 +197,12 @@ maintainer-clean-am:  maintainer-clean-generic distclean-am
 
 maintainer-clean: maintainer-clean-am
 
-.PHONY: uninstall-pkgdocDATA install-pkgdocDATA tags distdir info-am \
-info dvi-am dvi check check-am installcheck-am installcheck \
-install-exec-am install-exec install-data-am install-data install-am \
-install uninstall-am uninstall all-redirect all-am all installdirs \
-mostlyclean-generic distclean-generic clean-generic \
-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+.PHONY: tags distdir info-am info dvi-am dvi check check-am \
+installcheck-am installcheck install-exec-am install-exec \
+install-data-am install-data install-am install uninstall-am uninstall \
+all-redirect all-am all installdirs mostlyclean-generic \
+distclean-generic clean-generic maintainer-clean-generic clean \
+mostlyclean distclean maintainer-clean
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

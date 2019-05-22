@@ -1,4 +1,4 @@
-dnl aclocal.m4 generated automatically by aclocal 1.4-p5
+dnl aclocal.m4 generated automatically by aclocal 1.4-p6
 
 dnl Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
@@ -43,7 +43,8 @@ dnl Usage:
 dnl AM_INIT_AUTOMAKE(package,version, [no-define])
 
 AC_DEFUN([AM_INIT_AUTOMAKE],
-[AC_REQUIRE([AC_PROG_INSTALL])
+[AC_REQUIRE([AM_SET_CURRENT_AUTOMAKE_VERSION])dnl
+AC_REQUIRE([AC_PROG_INSTALL])
 PACKAGE=[$1]
 AC_SUBST(PACKAGE)
 VERSION=[$2]
@@ -59,12 +60,41 @@ AC_REQUIRE([AM_SANITY_CHECK])
 AC_REQUIRE([AC_ARG_PROGRAM])
 dnl FIXME This is truly gross.
 missing_dir=`cd $ac_aux_dir && pwd`
-AM_MISSING_PROG(ACLOCAL, aclocal, $missing_dir)
+AM_MISSING_PROG(ACLOCAL, aclocal-${am__api_version}, $missing_dir)
 AM_MISSING_PROG(AUTOCONF, autoconf, $missing_dir)
-AM_MISSING_PROG(AUTOMAKE, automake, $missing_dir)
+AM_MISSING_PROG(AUTOMAKE, automake-${am__api_version}, $missing_dir)
 AM_MISSING_PROG(AUTOHEADER, autoheader, $missing_dir)
 AM_MISSING_PROG(MAKEINFO, makeinfo, $missing_dir)
 AC_REQUIRE([AC_PROG_MAKE_SET])])
+
+# Copyright 2002  Free Software Foundation, Inc.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+
+# AM_AUTOMAKE_VERSION(VERSION)
+# ----------------------------
+# Automake X.Y traces this macro to ensure aclocal.m4 has been
+# generated from the m4 files accompanying Automake X.Y.
+AC_DEFUN([AM_AUTOMAKE_VERSION],[am__api_version="1.4"])
+
+# AM_SET_CURRENT_AUTOMAKE_VERSION
+# -------------------------------
+# Call AM_AUTOMAKE_VERSION so it can be traced.
+# This function is AC_REQUIREd by AC_INIT_AUTOMAKE.
+AC_DEFUN([AM_SET_CURRENT_AUTOMAKE_VERSION],
+	 [AM_AUTOMAKE_VERSION([1.4-p6])])
 
 #
 # Check to make sure that the build environment is sane.
@@ -203,6 +233,20 @@ case $host in
   rm -rf conftest*
   ;;
 
+*-*-linux*)
+  # Test if the compiler is 64bit
+  echo 'int i;' > conftest.$ac_ext
+  lt_cv_cc_64bit_output=no
+  if AC_TRY_EVAL(ac_compile); then
+    case `/usr/bin/file conftest.$ac_objext` in
+    *"ELF 64"*)
+      lt_cv_cc_64bit_output=yes
+      ;;
+    esac
+  fi
+  rm -rf conftest*
+  ;;
+  
 *-*-sco3.2v5*)
   # On SCO OpenServer 5, we need -belf to get full-featured binaries.
   SAVE_CFLAGS="$CFLAGS"
@@ -2227,6 +2271,13 @@ linux-gnu*)
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  case $host_cpu:$lt_cv_cc_64bit_output in
+  powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
+    sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /usr/X11R6/lib64"
+    sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64 /usr/X11R6/lib64"
+    ;;
+  esac
+
   # We used to test for /lib/ld.so.1 and disable shared libraries on
   # powerpc, because MkLinux only supported shared libraries with the
   # GNU dynamic linker.  Since this was broken with cross compilers,
@@ -3417,7 +3468,7 @@ irix5* | irix6*)
 # This must be Linux ELF.
 linux-gnu*)
   case $host_cpu in
-  alpha* | hppa* | i*86 | powerpc* | sparc* | ia64* )
+  alpha* | hppa* | i*86 | powerpc* | sparc* | ia64* | x86_64* )
     lt_cv_deplibs_check_method=pass_all ;;
   *)
     # glibc up to 2.1.1 does not perform some relocations on ARM

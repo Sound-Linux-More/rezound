@@ -57,13 +57,13 @@
 #define PACKAGE "rezound"
 
 /* Version number of package */
-#define VERSION "0.5.0beta"
+#define VERSION "0.5.1beta"
 
 /*  This is the prefix passed to configure */
 #define INSTALL_PREFIX "/usr/local"
 
 /*  This is the top source directory for pre-installed testing */
-#define SOURCE_DIR "/home/ddurham/code/rezound_alt2"
+#define SOURCE_DIR "/home/ddurham/code/rezound"
 
 /*  This the --datadir (share) set by configure  */
 #define DATA_DIR "/usr/local/share"
