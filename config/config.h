@@ -39,7 +39,7 @@
 #define PACKAGE "ReZound"
 
 /* Version number of package */
-#define VERSION "0.1.1alpha"
+#define VERSION "0.1.2alpha"
 
 /*  This is the prefix passed to configure */
 #define INSTALL_PREFIX "/usr/local"
