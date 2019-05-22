@@ -20,28 +20,58 @@
 
 #include "LoopingActionDialogs.h"
 
+#include "ActionParamMappers.h"
+
 // --- add cues -------------------------------
 
 CAddNCuesDialog::CAddNCuesDialog(FXWindow *mainWindow) :
 	CActionParamDialog(mainWindow)
 {
 	void *p=newVertPanel(NULL);
-		addStringTextEntry(p,N_("Cue Name"),"(",_("What to Name the New Cues"));
-		addNumericTextEntry(p,N_("Cue Count"),"",4,1,100,_("How Many Cues to Place Equally Spaced within the Selection"));
-		addCheckBoxEntry(p,N_("Anchor Cues in Time"),false,_("Set the Cues to be Anchored in Time or Not"));
-}
+		addStringTextEntry(p,
+			N_("Cue Name"),
+			"(",
+			_("What to Name the New Cues")
+		);
 
-static const double interpretValue_addTimedCues(const double x,const int s) { return x*s; }
-static const double uninterpretValue_addTimedCues(const double x,const int s) { return x/s; }
+		addNumericTextEntry(p,
+			N_("Cue Count"),
+			"",
+			4,
+			1,
+			100,
+			_("How Many Cues to Place Equally Spaced within the Selection")
+		);
+
+		addCheckBoxEntry(p,
+			N_("Anchor Cues in Time"),
+			false,
+			_("Set the Cues to be Anchored in Time or Not")
+		);
+}
 
 CAddTimedCuesDialog::CAddTimedCuesDialog(FXWindow *mainWindow) :
 	CActionParamDialog(mainWindow)
 {
 	void *p=newVertPanel(NULL);
-		addStringTextEntry(p,N_("Cue Name"),"(",_("What to Name the New Cues"));
-		addSlider(p,N_("Time Interval"),"s",interpretValue_addTimedCues,uninterpretValue_addTimedCues,NULL,10,1,3600,60,false);
-		addCheckBoxEntry(p,N_("Anchor Cues in Time"),false,_("Set the Cues to be Anchored in Time or Not"));
+		addStringTextEntry(p,
+			N_("Cue Name"),
+			"(",
+			_("What to Name the New Cues")
+		);
+
+		addSlider(p,
+			N_("Time Interval"),
+			"s",
+			new CActionParamMapper_linear(10,60,1,3600),
+			NULL,
+			false
+		);
+
+		addCheckBoxEntry(p,
+			N_("Anchor Cues in Time"),
+			false,
+			_("Set the Cues to be Anchored in Time or Not")
+		);
 }
-
-
 

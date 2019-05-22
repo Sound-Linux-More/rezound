@@ -27,8 +27,6 @@
 #include <vector>
 #include <string>
 
-#include <fox/fx.h>
-
 /*
  * If isEditable is true, then getValue and setValue are interpreted as the 
  * actual value to put in the combo box field.. if isEditable is false, then 
@@ -43,6 +41,13 @@ class FXComboTextParamValue : public FXHorizontalFrame
 public:
 	FXComboTextParamValue(FXComposite *p,int opts,const char *name,const vector<string> &items,bool isEditable);
 	virtual ~FXComboTextParamValue();
+
+	enum {
+		ID_COMBOBOX=FXHorizontalFrame::ID_LAST,
+		ID_LAST,
+	};
+
+	long onComboBoxChange(FXObject *object,FXSelector sel,void *ptr);
 
 	const FXint getValue(); // returns the index into the items given at construction of the selected item (or if isEditable it returns the numeric representation of the current string value in the combo box.. this needs to be changed really)
 	void setValue(const FXint value);
@@ -59,6 +64,9 @@ public:
 
 	void setTipText(const FXString &text);
 	FXString getTipText() const;
+
+	void enable();
+	void disable();
 
 	void readFromFile(const string &prefix,CNestedDataFile *f);
 	void writeToFile(const string &prefix,CNestedDataFile *f);
@@ -77,6 +85,7 @@ private:
 	FXFont *textFont;
 
 	vector<string> items;
+
 };
 
 #endif

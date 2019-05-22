@@ -32,7 +32,7 @@ ASoundRecorder::ASoundRecorder() :
 	sound(NULL)
 {
 	for(unsigned i=0;i<MAX_CHANNELS;i++)
-		lastPeakValues[i]=0.0;
+		lastPeakValues[i]=0.0f;
 }
 
 ASoundRecorder::~ASoundRecorder()
@@ -60,6 +60,13 @@ void ASoundRecorder::start(const double _startThreshold,const sample_pos_t maxDu
 void ASoundRecorder::stop()
 {
 	CMutexLocker l(mutex);
+	prvStop();
+
+}
+
+/* prvStop is an unmutex protected stop that I only call privately -- it's what actually does the work */
+void ASoundRecorder::prvStop()
+{
 	if(started)
 	{
 		started=false;
@@ -196,158 +203,151 @@ void ASoundRecorder::onData(sample_t *samples,const size_t _sampleFramesRecorded
 
 	size_t sampleFramesRecorded=_sampleFramesRecorded;
 	CMutexLocker l(mutex);
-	try
+	const unsigned channelCount=sound->getChannelCount();
+
+	// modify samples by the DC Offset compensation
+	for(unsigned i=0;i<channelCount;i++)
 	{
-		const unsigned channelCount=sound->getChannelCount();
-
-		// modify samples by the DC Offset compensation
-		for(unsigned i=0;i<channelCount;i++)
+		if(DCOffsetCompensation[i]!=0)
 		{
-			if(DCOffsetCompensation[i]!=0)
-			{
-				sample_t *_samples=samples+i;
-				const mix_sample_t DCOffsetCompensation=this->DCOffsetCompensation[i];
-				for(size_t t=0;t<sampleFramesRecorded;t++)
-				{
-					*_samples=ClipSample(*_samples+DCOffsetCompensation);
-					_samples+=channelCount;
-				}
-			}
-		}
-
-		// give realtime peak data updates
-		for(unsigned i=0;i<channelCount;i++)
-		{
-			mix_sample_t maxSample=(mix_sample_t)(lastPeakValues[i]*MAX_SAMPLE);
-			const sample_t *_samples=samples+i;
+			sample_t *_samples=samples+i;
+			const mix_sample_t DCOffsetCompensation=this->DCOffsetCompensation[i];
 			for(size_t t=0;t<sampleFramesRecorded;t++)
 			{
-				mix_sample_t s=*_samples;
-
-				if(s>=MAX_SAMPLE || s<=MIN_SAMPLE)
-					clipCount++;
-
-				if(s<0)
-					s=-s; // only use positive values
-
-				maxSample=max(maxSample,s);
-
-				// next sample in interleaved format
+				*_samples=ClipSample(*_samples+DCOffsetCompensation);
 				_samples+=channelCount;
-			}
-			lastPeakValues[i]=(float)maxSample/(float)MAX_SAMPLE;
-		}
-
-		// calculate the DC offset of data being recorded
-		for(unsigned i=0;i<channelCount;i++)
-		{
-			const sample_t *_samples=samples+i;
-			double &DCOffsetSum=this->DCOffsetSum[i];
-			for(size_t t=0;t<sampleFramesRecorded;t++)
-			{
-				DCOffsetSum+=*_samples;
-				// next sample in interleaved format
-				_samples+=channelCount;
-			}
-		}
-		DCOffsetCount+=sampleFramesRecorded;
-
-		if(DCOffsetCount>=(sound->getSampleRate()*5))
-		{ // at least 5 second has been sampled, so record this as the current DCOffset and start over
-			for(unsigned i=0;i<channelCount;i++)
-			{
-				DCOffset[i]=(sample_t)(DCOffsetSum[i]/DCOffsetCount);
-				DCOffsetSum[i]=0;
-			}
-			DCOffsetCount=0;
-		}
-
-
-		statusTrigger.trip();
-
-		if(started)
-		{
-			// if a startThreshold has been set, then ignore data even if started if no data is above the threshold
-			if(startThreshold>=0)
-			{
-				for(unsigned i=0;i<channelCount;i++)
-				{
-					const sample_t *_samples=samples+i;
-					for(size_t t=0;t<sampleFramesRecorded;t++)
-					{
-						sample_t s=*_samples;
-						if(s<0)
-							s=-s;
-						if(s>=startThreshold)
-						{
-							// threshold met, now turn off the threshold check
-							startThreshold=-1;
-
-							// ignore data in chunk before the first sample that met the treshold
-							samples+=(t*channelCount);
-							sampleFramesRecorded-=t;
-
-							goto goAheadAndSave; // using 'goto', because 'break' can't go past two loops
-						}
-						_samples+=channelCount;
-					}
-
-				}
-				return;
-			}
-
-			goAheadAndSave:
-
-			// we preallocate space in the sound in PREALLOC_SECONDS second chunks
-			if(prealloced<sampleFramesRecorded)
-			{
-				sound->lockForResize();
-				try
-				{
-					while(prealloced<sampleFramesRecorded)
-					{
-						sound->addSpace(sound->getLength(),PREALLOC_SECONDS*sound->getSampleRate(),false);
-						prealloced+=(PREALLOC_SECONDS*sound->getSampleRate());
-					}
-					sound->unlockForResize();
-				}
-				catch(...)
-				{
-					sound->unlockForResize();
-					throw;
-				}
-			}
-
-			if(stopPosition!=NIL_SAMPLE_POS && (this->writePos+sampleFramesRecorded)>stopPosition)
-				sampleFramesRecorded=stopPosition-this->writePos;
-
-			sample_pos_t writePos=0;
-			for(unsigned i=0;i<channelCount;i++)
-			{
-				CRezPoolAccesser a=sound->getAudio(i);
-				const sample_t *_samples=samples+i;
-				writePos=this->writePos;
-				for(size_t t=0;t<sampleFramesRecorded;t++)
-				{
-					a[writePos++]=*_samples;
-					_samples+=channelCount;
-				}
-
-			}
-
-			prealloced-=sampleFramesRecorded;
-			this->writePos=writePos;
-
-			if(stopPosition!=NIL_SAMPLE_POS && writePos>=stopPosition)
-			{
-				stop();
-				return;
 			}
 		}
 	}
-	catch(...)
+
+	// give realtime peak data updates
+	for(unsigned i=0;i<channelCount;i++)
 	{
-		throw;
+		mix_sample_t maxSample=convert_sample<float,sample_t>(lastPeakValues[i]);
+		const sample_t *_samples=samples+i;
+		for(size_t t=0;t<sampleFramesRecorded;t++)
+		{
+			mix_sample_t s=*_samples;
+
+			if(s>=MAX_SAMPLE || s<=MIN_SAMPLE)
+				clipCount++;
+
+			if(s<0)
+				s=-s; // only use positive values
+
+			maxSample=max(maxSample,s);
+
+			// next sample in interleaved format
+			_samples+=channelCount;
+		}
+		lastPeakValues[i]=convert_sample<sample_t,float>(maxSample);
+	}
+
+	// calculate the DC offset of data being recorded
+	for(unsigned i=0;i<channelCount;i++)
+	{
+		const sample_t *_samples=samples+i;
+		double &DCOffsetSum=this->DCOffsetSum[i];
+		for(size_t t=0;t<sampleFramesRecorded;t++)
+		{
+			DCOffsetSum+=*_samples;
+			// next sample in interleaved format
+			_samples+=channelCount;
+		}
+	}
+	DCOffsetCount+=sampleFramesRecorded;
+
+	if(DCOffsetCount>=(sound->getSampleRate()*5))
+	{ // at least 5 second has been sampled, so record this as the current DCOffset and start over
+		for(unsigned i=0;i<channelCount;i++)
+		{
+			DCOffset[i]=(sample_t)(DCOffsetSum[i]/DCOffsetCount);
+			DCOffsetSum[i]=0;
+		}
+		DCOffsetCount=0;
+	}
+
+
+	statusTrigger.trip();
+
+	if(started)
+	{
+		// if a startThreshold has been set, then ignore data even if started if no data is above the threshold
+		if(startThreshold>=0)
+		{
+			for(unsigned i=0;i<channelCount;i++)
+			{
+				const sample_t *_samples=samples+i;
+				for(size_t t=0;t<sampleFramesRecorded;t++)
+				{
+					sample_t s=*_samples;
+					if(s<0)
+						s=-s;
+					if(s>=startThreshold)
+					{
+						// threshold met, now turn off the threshold check
+						startThreshold=-1;
+
+						// ignore data in chunk before the first sample that met the treshold
+						samples+=(t*channelCount);
+						sampleFramesRecorded-=t;
+
+						goto goAheadAndSave; // using 'goto', because 'break' can't go past two loops
+					}
+					_samples+=channelCount;
+				}
+
+			}
+			return;
+		}
+
+		goAheadAndSave:
+
+		// we preallocate space in the sound in PREALLOC_SECONDS second chunks
+		if(prealloced<sampleFramesRecorded)
+		{
+			sound->lockForResize();
+			try
+			{
+				while(prealloced<sampleFramesRecorded)
+				{
+					sound->addSpace(sound->getLength(),PREALLOC_SECONDS*sound->getSampleRate(),false);
+					prealloced+=(PREALLOC_SECONDS*sound->getSampleRate());
+				}
+				sound->unlockForResize();
+			}
+			catch(...)
+			{
+				sound->unlockForResize();
+				throw;
+			}
+		}
+
+		if(stopPosition!=NIL_SAMPLE_POS && (this->writePos+sampleFramesRecorded)>stopPosition)
+			sampleFramesRecorded=stopPosition-this->writePos;
+
+		sample_pos_t writePos=0;
+		for(unsigned i=0;i<channelCount;i++)
+		{
+			CRezPoolAccesser a=sound->getAudio(i);
+			const sample_t *_samples=samples+i;
+			writePos=this->writePos;
+			for(size_t t=0;t<sampleFramesRecorded;t++)
+			{
+				a[writePos++]=*_samples;
+				_samples+=channelCount;
+			}
+
+		}
+
+		prealloced-=sampleFramesRecorded;
+		this->writePos=writePos;
+
+		if(stopPosition!=NIL_SAMPLE_POS && writePos>=stopPosition)
+		{
+			prvStop();
+			return;
+		}
 	}
 }
 
@@ -456,59 +456,100 @@ void ASoundRecorder::removeStatusTrigger(TriggerFunc triggerFunc,void *data)
 
 // ------------------------
 
+#include <stdio.h> // for fprintf
+#include <vector>
+#include <string>
+
+#include "settings.h"
+
 #include "COSSSoundRecorder.h"
 #include "CPortAudioSoundRecorder.h"
 #include "CJACKSoundRecorder.h"
+
+#include <CNestedDataFile/CNestedDataFile.h>
 
 #include "AStatusComm.h"
 
 ASoundRecorder *ASoundRecorder::createInitializedSoundRecorder(CSound *sound)
 {
+	// if the registry doesn't already contain a methods setting, then create the default one
+	if(gSettingsRegistry->keyExists("AudioInputMethods")!=CNestedDataFile::ktValue)
+	{
+		vector<string> methods;
+		methods.push_back("oss");
+		methods.push_back("jack");
+		methods.push_back("portaudio");
+		gSettingsRegistry->createValue("AudioInputMethods",methods);
+	}
+
+
+	bool initializeThrewException=false;
 	ASoundRecorder *soundRecorder=NULL;
 
-#if defined(ENABLE_PORTAUDIO)
-	soundRecorder=new CPortAudioSoundRecorder() ;
-#elif defined(ENABLE_JACK)
-	soundRecorder=new CJACKSoundRecorder();
-#elif defined(ENABLE_OSS)
-	soundRecorder=new COSSSoundRecorder();
-#endif
+	vector<string> methods=gSettingsRegistry->getValue<vector<string> >("AudioInputMethods");
 
-	try
+	// add --audio-method=... to the beginning
+	if(gDefaultAudioMethod!="")
+		methods.insert(methods.begin(),gDefaultAudioMethod);
+
+	// for each requested method in registry.AudioInputMethods try each until one succeeds
+	// 'suceeding' is true if the method was enabled at build time and it can initialize now at run-time
+	for(size_t t=0;t<methods.size();t++)
 	{
-		soundRecorder->initialize(sound);
-		return soundRecorder;
-	}
-	catch(exception &e)
-	{
-		delete soundRecorder;
-
-#if !defined(ENABLE_PORAUDIO) && !defined(ENABLE_JACK)
-		// OSS was the only defined method
-		throw;
-#else
-		// OSS was not the original method chosen at configure time so now fall back to using OSS if it wasn't disabled
-	#ifdef ENABLE_OSS
-		fprintf(stderr,"%s\n",(string(e.what())+"\nAttempting to fall back to using OSS for audio input.").c_str());
-		//Warning(string(e.what())+"\nAttempting to fall back to using OSS for audio input.");
-
-		// try OSS
-		soundRecorder=new COSSSoundRecorder();
+		const string method=methods[t];
 		try
 		{
-			soundRecorder->initialize(sound);
-			return soundRecorder;
+#define INITIALIZE_RECORDER(ClassName) 					\
+			{						\
+				initializeThrewException=false;		\
+				delete soundRecorder;			\
+				soundRecorder=new ClassName();		\
+				soundRecorder->initialize(sound);	\
+				break; /* no exception thrown from initialize() so we're good to go */ \
+			}
+
+			if(method=="oss")
+			{	
+#ifdef ENABLE_OSS
+				INITIALIZE_RECORDER(COSSSoundRecorder)
+#endif
+			}
+			else if(method=="jack")
+			{
+#ifdef ENABLE_JACK
+				INITIALIZE_RECORDER(CJACKSoundRecorder)
+#endif
+			}
+			else if(method=="portaudio")
+			{
+#ifdef ENABLE_PORTAUDIO
+				INITIALIZE_RECORDER(CPortAudioSoundRecorder)
+#endif
+			}
+			else
+			{
+				Warning("unhandled method type in the registry:AudioInputMethods[] '"+method+"'");
+				continue;
+			}
 		}
 		catch(exception &e)
 		{ // now really give up
-			delete soundRecorder;
-			throw runtime_error(string("Error occurred after trying to fall back to OSS\n")+e.what());
+			fprintf(stderr,"Error occurred while initializing audio input method '%s' -- %s\n",method.c_str(),e.what());
+			initializeThrewException=true;
 		}
-	#else
-		throw;
-	#endif
-#endif
 	}
 
+	if(soundRecorder)
+	{
+		if(initializeThrewException)
+		{
+			delete soundRecorder;
+			throw runtime_error(string(__func__)+" -- "+_("No audio input method could be initialized"));
+		}
+		else
+			return soundRecorder;
+	}
+	else
+		throw runtime_error(string(__func__)+" -- "+_("Either no audio input method was enabled at configure-time, or no method was recognized in the registry:AudioInputMethods[] setting"));
 }
 

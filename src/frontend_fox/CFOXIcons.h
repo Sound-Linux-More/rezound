@@ -3,7 +3,7 @@
 #define __CFOXIcons_H__
 #include "../../config/common.h"
 
-#include <fox/fx.h>
+#include "fox_compat.h"
 
 class CFOXIcons
 {
@@ -13,6 +13,7 @@ public:
 
         FXIcon *getByName(const char *name) const;
 
+	FXIcon *ABS_Sine_Wave___0_1_;
 	FXIcon *Constant;
 	FXIcon *edit_copy;
 	FXIcon *edit_crop;
@@ -25,6 +26,7 @@ public:
 	FXIcon *explain;
 	FXIcon *Falling_Sawtooth_Wave___0_1_;
 	FXIcon *Falling_Sawtooth_Wave___1_1_;
+	FXIcon *file_burn;
 	FXIcon *file_close;
 	FXIcon *file_new;
 	FXIcon *file_open;
@@ -61,6 +63,8 @@ public:
 	FXIcon *play_selection_looped;
 	FXIcon *play_selection_looped_skip_most;
 	FXIcon *play_selection_once;
+	FXIcon *play_selection_start_to_end;
+	FXIcon *plugin_wave;
 	FXIcon *record;
 	FXIcon *RedLED1;
 	FXIcon *RedMinus1;
@@ -83,9 +87,12 @@ public:
 	FXIcon *small_play_selection_looped;
 	FXIcon *small_play_selection_looped_skip_most;
 	FXIcon *small_play_selection_once;
+	FXIcon *small_play_selection_start_to_end;
 	FXIcon *small_record;
 	FXIcon *small_small_record;
 	FXIcon *small_stop;
+	FXIcon *Square_Wave___0_1_;
+	FXIcon *Square_Wave___1_1_;
 	FXIcon *stop;
 	FXIcon *YellowLED1;
 	FXIcon *zoom_fit;

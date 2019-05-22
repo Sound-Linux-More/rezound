@@ -54,6 +54,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -71,6 +72,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -101,6 +104,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -188,10 +193,13 @@ noinst_HEADERS = \
 		CRotateEdit.h \
 		CSwapChannelsEdit.h \
 		CAddChannelsEdit.h \
+		CDuplicateChannelEdit.h \
 		CRemoveChannelsEdit.h \
 		CSelectionEdit.h \
 		CSaveSelectionAsAction.h \
 		CSaveAsMultipleFilesAction.h \
+		CBurnToCDAction.h \
+		parse_segment_cues.h \
 		EditActions.h
 
 
@@ -208,9 +216,11 @@ libEdits_la_SOURCES = \
 		CRotateEdit.cpp \
 		CSwapChannelsEdit.cpp \
 		CAddChannelsEdit.cpp \
+		CDuplicateChannelEdit.cpp \
 		CRemoveChannelsEdit.cpp \
 		CSaveSelectionAsAction.cpp \
 		CSaveAsMultipleFilesAction.cpp \
+		CBurnToCDAction.cpp \
 		CSelectionEdit.cpp 
 
 subdir = src/backend/Edits
@@ -224,19 +234,22 @@ libEdits_la_LIBADD =
 am_libEdits_la_OBJECTS = CCopyCutDeleteEdit.lo CCopyCutToNewEdit.lo \
 	CCropEdit.lo CCueAction.lo CInsertSilenceEdit.lo CMuteEdit.lo \
 	CPasteEdit.lo CPasteAsNewEdit.lo CRotateEdit.lo \
-	CSwapChannelsEdit.lo CAddChannelsEdit.lo CRemoveChannelsEdit.lo \
+	CSwapChannelsEdit.lo CAddChannelsEdit.lo \
+	CDuplicateChannelEdit.lo CRemoveChannelsEdit.lo \
 	CSaveSelectionAsAction.lo CSaveAsMultipleFilesAction.lo \
-	CSelectionEdit.lo
+	CBurnToCDAction.lo CSelectionEdit.lo
 libEdits_la_OBJECTS = $(am_libEdits_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CAddChannelsEdit.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CBurnToCDAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCopyCutDeleteEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCopyCutToNewEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCropEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCueAction.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CDuplicateChannelEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CInsertSilenceEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMuteEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CPasteAsNewEdit.Plo \
@@ -290,10 +303,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CAddChannelsEdit.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CBurnToCDAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCopyCutDeleteEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCopyCutToNewEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCropEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCueAction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CDuplicateChannelEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInsertSilenceEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMuteEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPasteAsNewEdit.Plo@am__quote@

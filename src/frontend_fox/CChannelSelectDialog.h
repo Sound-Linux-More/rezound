@@ -19,7 +19,7 @@
  */
 
 #ifndef __CChannelSelectDialog_H__
-# define __CChannelSelectDialog_H__
+#define __CChannelSelectDialog_H__
 
 #include "../../config/common.h"
 #include "fox_compat.h"
@@ -51,6 +51,7 @@ public:
 	virtual ~CChannelSelectDialog();
 
 	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
+	void hide();
 
 	void setTitle(const string title) { };
 

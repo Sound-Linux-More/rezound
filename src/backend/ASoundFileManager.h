@@ -27,6 +27,7 @@ class ASoundFileManager;
 
 #include <string>
 #include <vector>
+#include <map>
 
 class CLoadedSound;
 class CNestedDataFile;
@@ -49,11 +50,12 @@ public:
 
 	void createNew();
 	CLoadedSound *createNew(const string filename,unsigned channelCount,unsigned sampleRate,unsigned length=1,bool rawFormat=false);
-	void open(const string filename="",bool openAsRaw=false);
+		// returns false if a prompt for filename was cancelled or if there was an error loading
+	bool open(const string filename="",bool openAsRaw=false);
 	// ??? should rename these to, saveActive...  or pass them a CSound * (I prefer that), perhaps optionally pass saveAs a filename which can be ""
 	void save();
 	void saveAs();
-	void savePartial(const CSound *sound,const string filename,const sample_pos_t saveStart,const sample_pos_t saveLength);
+	bool savePartial(const CSound *sound,const string filename,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs);
 	enum CloseTypes { ctSaveYesNoStop,ctSaveYesNoCancel,ctSaveNone };
 	void close(CloseTypes closeType,CLoadedSound *closeWhichSound=NULL); // if nothing is passed for closeWhichSound, then the active sound is closed
 	void revert();
@@ -71,9 +73,19 @@ public:
 	// should be implemented to return the number of currently opened sound files
 	virtual const size_t getOpenedCount() const=0;
 
+	// given an index from 0 to getOpenedCount()-1 should be implemented to 
+	// run the CLoadedSound pointer
+	virtual CLoadedSound *getSound(size_t index)=0;
+
 	// is called after an action is performed to update the screen or when the title
 	// bar and other status information of a loaded sound window needs to be modified
-	virtual void updateAfterEdit(CLoadedSound *sound=NULL)=0; // if NULL, then use the active one
+	virtual void updateAfterEdit(CLoadedSound *sound=NULL,bool undoing=false)=0; // if NULL, then use the active one
+
+	// these two methods should be implemented to get and set the positional information (i.e. zoom
+	// factors and scroll positions) of the window with the given sound (or the active one if sound
+	// is not passed in).
+	virtual const map<string,string> getPositionalInfo(CLoadedSound *sound=NULL)=0; // would be 'const' but have to call getActive()
+	virtual void setPositionalInfo(const map<string,string> positionalInfo,CLoadedSound *sound=NULL)=0;
 
 	// returns a list of error messages
 	const vector<string> loadFilesInRegistry();

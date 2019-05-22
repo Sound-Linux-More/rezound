@@ -33,7 +33,8 @@ SUBDIRS=\
 	Filters \
 	Looping \
 	Generate \
-	Remaster
+	Remaster \
+	@MAYBE_LADSPA_DIR@
 
 # this makes makedist happy
 EXTRA_DIST= \
@@ -63,6 +64,7 @@ noinst_HEADERS= \
 	   CLoadedSound.h \
 	   CNativeSoundClipboard.h \
 	   Cold_rezSoundTranslator.h \
+	   CNULLSoundPlayer.h \
 	   COSSSoundPlayer.h \
 	   COSSSoundRecorder.h \
 	   CPortAudioSoundPlayer.h \
@@ -76,6 +78,7 @@ noinst_HEADERS= \
 	   CSound.h \
 	   CSoundPlayerChannel.h \
 	   CTrigger.h \
+	   CPluginMapping.h \
 	   CvoxSoundTranslator.h \
 	   initialize.h \
 	   license.h \
@@ -121,6 +124,7 @@ libbackend_la_SOURCES= \
 			CSound.cpp  \
 			CSoundPlayerChannel.cpp \
 			CTrigger.cpp \
+			CPluginMapping.cpp \
 			CvoxSoundTranslator.cpp \
 		        initialize.cpp \
 			main_controls.cpp \

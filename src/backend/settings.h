@@ -61,12 +61,13 @@ extern string gSysPresetsFilename;		// gSysDataDirectory+"/presets.dat"
 extern CNestedDataFile *gSysPresetsFile;	// opened to gSysPresetsFilename
 
 
+extern string gDefaultAudioMethod;		// contains the value of the --audio-method=... argument
+
 // the desired output device parameters to try to open with
 extern unsigned gDesiredOutputSampleRate;	// defaulted to 44100
 extern unsigned gDesiredOutputChannelCount;	// defaulted to 2
 extern int gDesiredOutputBufferCount;		// defaulted to 2
 extern unsigned gDesiredOutputBufferSize;	// defaulted to 2048 (in frames)
-
 
 #ifdef ENABLE_OSS
 // the OSS devices to use (when not using libportaudio)
@@ -83,10 +84,6 @@ extern int gPortAudioInputDevice;		// defaulted to 0
 extern string gJACKOutputPortNames[64];
 extern string gJACKInputPortNames[64];
 #endif
-
-#if !defined(ENABLE_OSS) && !defined(ENABLE_PORTAUDIO) && !defined(ENABLE_JACK)
-	#error enable one of the audio I/O systems with the --enable-XXX flags to the configure script
-#endif 
 
 
 // This specifies the directory to fall back to if we cannot write
@@ -134,6 +131,7 @@ extern double gMaxPeakFallRate;		// the fraction of the maximum sample value tha
 
 extern bool gStereoPhaseMetersEnabled;	// flag whether the stereo phase meters are enabled
 extern unsigned gStereoPhaseMeterPointCount;	// the number of stereo phase point to plot from the audio output each update
+extern bool gStereoPhaseMeterUnrotate; // flag whether to unrotate the sereo phase meter by -45 degrees
 
 extern bool gFrequencyAnalyzerEnabled;	// flag whether the frequency analyzer is enabled
 extern unsigned gAnalyzerPeakFallDelayTime;	// the number of milliseconds before the analyzer peaks should hold before falling

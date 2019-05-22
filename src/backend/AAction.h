@@ -30,6 +30,7 @@ class AAction;
 
 #include <string>
 #include <vector>
+#include <map>
 
 // I figure most actions will need 2 or 3 of these, so I'll include them here
 #include <math.h>
@@ -92,7 +93,6 @@ public:
 	const string &getDescription() const;
 
 	bool hasDialog() const;
-
 
 protected:
 
@@ -158,6 +158,13 @@ public:
 
 	static vector<ASoundClipboard *> clipboards;
 
+	/* 
+	 * This is set to the return value of ASoundFileManager::getPositionalInfo() when
+	 * an action is about to be performed so that the same positional information can
+	 * be restore to the frontend upon undo
+	 */
+	map<string,string> positionalInfo;
+
 protected:
 	AAction(const CActionSound &actionSound);
 
@@ -221,6 +228,8 @@ protected:
 
 	int tempAudioPoolKey;
 	int tempAudioPoolKey2; // used incase MoveMethod was mmAllButSelection
+
+	unsigned preactionChannelCount;
 
 	// call this if it's needed to clear the saved start/stop selection positions (so it won't restore them after undoActionSizeSafe)
 	void clearSavedSelectionPositions();

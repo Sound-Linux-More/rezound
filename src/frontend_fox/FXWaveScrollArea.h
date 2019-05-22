@@ -24,8 +24,6 @@
 #include "../../config/common.h"
 #include "fox_compat.h"
 
-#include <fox/fx.h>
-
 #include "FXWaveCanvas.h" // for FXWaveCanvas::HorzRecenterTypes
 
 class FXRezWaveView;
@@ -40,12 +38,20 @@ public:
 	FXWaveScrollArea(FXRezWaveView *parent,CLoadedSound *_loadedSound);
 	virtual ~FXWaveScrollArea();
 
-	void updateFromEdit();
+	void updateFromEdit(bool undoing=false);
 
 						// ??? might be able to simply implement by setting the zoom factor and then calling centerStartPos or centerStopPos
 	void setHorzZoom(double v,FXWaveCanvas::HorzRecenterTypes horzRecenterType);
 	double getHorzZoom() const;
-	void setVertZoom(double v);
+
+	void setVertZoom(float v);
+	float getVertZoom() const;
+
+	void setHorzOffset(sample_pos_t offset);
+	sample_pos_t getHorzOffset() const;
+
+	void setVertOffset(int offset);
+	int getVertOffset() const;
 
 	void centerTime(const sample_pos_t time);
 	void centerStartPos();

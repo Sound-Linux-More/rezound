@@ -226,7 +226,7 @@ const sample_t ASoundPlayer::getPeakLevel(unsigned channel) const
 
 const size_t ASoundPlayer::getSamplingForStereoPhaseMeters(sample_t *buffer,size_t bufferSizeInSamples) const
 {
-	return samplingForStereoPhaseMeters.read(buffer,min(bufferSizeInSamples,gStereoPhaseMeterPointCount*devices[0].channelCount))/devices[0].channelCount; // ??? only device zero
+	return samplingForStereoPhaseMeters.read(buffer,min(bufferSizeInSamples,(size_t)(gStereoPhaseMeterPointCount*devices[0].channelCount)))/devices[0].channelCount; // ??? only device zero
 }
 
 #ifdef HAVE_LIBRFFTW
@@ -239,30 +239,30 @@ const size_t ASoundPlayer::getSamplingForStereoPhaseMeters(sample_t *buffer,size
 // ??? these need to be settings in the registry and have enforced limits
 static const float baseOctave=40;	// bottom frequency of analyzer  (actually the first band contains from 0Hz to upperFreqAtOctave(0) )
 static const size_t octaveStride=6;	// 6 bands per octave
-static const float deltaOctave=1.0/octaveStride;
+static const float deltaOctave=1.0f/octaveStride;
 
 // returns the frequency (in Hz) given the octave
 static float freqAtOctave(float octave)
 {
-	return baseOctave*pow((float)2.0,octave);
+	return baseOctave*powf(2.0f,octave);
 }
 
 // return middle of the previous band's frequency and our band's frequency
 static float lowerFreqAtOctave(float octave)
 {
-	return (freqAtOctave(octave-deltaOctave)+freqAtOctave(octave))/2.0;
+	return (freqAtOctave(octave-deltaOctave)+freqAtOctave(octave))/2.0f;
 }
 
 // return middle of the our band's frequency and the next band's frequency
 static float upperFreqAtOctave(float octave)
 {
-	return (freqAtOctave(octave)+freqAtOctave(octave+deltaOctave))/2.0;
+	return (freqAtOctave(octave)+freqAtOctave(octave+deltaOctave))/2.0f;
 }
 
 // returns the index (into an frequency domain array) given a frequency (but doesn't always return an integer, it returns what index we would wish to be there (perhaps between two elements))
 static float indexAtFreq(float freq,unsigned sampleRate)
 {
-	return (2.0*(ASP_ANALYSIS_BUFFER_SIZE/2)*freq)/(float)sampleRate;
+	return (2.0f*(ASP_ANALYSIS_BUFFER_SIZE/2)*freq)/(float)sampleRate;
 }
 
 // returns the (integer) lower index of the given band (expressed as an octave) into a frequency domain array
@@ -468,56 +468,103 @@ const size_t ASoundPlayer::getFrequencyAnalysisOctaveStride() const
 
 // ----------------------------
 
+#include <stdio.h> // just for fprintf
+#include <vector>
+#include <string>
+
+#include "CNULLSoundPlayer.h"
 #include "COSSSoundPlayer.h"
 #include "CPortAudioSoundPlayer.h"
 #include "CJACKSoundPlayer.h"
 
 #include "AStatusComm.h"
 
-#include <stdio.h> // just for fprintf
+#include <CNestedDataFile/CNestedDataFile.h>
 
 ASoundPlayer *ASoundPlayer::createInitializedSoundPlayer()
 {
+	// if the registry doesn't already contain a methods setting, then create the default one
+	if(gSettingsRegistry->keyExists("AudioOutputMethods")!=CNestedDataFile::ktValue)
+	{
+		vector<string> methods;
+		methods.push_back("oss");
+		methods.push_back("jack");
+		methods.push_back("portaudio");
+		gSettingsRegistry->createValue("AudioOutputMethods",methods);
+	}
+
+
+	bool initializeThrewException=false;
 	ASoundPlayer *soundPlayer=NULL;
 
-#if defined(ENABLE_PORTAUDIO)
-	soundPlayer=new CPortAudioSoundPlayer();
-#elif defined(ENABLE_JACK)
-	soundPlayer=new CJACKSoundPlayer();
-#elif defined(ENABLE_OSS)
-	soundPlayer=new COSSSoundPlayer();
-#endif
+	vector<string> methods=gSettingsRegistry->getValue<vector<string> >("AudioOutputMethods");
+	
+	// add --audio-method=... to the beginning
+	if(gDefaultAudioMethod!="")
+		methods.insert(methods.begin(),gDefaultAudioMethod);
 
-	try
-	{
-		soundPlayer->initialize();
-	}
-	catch(exception &e)
-	{
-#if !defined(ENABLE_PORAUDIO) && !defined(ENABLE_JACK)
-		// OSS was the only defined method
-		Error(string(e.what())+"\n"+_("Playing will be disabled."));
-#else
-		// OSS was not the original method chosen at configure time so now fall back to using OSS if it wasn't disabled
-	#ifdef ENABLE_OSS
-		fprintf(stderr,"%s\n",(string(e.what())+"\nAttempting to fall back to using OSS for audio output.").c_str());
-		//Warning(string(e.what())+"\nAttempting to fall back to using OSS for audio output.");
+	// try this as a last resort (it just holds the pointer place (so it's not NULL throughout the rest of the code) but it is written to fail to initialize
+	methods.push_back("null");
 
-		// try OSS
-		delete soundPlayer;
-		soundPlayer=new COSSSoundPlayer();
+	// for each requested method in registry.AudioOutputMethods try each until one succeeds
+	// 'suceeding' is true if the method was enabled at build time and it can initialize now at run-time
+	for(size_t t=0;t<methods.size();t++)
+	{
+		const string method=methods[t];
 		try
 		{
-			soundPlayer->initialize();
+#define INITIALIZE_PLAYER(ClassName)					\
+			{						\
+				initializeThrewException=false;		\
+				delete soundPlayer;			\
+				soundPlayer=new ClassName();		\
+				soundPlayer->initialize();		\
+				break; /* no exception thrown from initialize() so we're good to go */ \
+			}
+
+			if(method=="oss")
+			{	
+#ifdef ENABLE_OSS
+				INITIALIZE_PLAYER(COSSSoundPlayer)
+#endif
+			}
+			else if(method=="jack")
+			{
+#ifdef ENABLE_JACK
+				INITIALIZE_PLAYER(CJACKSoundPlayer)
+#endif
+			}
+			else if(method=="portaudio")
+			{
+#ifdef ENABLE_PORTAUDIO
+				INITIALIZE_PLAYER(CPortAudioSoundPlayer)
+#endif
+			}
+			else if(method=="null")
+			{
+				INITIALIZE_PLAYER(CNULLSoundPlayer)
+			}
+			else
+			{
+				Warning("unhandled method type in the registry:AudioOutputMethods[] '"+method+"'");
+				continue;
+			}
 		}
 		catch(exception &e)
 		{ // now really give up
-			Error(string(_("Error occurred after trying to fall back to OSS"))+"\n"+e.what()+"\n"+_("Playing will be disabled."));
+			fprintf(stderr,"Error occurred while initializing audio output method '%s' -- %s\n",method.c_str(),e.what());
+			initializeThrewException=true;
 		}
-	#else
-		Error(string(e.what())+"\n"+_("Playing will be disabled."));
-	#endif
-#endif
 	}
-	return soundPlayer;
+
+	if(soundPlayer)
+	{
+		if(initializeThrewException)
+			Error(_("No audio output method could be initialized -- Playing will be disabled."));
+
+		return soundPlayer;
+	}
+	else	/* ??? this should never happen anymore now with CNULLSoundPlayer */
+		throw runtime_error(string(__func__)+" -- "+_("Either no audio output method was enabled at configure-time, or no method was recognized in the registry:AudioOutputMethods[] setting"));
 }
+

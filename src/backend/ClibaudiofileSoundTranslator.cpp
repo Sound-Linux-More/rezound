@@ -25,7 +25,8 @@
 #include <unistd.h> // for unlink
 
 #include <stdexcept>
-#include <typeinfo>
+#include <vector>
+#include <utility>
 
 #include <istring>
 #include <TAutoBuffer.h>
@@ -34,6 +35,7 @@
 
 #include "CSound.h"
 #include "AStatusComm.h"
+#include "AFrontendHooks.h"
 
 #if (LIBAUDIOFILE_MAJOR_VERSION*10000+LIBAUDIOFILE_MINOR_VERSION*100+LIBAUDIOFILE_MICRO_VERSION) >= /*000204*/204
 	#define HANDLE_CUES_AND_MISC
@@ -44,11 +46,11 @@
 static int getUserNotesMiscType(int type)
 {
 	if(type==AF_FILE_WAVE)
-		return(AF_MISC_ICMT);
+		return AF_MISC_ICMT;
 	else if(type==AF_FILE_AIFFC || type==AF_FILE_AIFF)
-		return(AF_MISC_ANNO);
+		return AF_MISC_ANNO;
 
-	return(0);
+	return 0;
 }
 
 
@@ -83,54 +85,62 @@ bool ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 
 	AFfilehandle h=afOpenFile(filename.c_str(),"r",initialSetup);
 	if(h==AF_NULL_FILEHANDLE)
-		throw(runtime_error(string(__func__)+_(" -- error opening")+" '"+filename+"' -- "+errorMessage));
+		throw runtime_error(string(__func__)+_(" -- error opening")+" '"+filename+"' -- "+errorMessage);
 
 
-	// ??? this if set may not completly handle all possibilities
-	int err;
-	if(typeid(sample_t)==typeid(int16_t))
-		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8);
-	else if(typeid(sample_t)==typeid(float))
-		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8);
-	else
-	{
-		afCloseFile(h);
-		throw(runtime_error(string(__func__)+" -- unhandled sample_t format"));
-	}
-
-	if(err!=0)
-		throw(runtime_error(string(__func__)+" -- error setting virtual format -- "+errorMessage));
+#if defined(SAMPLE_TYPE_S16)
+	if(afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8)!=0)
+#elif defined(SAMPLE_TYPE_FLOAT)
+	if(afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8)!=0)
+#else
+	#error unhandled SAMPLE_TYPE_xxx define
+#endif
+		throw runtime_error(string(__func__)+" -- error setting virtual format -- "+errorMessage);
 		
+#ifdef WORDS_BIGENDIAN
+	if(afSetVirtualByteOrder(h,AF_DEFAULT_TRACK,AF_BYTEORDER_BIGENDIAN))
+#else
 	if(afSetVirtualByteOrder(h,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN))
-		throw(runtime_error(string(__func__)+" -- error setting virtual byte order -- "+errorMessage));
+#endif
+		throw runtime_error(string(__func__)+" -- error setting virtual byte order -- "+errorMessage);
 
-		// ??? I'm not sure about the 3to4 parameter, because won't it give it to me in whatever bit size I said in afSetVirtualSampleFormat ?
-	//unsigned channelCount=(unsigned)(afGetVirtualFrameSize(h,AF_DEFAULT_TRACK,1)/sizeof(sample_t));
 	unsigned channelCount=afGetChannels(h,AF_DEFAULT_TRACK);
 	if(channelCount<=0 || channelCount>MAX_CHANNELS) // ??? could just ignore the extra channels
-		throw(runtime_error(string(__func__)+" -- invalid number of channels in audio file: "+istring(channelCount)+" -- you could simply increase MAX_CHANNELS in CSound.h"));
+		throw runtime_error(string(__func__)+" -- invalid number of channels in audio file: "+istring(channelCount)+" -- you could simply increase MAX_CHANNELS in CSound.h");
 	unsigned sampleRate=(unsigned)afGetRate(h,AF_DEFAULT_TRACK);
 
-	if(sampleRate<4000 || sampleRate>96000)
-		throw(runtime_error(string(__func__)+" -- an unlikely sample rate of "+istring(sampleRate)+" probably indicates a corrupt file and SGI's libaudiofile has been known to miss these"));
+	if(sampleRate<4000 || sampleRate>196000)
+		throw runtime_error(string(__func__)+" -- an unlikely sample rate of "+istring(sampleRate)+" probably indicates a corrupt file and SGI's libaudiofile has been known to miss these");
 
 	
 	// ??? make sure it's not more than MAX_LENGTH
 		// ??? just truncate the length
 	sample_pos_t size=afGetFrameCount(h,AF_DEFAULT_TRACK);
 	if(size<0)
-		throw(runtime_error(string(__func__)+" -- libaudiofile reports the data length as "+istring(size)));
+		throw runtime_error(string(__func__)+" -- libaudiofile reports the data length as "+istring(size));
 
 	const sample_pos_t fileSize=CPath(filename).getSize(false)/(channelCount*sizeof(sample_t));
 	if(fileSize<(size/25)) // ??? possibly 1/25th compression... really just trying to check for a sane value
 	{
-		Warning("libaudiofile reports that "+filename+" contains "+istring(size)+" samples yet the file is most likely not large enough to contain that many samples.\nLoading what can be loaded.");
+		Warning("libaudiofile reports that "+filename+" contains "+istring(size)+" sample frames yet the file is most likely not large enough to contain that many samples.\nLoading what can be loaded.");
 		//size=fileSize; not doing this because I once ran across a situation where you could read more from the file that stat said it was... even ls showed it smaller than I could actually read
 		//		??? however ^^^ on the other hand, I don't want the length to be 8 gigs worth of space...   Perhaps I should always ignore the given size, and add space in large units until I run out of file... I should apply cues last then
-		//throw(runtime_error(string(__func__)+" -- libaudiofile is not seeing this as a corrupt file -- it thinks the data length is "+istring(size)+" yet when the file is only "+istring(fileSize)+" bytes"));
+		//throw runtime_error(string(__func__)+" -- libaudiofile is not seeing this as a corrupt file -- it thinks the data length is "+istring(size)+" yet when the file is only "+istring(fileSize)+" bytes");
 	}
 
 	sound->createWorkingPoolFile(filename,sampleRate,channelCount,size);
+
+	// remember information for how to save the file if libaudiofile is also used to save it
+	{
+		int sampleFormat,sampleWidth,compressionType;
+
+		afGetSampleFormat(h,AF_DEFAULT_TRACK,&sampleFormat,&sampleWidth);
+		compressionType=afGetCompression(h,AF_DEFAULT_TRACK);
+
+		sound->getGeneralDataAccesser<int>("AF_SAMPFMT_xxx").write(&sampleFormat,1);
+		sound->getGeneralDataAccesser<int>("AF_sample_width").write(&sampleWidth,1);
+		sound->getGeneralDataAccesser<int>("AF_COMPRESSION_xxx").write(&compressionType,1);
+	}
 
 #ifdef HANDLE_CUES_AND_MISC
 
@@ -222,19 +232,25 @@ bool ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 			const int chunkSize=  (t==count-1 ) ? size%4096 : 4096;
 			if(chunkSize!=0)
 			{
-				if(afReadFrames(h,AF_DEFAULT_TRACK,(void *)buffer,chunkSize)!=chunkSize)
+				const int read=afReadFrames(h,AF_DEFAULT_TRACK,(void *)buffer,chunkSize);
+				if(read>0)
 				{
-					//throw(runtime_error(string(__func__)+" -- error reading audio data -- "+errorMessage));
-					Error("error reading audio data from "+filename+" -- "+errorMessage+" -- keeping what was read");
-					break;
+					for(unsigned c=0;c<channelCount;c++)
+					{
+						for(int i=0;i<read;i++)
+							(*(accessers[c]))[pos+i]=buffer[i*channelCount+c];
+					}
+					pos+=read;
 				}
 
-				for(unsigned c=0;c<channelCount;c++)
+				if(read!=chunkSize)
 				{
-					for(int i=0;i<chunkSize;i++)
-						(*(accessers[c]))[pos+i]=buffer[i*channelCount+c];
+					Error("Error reading audio data from "+filename+" -- "+errorMessage+" -- keeping what was read");
+					// remove unnecessary silence
+					if(sound->getLength()>pos)
+						sound->removeSpace(pos,sound->getLength()-pos);
+					break;
 				}
-				pos+=chunkSize;
 			}
 
 			if(statusBar.update(pos))
@@ -263,7 +279,42 @@ bool ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 	return ret;
 }
 
-bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength) const
+static int sampleTypeToIndex(int sampleType)
+{
+	switch(sampleType)
+	{
+		case AF_SAMPFMT_TWOSCOMP: return 0;
+		case AF_SAMPFMT_UNSIGNED: return 1;
+		case AF_SAMPFMT_FLOAT: return 2;
+		case AF_SAMPFMT_DOUBLE: return 3;
+		default: throw runtime_error(string(__func__)+" -- internal error -- unhandled sampleType: "+istring(sampleType));
+	};
+}
+
+static int sampleWidthToIndex(int sampleWidth)
+{
+	switch(sampleWidth)
+	{
+		case 8: return 0;
+		case 16: return 1;
+		case 24: return 2;
+		case 32: return 3;
+		default: {printf("weird sampleWidth: %d -- returning 16bit instead\n",sampleWidth); return 1;}
+	};
+}
+
+static int compressionTypeToIndex(int compressionType,vector<pair<string,int> > supportedCompressionTypes)
+{
+	for(size_t t=0;t<supportedCompressionTypes.size();t++)
+	{
+		if(supportedCompressionTypes[t].second==compressionType)
+			return t;
+	}
+
+	return 0; // none
+}
+
+bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs) const
 {
 	int fileType;
 
@@ -277,23 +328,92 @@ bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,const CSoun
 	else if(extension=="sf")
 		fileType=AF_FILE_BICSF;
 	else
-		throw(runtime_error(string(__func__)+" -- unhandled extension for filename: "+filename));
+		throw runtime_error(string(__func__)+" -- unhandled extension for filename: "+filename);
 
 	AFfilesetup setup=afNewFileSetup();
 	try
 	{
+		// get user preferences for saving the file
+		static bool parametersGotten=false;
+		static AFrontendHooks::libaudiofileSaveParameters parameters;
+		useLastUserPrefs&=parametersGotten;
+		if(!useLastUserPrefs)
+		{
+			// get name of format to show
+			const char *desc=(const char *)afQueryPointer(AF_QUERYTYPE_FILEFMT,AF_QUERY_NAME,fileType,0,0);
+
+			// setup for supported compression types
+			{
+				int nCompressionTypes=afQueryLong(AF_QUERYTYPE_FILEFMT,AF_QUERY_COMPRESSION_TYPES,AF_QUERY_VALUE_COUNT,fileType,0);
+				const int *compressionTypes=(const int *)afQueryPointer(AF_QUERYTYPE_FILEFMT,AF_QUERY_COMPRESSION_TYPES,AF_QUERY_VALUES,fileType,0); // I may need to free this??? but I haven't seen in the docs that it needs to be done, ask him
+				vector<pair<string,int> > supportedCompressionTypes;
+				supportedCompressionTypes.push_back(make_pair(string("None"),(int)AF_COMPRESSION_NONE));
+				for(int t=0;t<nCompressionTypes;t++)
+				{
+					supportedCompressionTypes.push_back(make_pair(
+						(const char *)afQueryPointer(AF_QUERYTYPE_COMPRESSION,AF_QUERY_NAME,compressionTypes[t],0,0),
+						compressionTypes[t]
+					));
+				}
+			
+				parameters.supportedCompressionTypes=supportedCompressionTypes;
+			}
+
+			parameters.defaultSampleFormatIndex=
+				sound->containsGeneralDataPool("AF_SAMPFMT_xxx") 
+				? 
+					sampleTypeToIndex(sound->getGeneralDataAccesser<int>("AF_SAMPFMT_xxx")[0])
+				: 
+					sampleTypeToIndex(afQueryLong(AF_QUERYTYPE_FILEFMT,AF_QUERY_SAMPLE_FORMATS,AF_QUERY_DEFAULT,fileType,0))
+				;
+
+
+			parameters.defaultSampleWidthIndex=
+				sound->containsGeneralDataPool("AF_sample_width") 
+				? 
+					sampleWidthToIndex(sound->getGeneralDataAccesser<int>("AF_sample_width")[0])
+				: 
+					sampleWidthToIndex(afQueryLong(AF_QUERYTYPE_FILEFMT,AF_QUERY_SAMPLE_SIZES,AF_QUERY_DEFAULT,fileType,0))
+				;
+
+			parameters.defaultCompressionTypeIndex=
+				sound->containsGeneralDataPool("AF_COMPRESSION_xxx") 
+				? 
+					compressionTypeToIndex(sound->getGeneralDataAccesser<int>("AF_COMPRESSION_xxx")[0],parameters.supportedCompressionTypes)
+				: 
+					compressionTypeToIndex(AF_COMPRESSION_NONE,parameters.supportedCompressionTypes)
+				;
+
+			if(!gFrontendHooks->promptForlibaudiofileSaveParameters(parameters,desc))
+				return false;
+			parametersGotten=true;
+		}
+
+		
 		// ??? all the following parameters need to be passed in somehow as the export format
 		// 	??? can easily do it with AFrontendHooks
 		afInitFileFormat(setup,fileType); 
-		afInitByteOrder(setup,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN); 			// ??? I would actually want to pass how the user wants to export the data...
+		if(fileType==AF_FILE_WAVE)
+			afInitByteOrder(setup,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN);
+		else if(fileType==AF_FILE_AIFF)
+			afInitByteOrder(setup,AF_DEFAULT_TRACK,AF_BYTEORDER_BIGENDIAN);
+		else if(fileType==AF_FILE_NEXTSND)
+			afInitByteOrder(setup,AF_DEFAULT_TRACK,AF_BYTEORDER_BIGENDIAN);
+		else
+		{	// let the endian be native
+#ifdef WORDS_BIGENDIAN
+			afInitByteOrder(setup,AF_DEFAULT_TRACK,AF_BYTEORDER_BIGENDIAN);
+#else
+			afInitByteOrder(setup,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN);
+#endif
+		}
 		afInitChannels(setup,AF_DEFAULT_TRACK,sound->getChannelCount());
-		afInitSampleFormat(setup,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(int16_t)*8); 	// ??? I would actually want to pass how the user wants to export the data... int16_t matching AF_SAMPFMT_TWOSCOMP
-		afInitRate(setup,AF_DEFAULT_TRACK,sound->getSampleRate()); 				// ??? I would actually want to pass how the user wants to export the data... doesn't actual do any conversion right now (perhaps I could patch it for them)
-		afInitCompression(setup,AF_DEFAULT_TRACK,AF_COMPRESSION_NONE);
-			//afInitInitCompressionParams(setup,AF_DEFAULT_TRACK, ... );
+		afInitSampleFormat(setup,AF_DEFAULT_TRACK,parameters.sampleFormat,parameters.sampleWidth);
+		afInitRate(setup,AF_DEFAULT_TRACK,sound->getSampleRate()); // ??? would put on the dialog except the library doesn't do sample rate conversion itself currently
+		afInitCompression(setup,AF_DEFAULT_TRACK,parameters.compressionType);
 		afInitFrameCount(setup,AF_DEFAULT_TRACK,saveLength);
 
-		const bool ret=saveSoundGivenSetup(filename,sound,saveStart,saveLength,setup,fileType);
+		const bool ret=saveSoundGivenSetup(filename,sound,saveStart,saveLength,setup,fileType,useLastUserPrefs);
 
 		afFreeFileSetup(setup);
 
@@ -307,7 +427,7 @@ bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,const CSoun
 }
 
 
-bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,AFfilesetup initialSetup,int fileFormatType) const
+bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,AFfilesetup initialSetup,int fileFormatType,bool useLastUserPrefs) const
 {
 	bool ret=true;
 
@@ -330,7 +450,10 @@ bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,con
 	if(cueCount>0)
 	{
 		if(!afQueryLong(AF_QUERYTYPE_MARK,AF_QUERY_SUPPORTED,fileFormatType,0,0))
-			Warning(_("This format does not support saving cues"));
+		{
+			if(!useLastUserPrefs) /* don't warn user if they've probably already been warned */
+				Warning(_("This format does not support saving cues"));
+		}
 		else
 		{
 
@@ -366,6 +489,7 @@ bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,con
 			Warning("This format does not support saving user notes");
 		else
 		*/
+		if(fileFormatType==AF_FILE_WAVE || fileFormatType==AF_FILE_AIFF)
 		{
 			afInitMiscIDs(initialSetup,&userNotesMiscID,1);
 			afInitMiscType(initialSetup,userNotesMiscID,userNotesMiscType);
@@ -379,25 +503,24 @@ bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,con
 	unlink(filename.c_str());
 	AFfilehandle h=afOpenFile(filename.c_str(),"w",initialSetup);
 	if(h==AF_NULL_FILEHANDLE)
-		throw(runtime_error(string(__func__)+" -- error opening '"+filename+"' for writing -- "+errorMessage));
+		throw runtime_error(string(__func__)+" -- error opening '"+filename+"' for writing -- "+errorMessage);
 
 	// ??? this if set may not completly handle all possibilities
-	int err;
-	if(typeid(sample_t)==typeid(int16_t))
-		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8);
-	else if(typeid(sample_t)==typeid(float))
-		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8);
-	else
-	{
-		afCloseFile(h);
-		throw(runtime_error(string(__func__)+" -- unhandled sample_t format"));
-	}
+#if defined(SAMPLE_TYPE_S16)
+	if(afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8)!=0)
+#elif defined(SAMPLE_TYPE_FLOAT)
+	if(afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8)!=0)
+#else
+	#error unhandled SAMPLE_TYPE_xxx define
+#endif
+		throw runtime_error(string(__func__)+" -- error setting virtual format -- "+errorMessage);
 
-	if(err!=0)
-		throw(runtime_error(string(__func__)+" -- error setting virtual format -- "+errorMessage));
-
+#ifdef WORDS_BIGENDIAN
+	if(afSetVirtualByteOrder(h,AF_DEFAULT_TRACK,AF_BYTEORDER_BIGENDIAN))
+#else
 	if(afSetVirtualByteOrder(h,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN))
-		throw(runtime_error(string(__func__)+" -- error setting virtual byte order -- "+errorMessage));
+#endif
+		throw runtime_error(string(__func__)+" -- error setting virtual byte order -- "+errorMessage);
 	afSetVirtualChannels(h,AF_DEFAULT_TRACK,channelCount);
 
 	CRezPoolAccesser *accessers[MAX_CHANNELS]={0};
@@ -422,7 +545,7 @@ bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,con
 						buffer[i*channelCount+c]=(*(accessers[c]))[pos+i+saveStart];
 				}
 				if(afWriteFrames(h,AF_DEFAULT_TRACK,(void *)buffer,chunkSize)!=chunkSize)
-					throw(runtime_error(string(__func__)+" -- error writing audio data -- "+errorMessage));
+					throw runtime_error(string(__func__)+" -- error writing audio data -- "+errorMessage);
 				pos+=chunkSize;
 			}
 
@@ -454,6 +577,7 @@ bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,con
 				Warning("This format does not support saving user notes");
 			else
 			*/
+			if(fileFormatType==AF_FILE_WAVE || fileFormatType==AF_FILE_AIFF)
 			{
 				afWriteMisc(h,userNotesMiscID,(void *)userNotes.c_str(),userNotes.length());
 			}
@@ -490,7 +614,7 @@ bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,con
 
 bool ClibaudiofileSoundTranslator::handlesExtension(const string extension,const string filename) const
 {
-	return(extension=="wav" || extension=="aiff" || extension=="au" || extension=="snd" || extension=="sf");
+	return extension=="wav" || extension=="aiff" || extension=="au" || extension=="snd" || extension=="sf";
 }
 
 bool ClibaudiofileSoundTranslator::supportsFormat(const string filename) const
@@ -498,13 +622,13 @@ bool ClibaudiofileSoundTranslator::supportsFormat(const string filename) const
 	int fd=open(filename.c_str(),O_RDONLY);
 	int _e=errno;
 	if(fd==-1)
-		throw(runtime_error(string(__func__)+" -- error opening file '"+filename+"' -- "+strerror(_e)));
+		throw runtime_error(string(__func__)+" -- error opening file '"+filename+"' -- "+strerror(_e));
 
 	int implemented=0;
 	int id=afIdentifyNamedFD(fd,filename.c_str(),&implemented);
 	close(fd);
 
-	return(implemented);
+	return implemented;
 }
 
 const vector<string> ClibaudiofileSoundTranslator::getFormatNames() const
@@ -516,7 +640,7 @@ const vector<string> ClibaudiofileSoundTranslator::getFormatNames() const
 	names.push_back("NeXT/Sun");
 	names.push_back("Berkeley/IRCAM/CARL");
 
-	return(names);
+	return names;
 }
 
 const vector<vector<string> > ClibaudiofileSoundTranslator::getFormatFileMasks() const
@@ -541,7 +665,7 @@ const vector<vector<string> > ClibaudiofileSoundTranslator::getFormatFileMasks()
 	fileMasks.push_back("*.sf");
 	list.push_back(fileMasks);
 
-	return(list);
+	return list;
 }
 
 #endif // HAVE_LIBAUDIOFILE

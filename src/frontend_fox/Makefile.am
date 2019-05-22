@@ -33,6 +33,7 @@ libfrontend_la_SOURCES= \
 			CChannelSelectDialog.cpp \
 			CCrossfadeEdgesDialog.cpp \
 			CActionParamDialog.cpp \
+			AActionParamMapper.cpp \
 			CCueDialog.cpp \
 			CCueListDialog.cpp \
 			CMainWindow.cpp \
@@ -52,6 +53,7 @@ libfrontend_la_SOURCES= \
 			CMp3Dialog.cpp \
 			CJACKPortChoiceDialog.cpp \
 			CMIDIDumpSampleIdDialog.cpp \
+			ClibaudiofileSaveParametersDialog.cpp \
 			drawPortion.cpp \
 			EditActionDialogs.cpp \
 			EffectActionDialogs.cpp \
@@ -67,10 +69,12 @@ libfrontend_la_SOURCES= \
 			FXCheckBoxParamValue.cpp \
 			FXGraphParamValue.cpp \
 			FXLFOParamValue.cpp \
+			FXPluginRoutingParamValue.cpp \
 			FXModalDialogBox.cpp \
 			FXRezWaveView.cpp \
 			FXWaveScrollArea.cpp \
 			FXWaveCanvas.cpp \
+			CLADSPAActionDialog.cpp \
 			rememberShow.cpp \
 			settings.cpp
 
@@ -91,7 +95,7 @@ rezound_SOURCES= main.cpp
 ## It's up to each subdirectory's Makefile to build it's .la library.
 ## notice we use $(top_builddir) for the modules. This allows building in a 
 ## separate directory
-rezound_LDADD= libfrontend.la\
+_rezound_LDADD= libfrontend.la\
 	$(top_builddir)/src/backend/libbackend.la \
 	$(top_builddir)/src/backend/Edits/libEdits.la \
 	$(top_builddir)/src/backend/Effects/libEffects.la \
@@ -99,10 +103,18 @@ rezound_LDADD= libfrontend.la\
 	$(top_builddir)/src/backend/Looping/libLooping.la \
 	$(top_builddir)/src/backend/Remaster/libRemaster.la \
 	$(top_builddir)/src/backend/Generate/libGenerate.la \
+	@MAYBE_LADSPA_LIB@ \
 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
-	$(top_builddir)/src/PoolFile/libPoolFile.la @FOX_LIBS@
+	$(top_builddir)/src/PoolFile/libPoolFile.la
 
-rezound_CXXFLAGS=@FOX_CXXFLAGS@
+rezound_LDADD=$(_rezound_LDADD) @FOX_1_1_LIBS@ @FOX_LIBS@
+
+## if I don't do this, automake leaves out @abc@ vars when creating the rezound_DEPENDENCES value
+## so changes to the LADSPA lib (that may or may not be built) don't cause a re-link
+rezound_DEPENDENCIES=$(_rezound_LDADD)
+
+
+AM_CXXFLAGS=@FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
 
 noinst_HEADERS=\
 	fox_compat.h \
@@ -111,6 +123,7 @@ noinst_HEADERS=\
 	CChannelSelectDialog.h \
 	CCrossfadeEdgesDialog.h \
 	CActionParamDialog.h \
+	AActionParamMapper.h \
 	CCueDialog.h \
 	CCueListDialog.h \
 	CMainWindow.h \
@@ -130,6 +143,7 @@ noinst_HEADERS=\
 	CMp3Dialog.h \
 	CJACKPortChoiceDialog.h \
 	CMIDIDumpSampleIdDialog.h \
+	ClibaudiofileSaveParametersDialog.h \
 	EditActionDialogs.h \
 	EffectActionDialogs.h \
 	FilterActionDialogs.h \
@@ -138,6 +152,7 @@ noinst_HEADERS=\
 	LoopingActionDialogs.h \
 	CAboutDialog.h \
 	FXConstantParamValue.h \
+	FXPluginRoutingParamValue.h \
 	FXTextParamValue.h \
 	FXDiskEntityParamValue.h \
 	FXComboTextParamValue.h \
@@ -148,11 +163,14 @@ noinst_HEADERS=\
 	FXRezWaveView.h \
 	FXWaveScrollArea.h \
 	FXWaveCanvas.h \
+	CLADSPAActionDialog.h \
 	FXPopupHint.h \
+	FXBackBufferedCanvas.h \
 	drawPortion.h \
 	rememberShow.h \
 	custom_cursors.h \
 	utils.h \
+	ActionParamMappers.h \
 	settings.h 
 
 EXTRA_DIST=convert_images.sh

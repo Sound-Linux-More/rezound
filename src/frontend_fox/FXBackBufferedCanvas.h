@@ -19,7 +19,7 @@
 * License along with this library; if not, write to the Free Software           *
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.    *
 *********************************************************************************
-* $Id: FXBackBufferedCanvas.h-missing,v 1.4 2003/05/03 07:13:01 ddurham Exp $                       *
+* $Id: FXBackBufferedCanvas.h,v 1.1 2003/10/07 18:39:32 ddurham Exp $                       *
 ********************************************************************************/
 #ifndef FXBACKBUFFEREDCANVAS_H
 #define FXBACKBUFFEREDCANVAS_H
@@ -31,7 +31,7 @@
 // had a separate .h and .cpp file.. I combined it for a quick and dirty way not to need a
 // lib
 
-#include <fox/fx.h> // change to "FXCanvas.h"
+//#include "FXCanvas.h" // uncomment when putting into lib
 
 // namespace FX {
 

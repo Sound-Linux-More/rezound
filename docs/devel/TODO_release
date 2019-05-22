@@ -1,4 +1,4 @@
-$Id: TODO_release,v 1.22 2003/07/09 20:52:42 ddurham Exp $
+$Id: TODO_release,v 1.24 2003/10/22 05:18:03 ddurham Exp $
 
 This is a todo list for things we need to do for an official release. In
 other words, it's what we'll want to change between the cvs sources and a
@@ -11,35 +11,39 @@ distro tarball(eg: removing warning flags)
 
 3. Revise docs/NEWS and docs/Features.txt (use cvs2cl.pl to determine what significant things have changed since the previous release)
 
-4. Update the version number in configure.ac and docs/INSTALL
-	- and then do a bootstrap ; configure
+4. in po/ to make POTFILES.in-update and make rezound.pot-update
 
-5. PROOF-READ ALL CHANGES YOU JUST MADE!
+5. Update the version number in configure.ac and docs/INSTALL
+	- and then do a bootstrap && configure
 
-6. Remove any files: rm `find . -name ".#*"`
+6. PROOF-READ ALL CHANGES YOU JUST MADE!
+
+7. Remove any files: rm `find . -name ".#*"`
 
 --- EITHER -------------
 
-7. update the rpm spec file
+8. update the rpm spec file
 
-8. rebuild FOX with all the possible --disable flags, --with-opengl=no, and probably CPPFLAGS=-NO_XIM
+9. rebuild FOX with all the possible --disable flags, --with-opengl=no, and probably CPPFLAGS=-DNO_XIM
+	CPPFLAGS=-DNO_XIM configure --with-opengl=no --disable-jpeg --disable-png --disable-tiff --disable-zlib --disable-bz2lib
+	- Sometimes fox needs --disable-shared with gcc-3.2 on some platforms to make the rezound FOX test succeed [linking issues]
 
-9. run build_packages_for_release.sh (which is only local to me -- not in CVS)
+10. run build_packages_for_release.sh (which is only local to me -- not in CVS)
 
 --- OR -----------------
 
-7. 'make distcheck'
-8. rebuild FOX with all the possible --disable flags, --with-opengl=no, and probably CPPFLAGS=-NO_XIM then 'make_standalone.sh'
-9. create .rpm as standalone
+8. 'make distcheck'
+9. rebuild FOX with all the possible --disable flags, --with-opengl=no, and probably CPPFLAGS=-NO_XIM then 'make_standalone.sh'
+10. create .rpm as standalone
 	- update the rpm spec file
 	- copy the source tarball to /usr/src/RPM/SOURCES
 	- rpmbuild -ba rezound.spec
 
 ------------------------
 
-10. checkin any modified files (docs/AUTHORS, docs/NEWS, docs/Features.txt, configure.in, docs/INSTALL, etc)
+11. checkin any modified files (docs/AUTHORS, docs/NEWS, docs/Features.txt, configure.in, docs/INSTALL, etc)
 
-11. get .deb from Anthony
+12. get .deb from Anthony
 
 13. Make a cvs release tag (but check in any files that may have been changed first)
 	- cvs tag rezound-1_2_3alpha

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.16 2003/06/13 07:01:56 ddurham Exp $
+/* $Id: common.h,v 1.18 2003/11/11 20:25:21 ddurham Exp $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -68,16 +68,8 @@ static const char *REZOUND_VERSION=VERSION;
 # define __func__ __func__
 #endif //__GNUC__
 
-
-/*
- * This should really be a configure test because 'nearbyint() and round()' might 
- * exist one day on BSD I could also just use rint, but nearbyint is supposed to 
- * be slightly faster because it doesn't raise the inexact math exception.
- */
-#ifdef __FreeBSD__
-#define nearbyint rint
-#define round rintf
-#endif
+/* include code that determines the platform, and may supply missing function implementations */
+#include "platform/platform.h"
 
 /*
  * It is not good to simply use bool==bool because anything non-zero is seen as true
@@ -85,8 +77,17 @@ static const char *REZOUND_VERSION=VERSION;
  */
 static bool compareBool(int a,int b) { return (a && b) || (!a && !b); }
 
-#ifdef ENABLE_NLS
+
+
+/* 
+ * Include this now so that it can't be included later and then the #define gettext(a)-to-nothing 
+ * below won't mutate the header file's declaration 
+ */
+#ifdef HAVE_LIBINTL_H
 	#include <libintl.h>
+#endif 
+
+#ifdef ENABLE_NLS
 	/* this avoids having gettext("") return junk instead of a simple "" */
 	#define gettext(String) ((String)==NULL ? NULL : ( (String)[0]==0 ? "" : gettext(String) ))
 	#define _(String) gettext (String)
@@ -97,8 +98,6 @@ static bool compareBool(int a,int b) { return (a && b) || (!a && !b); }
 
 // NOOP for gettext
 #define N_(String) String
-
-
 
 
 #endif /* COMMON_H */

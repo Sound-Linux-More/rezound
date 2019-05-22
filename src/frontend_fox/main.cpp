@@ -21,10 +21,10 @@
 #include "../../config/common.h"
 #include "fox_compat.h"
 
-#include <fox/fx.h>
-
 #include <stdexcept>
+#ifdef ENABLE_NLS
 #include <clocale> // for gettext init
+#endif
 
 #include <CPath.h>
 DECLARE_STATIC_CPATH // to declare CPath::dirDelim
@@ -207,7 +207,6 @@ void setupWindows(CMainWindow *mainWindow)
 		mainWindow->createMenus();
 }
 
-#include <fox/fxkeys.h>
 void setupAccels(CMainWindow *mainWindow)
 {
 	FXAccelTable *at=mainWindow->getAccelTable();
@@ -265,6 +264,20 @@ void setLocaleFont(FXApp *application)
 
 		application->setNormalFont(new FXFont(application,desc));
 	}
+	else if(lang=="de" || lang=="de_DE")
+	{ // setup ISO_8859-2 encoded font
+		FXFontDesc desc={
+			"helvetica",
+			90,
+			FONTWEIGHT_BOLD,
+			FONTSLANT_REGULAR,
+			FONTENCODING_ISO_8859_1,
+			FONTSETWIDTH_DONTCARE,
+			0
+		};
+
+		application->setNormalFont(new FXFont(application,desc));
+	}
 }
 #endif
 
@@ -303,9 +316,7 @@ void printNormalFontProperties(FXApp *application)
 	printf("\tflags: %d\n",desc.flags);
 	printf("}\n");
 }
-#endif
 
-#if 0
 void listFonts()
 {
 	printf("font_listing {\n");

@@ -27,6 +27,10 @@
 #include "CActionSound.h"
 #include "AActionDialog.h"
 
+// for frontend positional information saving
+#include "CActionParameters.h"
+#include "ASoundFileManager.h"
+
 #include "settings.h"
 
 
@@ -81,6 +85,11 @@ bool AActionFactory::performAction(CLoadedSound *loadedSound,CActionParameters *
 			}
 
 			action=manufactureAction(actionSound,actionParameters);
+
+			// save zoom factors and scroll positions so the frontend can restore this upon undo
+			if(actionParameters->getSoundFileManager()!=NULL)
+				action->positionalInfo=actionParameters->getSoundFileManager()->getPositionalInfo();
+
 			ret&=action->doAction(loadedSound->channel,true,willResize,crossfadeEdgesIsApplicable);
 
 			/*
@@ -114,6 +123,12 @@ bool AActionFactory::performAction(CLoadedSound *loadedSound,CActionParameters *
 	catch(exception &e)
 	{
 		Error(e.what());
+
+		if(channelSelectDialog) 
+			channelSelectDialog->hide();
+		if(dialog)
+			dialog->hide();
+
 		return false;
 	}
 }
@@ -149,6 +164,8 @@ AAction::AAction(const CActionSound &_actionSound) :
 	tempAudioPoolKey(-1),
 	tempAudioPoolKey2(-1),
 
+	preactionChannelCount(_actionSound.sound->getChannelCount()),
+
 	actionSound(_actionSound),
 	willResize(false),
 	done(false),
@@ -168,7 +185,8 @@ AAction::AAction(const CActionSound &_actionSound) :
 	crossfadeStart(0),
 	crossfadeStartLength(0),
 	crossfadeStop(0),
-	crossfadeStopLength(0)
+	crossfadeStopLength(0),
+	crossfadeMoveMul(0)
 {
 }
 
@@ -296,7 +314,8 @@ bool AAction::doAction(CSoundPlayerChannel *channel,bool prepareForUndo,bool _wi
 		else
 			actionSound.sound->unlockSize();
 
-		Message(e.what());
+		if(e.what()[0])
+			Message(e.what());
 		return false;
 	}
 	catch(...)
@@ -387,7 +406,8 @@ void AAction::undoAction(CSoundPlayerChannel *channel)
 		else
 			actionSound.sound->unlockSize();
 
-		Message(e.what());
+		if(e.what()[0])
+			Message(e.what());
 	}
 	catch(...)
 	{
@@ -534,7 +554,7 @@ void AAction::crossfadeEdgesInner(const CActionSound &actionSound)
 		// just after doAction
 		int tempPoolKey=actionSound.sound->copyDataToTemp(allChannels,actionSound.start,crossfadeStartTime);
 
-		for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
+		for(unsigned i=0;i<actionSound.sound->getChannelCount() && i<preactionChannelCount;i++)
 		{	
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempCrossfadePoolKeyStart,i);
@@ -573,7 +593,7 @@ run-through on paper would help
 	{
 		int tempPoolKey=actionSound.sound->copyDataToTemp(allChannels,actionSound.stop-crossfadeStopTime+1,crossfadeStopTime);
 
-		for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
+		for(unsigned i=0;i<actionSound.sound->getChannelCount() && i<preactionChannelCount;i++)
 		{	
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempCrossfadePoolKeyStop,i);

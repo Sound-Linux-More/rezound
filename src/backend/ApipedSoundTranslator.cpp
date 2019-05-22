@@ -46,21 +46,7 @@ ApipedSoundTranslator::~ApipedSoundTranslator()
 
 const string ApipedSoundTranslator::findAppOnPath(const string appName)
 {
-	// ??? this should eventually use a registry setting which comes from user preferences and would be checked first
-	FILE *p=mypopen(("which "+appName+" 2>/dev/null").c_str(),"r");
-	if(p==NULL)
-		return "";
-
-	char buffer[4096+1]={0};
-	fgets(buffer,4096,p);
-	mypclose(p);
-
-	// remove trailing \n if it's there
-	const size_t l=strlen(buffer);
-	if(l>0 && buffer[l-1]=='\n')
-		buffer[l-1]=0;
-
-	return buffer;
+	return CPath::which(appName);
 }
 
 /* translate \ to \\ and " to \" in the given filename and put quotes around filename */
@@ -95,6 +81,11 @@ void ApipedSoundTranslator::removeExistingFile(const string filename)
 		}
 	}
 }
+
+/* this wasn't defined on solaris or bsd using gcc when I ported the code */
+#if defined(rez_OS_SOLARIS) || defined(rez_OS_BSD)
+	typedef void (*sighandler_t) (int);
+#endif
 
 static sighandler_t origSIGPIPE_Handler;
 bool ApipedSoundTranslator::SIGPIPECaught;

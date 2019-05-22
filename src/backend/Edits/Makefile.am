@@ -38,10 +38,13 @@ noinst_HEADERS= \
 		CRotateEdit.h \
 		CSwapChannelsEdit.h \
 		CAddChannelsEdit.h \
+		CDuplicateChannelEdit.h \
 		CRemoveChannelsEdit.h \
 		CSelectionEdit.h \
 		CSaveSelectionAsAction.h \
 		CSaveAsMultipleFilesAction.h \
+		CBurnToCDAction.h \
+		parse_segment_cues.h \
 		EditActions.h
 
 ## see PoolFile Makefile.am for explanation here out
@@ -59,7 +62,9 @@ libEdits_la_SOURCES= \
 		CRotateEdit.cpp \
 		CSwapChannelsEdit.cpp \
 		CAddChannelsEdit.cpp \
+		CDuplicateChannelEdit.cpp \
 		CRemoveChannelsEdit.cpp \
 		CSaveSelectionAsAction.cpp \
 		CSaveAsMultipleFilesAction.cpp \
+		CBurnToCDAction.cpp \
 		CSelectionEdit.cpp 

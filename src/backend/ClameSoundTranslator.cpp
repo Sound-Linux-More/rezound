@@ -28,17 +28,70 @@
 
 #include "ClameSoundTranslator.h"
 
-#include <typeinfo>
 #include <stdexcept>
 
 #include <CPath.h>
 #include <TAutoBuffer.h>
+#include <endian_util.h>
 
 #include "CSound.h"
 #include "AFrontendHooks.h"
 #include "AStatusComm.h"
 
 static string gPathToLame="";
+
+struct RWaveHeader
+{
+	char RIFF_ID[4];
+	uint32_t fileSize; // bogus coming from lame
+	char WAVE_ID[4];
+	char fmt_ID[4];
+	uint32_t fmtSize;
+	uint16_t dataType; // 1 => PCM
+	uint16_t channelCount;
+	uint32_t sampleRate;
+	uint32_t bytesPerSec;
+	uint16_t bytesPerSample;
+	uint16_t bitsPerSample;
+	char data_ID[4];
+	uint32_t dataLength; // bogus coming from lame
+
+	void convertFromLE()
+	{
+		//hetle((uint32_t *)RIFF_ID);
+		hetle(&fileSize);
+		//hetle((uint32_t *)WAVE_ID);
+		//hetle((uint32_t *)fmt_ID);
+		hetle(&fmtSize);
+		hetle(&dataType);
+		hetle(&channelCount);
+		hetle(&sampleRate);
+		hetle(&bytesPerSec);
+		hetle(&bytesPerSample);
+		hetle(&bitsPerSample);
+		//hetle((uint32_t *)data_ID);
+		hetle(&dataLength);
+	}
+
+	void convertToLE()
+	{
+		//hetle((uint32_t *)RIFF_ID);
+		hetle(&fileSize);
+		//hetle((uint32_t *)WAVE_ID);
+		//hetle((uint32_t *)fmt_ID);
+		hetle(&fmtSize);
+		hetle(&dataType);
+		hetle(&channelCount);
+		hetle(&sampleRate);
+		hetle(&bytesPerSec);
+		hetle(&bytesPerSample);
+		hetle(&bitsPerSample);
+		//hetle((uint32_t *)data_ID);
+		hetle(&dataLength);
+	}
+
+
+}; 
 
 ClameSoundTranslator::ClameSoundTranslator() :
 	ApipedSoundTranslator()
@@ -64,10 +117,10 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 	bool ret=true;
 
 	if(gPathToLame=="")
-		throw(runtime_error(string(__func__)+" -- $PATH to 'lame' not set"));
+		throw runtime_error(string(__func__)+" -- $PATH to 'lame' not set");
 
 	if(!checkThatFileExists(filename))
-		throw(runtime_error(string(__func__)+" -- file not found, '"+filename+"'"));
+		throw runtime_error(string(__func__)+" -- file not found, '"+filename+"'");
 
 	const string cmdLine=gPathToLame+" --decode "+escapeFilename(filename)+" -";
 
@@ -79,56 +132,39 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 	CRezPoolAccesser *accessers[MAX_CHANNELS]={0};
 	try
 	{
-		// for now lame always outputs a fixed size wave header as little 
-		// endian just specifying the format so I'll just fread this struct
-		// and later I will have to contend with endian-ness ???
-		struct 
-		{
-			char RIFF_ID[4];
-			uint32_t fileSize; // bogus coming from lame
-			char WAVE_ID[4];
-			char fmt_ID[4];
-			uint32_t fmtSize;
-			uint16_t dataType; // 1 => PCM
-			uint16_t channelCount;
-			uint32_t sampleRate;
-			uint32_t bytesPerSec;
-			uint16_t bytesPerSample;
-			uint16_t bitsPerSample;
-			char data_ID[4];
-			uint32_t dataLength; // bogus coming from lame
-		} waveHeader; 
+		RWaveHeader waveHeader; 
 		memset(&waveHeader,0,sizeof(waveHeader));
 
 
 		fread(&waveHeader,1,sizeof(waveHeader),p);
+		waveHeader.convertFromLE();
 
 		// verify some stuff about the output of lame
 		if(waveHeader.fmtSize!=16)
-			throw(runtime_error(string(__func__)+" -- it looks as if either there is an error in the input file -- or lame was not compiled with decoding support (get latest at http://mp3dev.org) -- or an error has occuring executing lame -- or your version of lame has started to output a different wave file header when decoding MPEG Layer-1,2,3 files to wave files.  Changes will have to be made to this source to handle the new wave file output -- check stderr for more information"));
+			throw runtime_error(string(__func__)+" -- it looks as if either there is an error in the input file -- or lame was not compiled with decoding support (get latest at http://mp3dev.org) -- or an error has occuring executing lame -- or your version of lame has started to output a different wave file header when decoding MPEG Layer-1,2,3 files to wave files.  Changes will have to be made to this source to handle the new wave file output -- check stderr for more information");
 		if(strncmp(waveHeader.RIFF_ID,"RIFF",4)!=0)
-			throw(runtime_error(string(__func__)+" -- internal error -- 'RIFF' expected in lame output"));
+			throw runtime_error(string(__func__)+" -- internal error -- 'RIFF' expected in lame output");
 		if(strncmp(waveHeader.WAVE_ID,"WAVE",4)!=0)
-			throw(runtime_error(string(__func__)+" -- internal error -- 'WAVE' expected in lame output"));
+			throw runtime_error(string(__func__)+" -- internal error -- 'WAVE' expected in lame output");
 		if(strncmp(waveHeader.fmt_ID,"fmt ",4)!=0)
-			throw(runtime_error(string(__func__)+" -- internal error -- 'fmt ' expected in lame output"));
+			throw runtime_error(string(__func__)+" -- internal error -- 'fmt ' expected in lame output");
 		if(strncmp(waveHeader.data_ID,"data",4)!=0)
-			throw(runtime_error(string(__func__)+" -- internal error -- 'data' expected in lame output"));
+			throw runtime_error(string(__func__)+" -- internal error -- 'data' expected in lame output");
 
 		if(waveHeader.dataType!=1)
-			throw(runtime_error(string(__func__)+" -- internal error -- it looks as if your version of lame has started to output non-PCM data when decoding mp3 files to wave files.  Changes will have to be made to this source to handle the new wave file output"));
+			throw runtime_error(string(__func__)+" -- internal error -- it looks as if your version of lame has started to output non-PCM data when decoding mp3 files to wave files.  Changes will have to be made to this source to handle the new wave file output");
 
 		unsigned channelCount=waveHeader.channelCount;
 		if(channelCount<=0 || channelCount>MAX_CHANNELS) // ??? could just ignore the extra channels
-			throw(runtime_error(string(__func__)+" -- invalid number of channels in audio file: "+istring(channelCount)+" -- you could simply increase MAX_CHANNELS in CSound.h"));
+			throw runtime_error(string(__func__)+" -- invalid number of channels in audio file: "+istring(channelCount)+" -- you could simply increase MAX_CHANNELS in CSound.h");
 
 		unsigned sampleRate=waveHeader.sampleRate;
 		if(sampleRate<100 || sampleRate>196000)
-			throw(runtime_error(string(__func__)+" -- an unlikely sample rate of "+istring(sampleRate)));
+			throw runtime_error(string(__func__)+" -- an unlikely sample rate of "+istring(sampleRate));
 
 		unsigned bits=waveHeader.bitsPerSample;
 		if(bits!=16 && bits!=8)
-			throw(runtime_error(string(__func__)+" -- an unlikely/unhandled bit rate of "+istring(bits)));
+			throw runtime_error(string(__func__)+" -- an unlikely/unhandled bit rate of "+istring(bits));
 
 		#define REALLOC_FILE_SIZE (1024*1024/4)
 		
@@ -144,51 +180,54 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 		while(fgets(errBuffer,BUFFER_SIZE,errStream)!=NULL) // non-blocking i/o set by mypopen on this stream
 			printf("%s",errBuffer);
 
-		if(bits==16 && typeid(sample_t)==typeid(int16_t))
+		TAutoBuffer<int8_t> mem_buffer((bits/8)*BUFFER_SIZE*channelCount); // set this up so it deallocates itself
+		void * const buffer=mem_buffer;
+
+		sample_pos_t pos=0;
+
+		CStatusBar statusBar("Loading Sound",0,100,true);
+		for(;;)
 		{
+			size_t chunkSize=fread(buffer,(bits/8)*channelCount,BUFFER_SIZE,p);
+			if(chunkSize<=0)
+				break;
 
-			TAutoBuffer<sample_t> buffer(BUFFER_SIZE*channelCount);
-			sample_pos_t pos=0;
+			if((pos+chunkSize)>sound->getLength())
+				sound->addSpace(sound->getLength(),REALLOC_FILE_SIZE);
 
-			CStatusBar statusBar("Loading Sound",0,100,true);
-			for(;;)
+			if(bits==16)
 			{
-				size_t chunkSize=fread((void *)((sample_t *)buffer),sizeof(sample_t)*channelCount,BUFFER_SIZE,p);
-				if(chunkSize<=0)
-					break;
-
-				if((pos+chunkSize)>sound->getLength())
-					sound->addSpace(sound->getLength(),REALLOC_FILE_SIZE);
-
 				for(unsigned c=0;c<channelCount;c++)
 				{
+					CRezPoolAccesser &accesser=*(accessers[c]);
 					for(unsigned i=0;i<chunkSize;i++)
-						(*(accessers[c]))[pos+i]=buffer[i*channelCount+c];
+						accesser[pos+i]=convert_sample<int16_t,sample_t>(lethe(((int16_t *)buffer)[i*channelCount+c]));
 				}
-				pos+=chunkSize;
-
-				// read and parse the stderr of 'lame' to determine the progress of the load
-				while(fgets(errBuffer,BUFFER_SIZE,errStream)!=NULL) // non-blocking i/o set by mypopen on this stream
-				{
-					int frameNumber,totalFrames;
-					sscanf(errBuffer,"%*s %d%*c%d ",&frameNumber,&totalFrames);
-					printf("%s",errBuffer);
-					if(statusBar.update(frameNumber*100/totalFrames))
-					{ // cancelled
-						ret=false;
-						goto cancelled;
-					}
-				}
-
 			}
-			printf("\n"); // after lame stderr output
+			else
+				throw runtime_error(string(__func__)+" -- an unhandled bit rate of "+istring(bits));
 
-			// remove any extra allocated space
-			if(sound->getLength()>pos)
-				sound->removeSpace(pos,sound->getLength()-pos);
+			pos+=chunkSize;
+
+			// read and parse the stderr of 'lame' to determine the progress of the load
+			while(fgets(errBuffer,BUFFER_SIZE,errStream)!=NULL) // non-blocking i/o set by mypopen on this stream
+			{
+				int frameNumber,totalFrames;
+				sscanf(errBuffer,"%*s %d%*c%d ",&frameNumber,&totalFrames);
+				printf("%s",errBuffer);
+				if(statusBar.update(frameNumber*100/totalFrames))
+				{ // cancelled
+					ret=false;
+					goto cancelled;
+				}
+			}
+
 		}
-		else
-			throw(runtime_error(string(__func__)+" -- an unhandled bit rate of "+istring(bits)));
+		printf("\n"); // after lame stderr output
+
+		// remove any extra allocated space
+		if(sound->getLength()>pos)
+			sound->removeSpace(pos,sound->getLength()-pos);
 
 		cancelled:
 
@@ -210,24 +249,35 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 	return ret;
 }
 
-bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength) const
+bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs) const
 {
 	bool ret=true;
 
 	if(gPathToLame=="")
-		throw(runtime_error(string(__func__)+" -- path to 'lame' not set"));
+		throw runtime_error(string(__func__)+" -- path to 'lame' not set");
 
 	if(CPath(filename).extension()!="mp3")
-		throw(runtime_error(string(__func__)+" -- can only encode in MPEG Layer-3"));
+		throw runtime_error(string(__func__)+" -- can only encode in MPEG Layer-3");
 
-	AFrontendHooks::Mp3CompressionParameters parameters;
-	if(!gFrontendHooks->promptForMp3CompressionParameters(parameters))
-		return false;
-	
+	// get user preferences for saving the mp3
+	static bool parametersGotten=false;
+	static AFrontendHooks::Mp3CompressionParameters parameters;
+	useLastUserPrefs&=parametersGotten;
+	if(!useLastUserPrefs)
+	{
+		if(!gFrontendHooks->promptForMp3CompressionParameters(parameters))
+			return false;
+		parametersGotten=true;
+	}
+		
 	if(sound->getCueCount()>0 || sound->getUserNotes()!="")
 	{
-		if(Question(_("MPEG Layer-3 does not support saving user notes or cues\nDo you wish to continue?"),yesnoQues)!=yesAns)
-			return false;
+		// don't prompt the user if they've already answered this question
+		if(!useLastUserPrefs)
+		{
+			if(Question(_("MPEG Layer-3 does not support saving user notes or cues\nDo you wish to continue?"),yesnoQues)!=yesAns)
+				return false;
+		}
 	}
 
 	removeExistingFile(filename);
@@ -249,7 +299,7 @@ bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound
 			cmdLine+=" -V "+istring(parameters.quality)+" ";
 		}
 		else
-			throw(runtime_error(string(__func__)+" -- internal error -- unhandle bit rate method "+istring(parameters.method)));
+			throw runtime_error(string(__func__)+" -- internal error -- unhandle bit rate method "+istring(parameters.method));
 	}
 
 	cmdLine+=" "+parameters.additionalFlags+" ";
@@ -267,31 +317,13 @@ bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound
 	{
 		const unsigned channelCount=sound->getChannelCount();
 
-		// for now lame always outputs a fixed size wave header as little 
-		// endian just specifying the format so I'll just fread this struct
-		// and later I will have to contend with endian-ness
-		struct 
-		{
-			char RIFF_ID[4];
-			uint32_t fileSize;
-			char WAVE_ID[4];
-			char fmt_ID[4];
-			uint32_t fmtSize;
-			uint16_t dataType; // 1 => PCM
-			uint16_t channelCount;
-			uint32_t sampleRate;
-			uint32_t bytesPerSec;
-			uint16_t bytesPerSample;
-			uint16_t bitsPerSample;
-			char data_ID[4];
-			uint32_t dataLength;
-		} waveHeader; 
 
 		#define BITS 16 // has to go along with how we're writing it to the pipe below
 
 		if(saveLength>((0x7fffffff-4096)/((BITS/2)*channelCount)))
-			throw(runtime_error(string(__func__)+" -- audio data is too large to be converted to mp3 (more than 2gigs of "+istring(BITS)+"bit/"+istring(channelCount)+"channels"));
+			throw runtime_error(string(__func__)+" -- audio data is too large to be converted to mp3 (more than 2gigs of "+istring(BITS)+"bit/"+istring(channelCount)+"channels");
 
+		RWaveHeader waveHeader; 
 		strncpy(waveHeader.RIFF_ID,"RIFF",4);
 		waveHeader.fileSize=36+(saveLength*(channelCount*(BITS/8)));
 		strncpy(waveHeader.WAVE_ID,"WAVE",4);
@@ -306,47 +338,46 @@ bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound
 		waveHeader.dataLength=saveLength*(channelCount*(BITS/8));
 
 		if(SIGPIPECaught)
-			throw(runtime_error(string(__func__)+" -- lame aborted -- check stderr for more information"));
-		fwrite(&waveHeader,1,sizeof(waveHeader),p);
+			throw runtime_error(string(__func__)+" -- lame aborted -- check stderr for more information");
 
+		waveHeader.convertToLE();
+		fwrite(&waveHeader,1,sizeof(waveHeader),p);
 
 		for(unsigned t=0;t<channelCount;t++)
 			accessers[t]=new CRezPoolAccesser(sound->getAudio(t));
 
 		#define BUFFER_SIZE 4096
-		if(typeid(sample_t)==typeid(int16_t))
+
+		TAutoBuffer<int16_t> buffer(BUFFER_SIZE*channelCount);
+		sample_pos_t pos=0;
+
+		CStatusBar statusBar(_("Saving Sound"),0,saveLength,true);
+		while(pos<saveLength)
 		{
-			TAutoBuffer<sample_t> buffer(BUFFER_SIZE*channelCount);
-			sample_pos_t pos=0;
+			size_t chunkSize=BUFFER_SIZE;
+			if(pos+chunkSize>saveLength)
+				chunkSize=saveLength-pos;
 
-			CStatusBar statusBar(_("Saving Sound"),0,saveLength,true);
-			while(pos<saveLength)
+			for(unsigned c=0;c<channelCount;c++)
 			{
-				size_t chunkSize=BUFFER_SIZE;
-				if(pos+chunkSize>saveLength)
-					chunkSize=saveLength-pos;
+				const CRezPoolAccesser &accesser=*(accessers[c]);
+				for(unsigned i=0;i<chunkSize;i++)
+					buffer[i*channelCount+c]=hetle( (convert_sample<sample_t,int16_t>(accesser[pos+i+saveStart])) );
+			}
 
-				for(unsigned c=0;c<channelCount;c++)
-				{
-					for(unsigned i=0;i<chunkSize;i++)
-						buffer[i*channelCount+c]=(*(accessers[c]))[pos+i+saveStart];
-				}
-				pos+=chunkSize;
+			pos+=chunkSize;
 
-				if(SIGPIPECaught)
-					throw(runtime_error(string(__func__)+" -- lame aborted -- check stderr for more information"));
-				if(fwrite((void *)((sample_t *)buffer),sizeof(sample_t)*channelCount,chunkSize,p)!=chunkSize)
-					fprintf(stderr,"%s -- dropped some data while writing\n",__func__);
+			if(SIGPIPECaught)
+				throw runtime_error(string(__func__)+" -- lame aborted -- check stderr for more information");
+			if(fwrite(buffer,sizeof(int16_t)*channelCount,chunkSize,p)!=chunkSize)
+				fprintf(stderr,"%s -- dropped some data while writing\n",__func__);
 
-				if(statusBar.update(pos))
-				{ // cancelled
-					ret=false;
-					goto cancelled;
-				}
+			if(statusBar.update(pos))
+			{ // cancelled
+				ret=false;
+				goto cancelled;
 			}
 		}
-		else
-			throw(runtime_error(string(__func__)+" -- internal error -- an unhandled sample_t type"));
 
 		cancelled:
 
@@ -383,9 +414,10 @@ bool ClameSoundTranslator::handlesExtension(const string extension,const string 
 
 bool ClameSoundTranslator::supportsFormat(const string filename) const
 {
+	return handlesExtension(CPath(filename).extension(),filename);
 	// I've tried and only can really get lame to know the format
 	// from the extension unless I can do some analysis on it myself
-	return false;
+	//return false;
 }
 
 const vector<string> ClameSoundTranslator::getFormatNames() const

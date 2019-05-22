@@ -66,7 +66,7 @@ bool CResampleAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempAudioPoolKey,i);
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 
-			TSoundStretcher<CRezPoolAccesser> stretcher(src,0,oldLength,newLength,1,0,true);
+			TSoundStretcher<const CRezPoolAccesser> stretcher(src,0,oldLength,newLength,1,0,true);
 			for(sample_pos_t t=0;t<newLength;t++)
 			{
 				dest[t]=stretcher.getSample();
@@ -80,8 +80,13 @@ bool CResampleAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 		}
 	}
 
-	actionSound.stop=(sample_pos_t)((sample_fpos_t)actionSound.stop/oldSampleRate*newSampleRate);
-	actionSound.start=(sample_pos_t)((sample_fpos_t)actionSound.start/oldSampleRate*newSampleRate);
+	// adjust all cue positions (even anchored ones)
+	for(size_t t=0;t<actionSound.sound->getCueCount();t++)
+		actionSound.sound->setCueTime(t,(sample_pos_t)sample_fpos_round((sample_fpos_t)actionSound.sound->getCueTime(t)/oldSampleRate*newSampleRate));
+	
+	// adjust start and stop positions
+	actionSound.stop=(sample_pos_t)sample_fpos_round((sample_fpos_t)actionSound.stop/oldSampleRate*newSampleRate);
+	actionSound.start=(sample_pos_t)sample_fpos_round((sample_fpos_t)actionSound.start/oldSampleRate*newSampleRate);
 
 	actionSound.sound->setSampleRate(newSampleRate);
 

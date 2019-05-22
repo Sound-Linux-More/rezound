@@ -26,7 +26,6 @@
 #include "CMIDISDSSoundTranslator.h"
 
 #include <stdexcept>
-#include <typeinfo>
 #include <algorithm>
 
 #include <errno.h>
@@ -243,7 +242,7 @@ bool CMIDISDSSoundTranslator::onLoadSound(const string filename,CSound *sound) c
 				if(write(fd,buffer,7)!=7)
 				{
 					const int err=errno;
-					throw runtime_error(string(__func__)+" -- error writing SAMPLE DUMP request to device -- "+strerror(err));
+					throw runtime_error(string(__func__)+" -- error writing SAMPLE DUMP request to device -- perhaps the disk is full -- "+strerror(err));
 				}
 
 				sampleDumpRequestSent=true;
@@ -441,8 +440,7 @@ bool CMIDISDSSoundTranslator::onLoadSound(const string filename,CSound *sound) c
 			printf("processing data\n");
 #endif
 			// read the 120 bytes worth of sample data
-				// assuming 16 bit data
-			if(typeid(sample_t)==typeid(int16_t))
+				// assuming 16bit unsigned data from MIDI device
 			{
 				CRezPoolAccesser dest=sound->getAudio(0);
 				sample_pos_t k=0;
@@ -450,14 +448,12 @@ bool CMIDISDSSoundTranslator::onLoadSound(const string filename,CSound *sound) c
 				for(int t=0;t<120 && lengthRead<length;t+=3)
 				{
 					// bits are left-justified in 3 byte sections except that bit 7 is unused in each byte
-					mix_sample_t s=( (((sample_t)ptr[t+0]))<<9 ) + ( (((sample_t)ptr[t+1]))<<2 ) + (((sample_t)ptr[t+2])>>5);
-					dest[lengthRead++]=s-0x8000;
+					int16_t s=( (((int16_t)ptr[t+0]))<<9 ) + ( (((int16_t)ptr[t+1]))<<2 ) + (((int16_t)ptr[t+2])>>5);
+					dest[lengthRead++]=convert_sample<int16_t,sample_t>(s-0x8000);
 				}
 
 				// could perform checksum verification
 			}
-			else
-				throw runtime_error(string(__func__)+" -- unimplemented sample type conversion");
 
 			if(isDevice)
 			{ // send ACK message
@@ -509,7 +505,7 @@ bool CMIDISDSSoundTranslator::onLoadSound(const string filename,CSound *sound) c
 
 }
 
-bool CMIDISDSSoundTranslator::onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength) const
+bool CMIDISDSSoundTranslator::onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs) const
 {
 	int sysExChannel=-1;
 	int packetSeq=0;
@@ -528,10 +524,6 @@ bool CMIDISDSSoundTranslator::onSaveSound(const string filename,const CSound *so
 	{
 		unsigned char buffer[256];
 		int l;
-
-			// ??? handle later
-		if(typeid(sample_t)!=typeid(int16_t))
-			throw runtime_error(string(__func__)+" -- unimplemented sample_t type");
 
 		// prompt for some necessary things
 		sysExChannel=	sound->containsGeneralDataPool("SDS Data") ? sound->getGeneralDataAccesser<int16_t>("SDS Data")[0] : -1;
@@ -663,7 +655,7 @@ bool CMIDISDSSoundTranslator::onSaveSound(const string filename,const CSound *so
 			unsigned char *b=buffer+5;
 			for(int t=0;t<len;t++)
 			{
-				mix_sample_t s=src[saveStart+(packetSeq*SAMPLES_PER_PACK)+t]+0x8000;
+				int s=(int)convert_sample<sample_t,int16_t>(src[saveStart+(packetSeq*SAMPLES_PER_PACK)+t])+0x8000;
 				(*(b++))=(s>>9)&0x7f;
 				(*(b++))=(s>>2)&0x7f;
 				(*(b++))=s&0x3;
@@ -788,16 +780,28 @@ bool CMIDISDSSoundTranslator::handlesExtension(const string extension,const stri
 
 bool CMIDISDSSoundTranslator::supportsFormat(const string filename) const
 {
-	// shouldn't get called if filename is a device
+	printf("file: %s\n",filename.c_str());
+	bool ret=false;
 
-	// check if filename is a normal file or a link to a normal file I guess (use realpath perhaps)
+	// this won't get called from ASoundTranslator::findTranslator if filename is a device
+
+	//                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20  
 	// should start with  "F0 7E xx 01 xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx F7"
+	FILE *f=fopen(filename.c_str(),"r");
+	if(f!=NULL)
+	{
+		uint8_t buffer[21]={0};
+		fread(buffer,21,1,f);
+		if(buffer[0]==0xf0 && buffer[1]==0x7e && buffer[3]==0x01 && buffer[20]==0xf7)
+			ret=true;
+		fclose(f);
+	}
 
-	// ??? if isDevice, then send a NAK and it will resend the data, if not a device, then we can seek
+	// perhaps if isDevice, then send a NAK and it will resend the data, if not a device, then we can seek
 	// we'd have to know the waveformId and request it or wait for something.. but if it wasn't a MIDI 
 	// then attempting to read a header would mess things up unless we could rewind some
 	
-	return false;
+	return ret;
 }
 
 const vector<string> CMIDISDSSoundTranslator::getFormatNames() const

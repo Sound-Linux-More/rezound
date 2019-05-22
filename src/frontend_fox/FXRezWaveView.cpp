@@ -169,10 +169,36 @@ double FXRezWaveView::getHorzZoom() const
 	return waveScrollArea->getHorzZoom();
 }
 
-void FXRezWaveView::setVertZoom(double v)
+void FXRezWaveView::setVertZoom(float v)
 {
 	waveScrollArea->setVertZoom(v);
 }
+
+float FXRezWaveView::getVertZoom() const
+{
+	return waveScrollArea->getVertZoom();
+}
+
+void FXRezWaveView::setHorzOffset(const sample_pos_t offset)
+{
+	waveScrollArea->setHorzOffset(offset);
+}
+
+sample_pos_t FXRezWaveView::getHorzOffset() const
+{
+	return waveScrollArea->getHorzOffset();
+}
+
+void FXRezWaveView::setVertOffset(const int offset)
+{
+	waveScrollArea->setVertOffset(offset);
+}
+
+int FXRezWaveView::getVertOffset() const
+{
+	return waveScrollArea->getVertOffset();
+}
+
 
 void FXRezWaveView::drawPlayPosition(sample_pos_t dataPosition,bool justErasing,bool scrollToMakeVisible)
 {
@@ -208,9 +234,9 @@ void FXRezWaveView::updateFromSelectionChange(FXWaveCanvas::LastChangedPositions
 	waveScrollArea->updateFromSelectionChange(lastChangedPosition);
 }
 
-void FXRezWaveView::updateFromEdit()
+void FXRezWaveView::updateFromEdit(bool undoing)
 {
-	waveScrollArea->updateFromEdit();
+	waveScrollArea->updateFromEdit(undoing);
 	update();
 	rulerPanel->update();
 }
@@ -787,7 +813,6 @@ long FXWaveRuler::onFocusOut(FXObject* sender,FXSelector sel,void* ptr){
  * some given time I guess (because I dont want every little nudge to be undoable)
  */
 
-#include <fox/fxkeys.h>
 long FXWaveRuler::onKeyPress(FXObject *object,FXSelector sel,void *ptr)
 {
 	FXEvent* event=(FXEvent*)ptr;
@@ -868,7 +893,7 @@ void FXWaveRuler::focusNextCue()
 {
 	if(focusedCueIndex==0xffffffff)
 	{
-		size_t dummy;
+		sample_pos_t dummy;
 		if(!sound->findNearestCue(0,focusedCueIndex,dummy))
 			focusedCueIndex=0xffffffff;
 		else
@@ -889,7 +914,6 @@ void FXWaveRuler::focusPrevCue()
 		focusNextCue(); // would implement the same thing here, so just call it
 	else
 	{
-		size_t dummy;
 		if(sound->findPrevCue(focusedCueTime,focusedCueIndex))
 			focusedCueTime=sound->getCueTime(focusedCueIndex);
 		else
@@ -899,7 +923,7 @@ void FXWaveRuler::focusPrevCue()
 
 void FXWaveRuler::focusFirstCue()
 {
-	size_t dummy;
+	sample_pos_t dummy;
 	if(!sound->findNearestCue(0,focusedCueIndex,dummy))
 		focusedCueIndex=0xffffffff;
 	else
@@ -908,7 +932,7 @@ void FXWaveRuler::focusFirstCue()
 
 void FXWaveRuler::focusLastCue()
 {
-	size_t dummy;
+	sample_pos_t dummy;
 	if(!sound->findNearestCue(sound->getLength()-1,focusedCueIndex,dummy))
 		focusedCueIndex=0xffffffff;
 	else

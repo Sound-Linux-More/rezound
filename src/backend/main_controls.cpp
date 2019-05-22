@@ -36,11 +36,11 @@
 // --- File Operations ---------------------------------------------------------------
 // -----------------------------------------------------------------------------------
 
-void openSound(ASoundFileManager *soundFileManager,const string filename)
+bool openSound(ASoundFileManager *soundFileManager,const string filename)
 {
 	try
 	{
-		soundFileManager->open(filename);
+		return soundFileManager->open(filename);
 	}
 	catch(exception &e)
 	{
@@ -366,8 +366,13 @@ void undo(ASoundFileManager *soundFileManager)
 				s->actions.pop();
 
 				a->undoAction(s->channel);
+
+				// restore the frontend position information as part of undoing the action
+				soundFileManager->setPositionalInfo(a->positionalInfo);
+
 				delete a; // ??? what ever final logic is implemented for undo, it should probably push it onto a redo stack
-				soundFileManager->updateAfterEdit();
+
+				soundFileManager->updateAfterEdit(NULL,true);
 			}
 			else
 				gStatusComm->beep();

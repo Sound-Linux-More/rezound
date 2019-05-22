@@ -54,6 +54,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -71,6 +72,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -101,6 +104,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -179,15 +184,18 @@ pkgdocdir = $(prefix)/doc/@PACKAGE@
 noinst_HEADERS = \
 		CConvolutionFilter.h \
 		CArbitraryFIRFilter.h \
+		CMorphingArbitraryFIRFilter.h \
 		CSinglePoleFilter.h \
 		CBiquadResFilter.h \
-		FilterActions.h
+		FilterActions.h \
+		filters_util.h
 
 
 noinst_LTLIBRARIES = libFilters.la
 libFilters_la_SOURCES = \
 			CConvolutionFilter.cpp \
 			CArbitraryFIRFilter.cpp \
+			CMorphingArbitraryFIRFilter.cpp \
 			CSinglePoleFilter.cpp \
 			CBiquadResFilter.cpp 
 
@@ -200,7 +208,8 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libFilters_la_LDFLAGS =
 libFilters_la_LIBADD =
 am_libFilters_la_OBJECTS = CConvolutionFilter.lo CArbitraryFIRFilter.lo \
-	CSinglePoleFilter.lo CBiquadResFilter.lo
+	CMorphingArbitraryFIRFilter.lo CSinglePoleFilter.lo \
+	CBiquadResFilter.lo
 libFilters_la_OBJECTS = $(am_libFilters_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
@@ -209,6 +218,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CArbitraryFIRFilter.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CBiquadResFilter.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CConvolutionFilter.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CMorphingArbitraryFIRFilter.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSinglePoleFilter.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -255,6 +265,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CArbitraryFIRFilter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CBiquadResFilter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CConvolutionFilter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMorphingArbitraryFIRFilter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSinglePoleFilter.Plo@am__quote@
 
 distclean-depend:

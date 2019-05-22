@@ -30,6 +30,7 @@
 #include "settings.h"
 
 #include <CNestedDataFile/CNestedDataFile.h>
+#include "../backend/ASoundTranslator.h"
 
 #include "utils.h"
 
@@ -64,6 +65,9 @@ FXDiskEntityParamValue::FXDiskEntityParamValue(FXComposite *p,int opts,const cha
 
 	textFont(getApp()->getNormalFont())
 {
+	if(openAsRawCheckButton && !ASoundTranslator::findRawTranslator())
+		openAsRawCheckButton->hide();
+
 	// create a smaller font to use 
         FXFontDesc d;
         textFont->getFontDesc(d);
@@ -102,7 +106,11 @@ long FXDiskEntityParamValue::onBrowseButton(FXObject *sender,FXSelector sel,void
 		break;
 
 	case detGeneralFilename:
-		throw runtime_error(string(__func__)+" -- general filename not yet implemented because it is not yet needed");
+		{
+			const string filename=FXFileDialog::getOpenFilename(this,name.c_str(),"").text();
+			if(filename!="")
+				setEntityName(filename);
+		}
 		break;
 
 	case detDirectory:

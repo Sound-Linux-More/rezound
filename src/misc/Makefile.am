@@ -39,7 +39,7 @@ noinst_HEADERS=\
 
 EXTRA_DIST= \
 	istring \
-	missing/FXBackBufferedCanvas.h-missing \
+	endian_util.h \
 	missing/sstream-missing \
 	missing/stdint.h-missing
 

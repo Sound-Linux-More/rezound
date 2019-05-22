@@ -34,14 +34,23 @@ public:
 	ASoundTranslator();
 	virtual ~ASoundTranslator();
 
-		// normally these return true, or they return false if cancelled
+	/* 
+	 * Normally returns true, or return false if cancelled.
+	 */
 	bool loadSound(const string filename,CSound *sound) const;
-	bool saveSound(const string filename,const CSound *sound) const;
-	bool saveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength) const;
+
+	/*
+	 * Normally returns true, or return false if cancelled.
+	 * useLastUserPrefs says: if possible, avoid prompting the user for saving 
+	 * preferences (i.e. compression type, audio format, etc) and use the last 
+	 * user chosen set of information.
+	 */
+	bool saveSound(const string filename,const CSound *sound,bool useLastUserPrefs=false) const;
+	bool saveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs=false) const;
 
 	// filename is passed, but that is just because sometimes at the point at which we want to let the extension determine the format, the filename might also help determine it too
 	virtual bool handlesExtension(const string extension,const string filename) const=0;
-	virtual bool supportsFormat(const string filename) const=0;
+	virtual bool supportsFormat(const string filename) const=0; // this will only get called iff the file exists and is a regular file
 	virtual bool handlesRaw() const { return(false); }	// only the raw translator implementation should override this to return true
 
 	virtual const vector<string> getFormatNames() const=0;			// return a list of format names than this derivation handles
@@ -50,8 +59,9 @@ public:
 	// returns a translator object that can handle loading the given file (detected either by the file contents or filename extention)
 	// an exception is thrown if no translator can handle it
 	// ??? perhaps I should have some enum here which indicates a desired format incase the extension is non-standard
-	static const ASoundTranslator *findTranslator(const string filename,bool isRaw);
+	static const ASoundTranslator *findTranslator(const string filename,bool byExtensionOnly,bool isRaw);
 
+	static const ASoundTranslator *findRawTranslator();
 	static const vector<const ASoundTranslator *> getTranslators();
 	static const vector<string> getFlatFormatList(); // returns a flattened list of every supported extension followed by a " [" then the format name then "]'
 
@@ -60,7 +70,7 @@ protected:
 	// ??? It might make sense to swap the return values of these before anyone codes
 		// these should return true normally, or they should return false if cancelled
 	virtual bool onLoadSound(const string filename,CSound *sound) const=0;
-	virtual bool onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveStop) const=0;
+	virtual bool onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveStop,bool useLastUserPrefs) const=0;
 
 private:
 	// this vectors is to be a list of all implemented (and enabled) ASoundTranslator derived classes

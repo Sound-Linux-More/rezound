@@ -27,6 +27,8 @@
 
 #include "utils.h"
 
+#include "ActionParamMappers.h"
+
 /*
 	- This is the LFO selection widget used over and over by ReZound on action dialogs
 
@@ -43,9 +45,6 @@ FXDEFMAP(FXLFOParamValue) FXLFOParamValueMap[]=
 
 FXIMPLEMENT(FXLFOParamValue,FXVerticalFrame,FXLFOParamValueMap,ARRAYNUMBER(FXLFOParamValueMap))
 
-static const double interpretValue(const double x,const int s) { return x*s; }
-static const double uninterpretValue(const double x,const int s) { return x/s; }
-
 FXLFOParamValue::FXLFOParamValue(FXComposite *p,int opts,const char *_name,const string ampUnits,const string ampTitle,const double maxAmp,const string freqUnits,const double maxFreq,const bool hideBipolarLFOs) :
 	FXVerticalFrame(p,opts|FRAME_RAISED |LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0, 2,2,2,2, 0,2),
 
@@ -53,13 +52,42 @@ FXLFOParamValue::FXLFOParamValue(FXComposite *p,int opts,const char *_name,const
 
 	titleLabel(new FXLabel(this,gettext(_name),NULL,LABEL_NORMAL|LAYOUT_CENTER_X)),
 	sliders(new FXHorizontalFrame(this,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
-		amplitudeSlider(new FXConstantParamValue(interpretValue,uninterpretValue,min((int)maxAmp,1),(int)maxAmp,min((int)maxAmp,1),false,sliders,LAYOUT_CENTER_X,gettext(ampTitle.c_str()))),
-		frequencySlider(new FXConstantParamValue(interpretValue,uninterpretValue,min((int)maxFreq,1),(int)maxFreq,min((int)maxFreq,1),false,sliders,LAYOUT_CENTER_X,N_("Frequency"))),
-		phaseSlider(new FXConstantParamValue(interpretValue,uninterpretValue,360,360,360,true,sliders,LAYOUT_CENTER_X,N_("Phase"))),
+
+		amplitudeSlider(new FXConstantParamValue(
+			new CActionParamMapper_linear(1.0,min((int)maxAmp,1),min((int)maxAmp,1),(int)maxAmp),
+			false,
+			sliders,
+			LAYOUT_CENTER_X,
+			gettext(ampTitle.c_str())
+		)),
+
+		frequencySlider(new FXConstantParamValue(
+			new CActionParamMapper_linear(1.0,min((int)maxFreq,1),min((int)maxFreq,1),(int)maxFreq),
+			false,
+			sliders,
+			LAYOUT_CENTER_X,
+			N_("Frequency")
+		)),
+
+		phaseSlider(new FXConstantParamValue(
+			new CActionParamMapper_linear(90.0,360,0,0),
+			true,
+			sliders,
+			LAYOUT_CENTER_X,
+			N_("Phase")
+		)),
+
 	LFOTypeComboBox(new FXListBox(this,16,this,ID_LFO_TYPE_COMBOBOX,FRAME_SUNKEN|FRAME_THICK|LISTBOX_NORMAL|LAYOUT_CENTER_X|LAYOUT_FIX_WIDTH,0,0,180,0)),
 
-	textFont(getApp()->getNormalFont())
+	textFont(getApp()->getNormalFont()),
+
+	minWidth(0),
+	minHeight(236)
 {
+	amplitudeSlider->setMinSize(0,0);
+	frequencySlider->setMinSize(0,0);
+	phaseSlider->setMinSize(0,0);
+
 	// create a smaller font to use 
         FXFontDesc d;
         textFont->getFontDesc(d);
@@ -73,11 +101,6 @@ FXLFOParamValue::FXLFOParamValue(FXComposite *p,int opts,const char *_name,const
 	amplitudeSlider->setUnits(ampUnits.c_str());
 	frequencySlider->setUnits(freqUnits.c_str());
 	phaseSlider->setUnits("deg");
-
-	// something initial
-	amplitudeSlider->setValue(1.0);
-	frequencySlider->setValue(1.0);
-	phaseSlider->setValue(90.0);
 
 		// ??? could seriously add icons for these
 	for(size_t t=0;t<gLFORegistry.getCount();t++)
@@ -99,9 +122,25 @@ FXLFOParamValue::~FXLFOParamValue()
 	delete textFont;
 }
 
+FXint FXLFOParamValue::getDefaultWidth()
+{
+	return max(FXVerticalFrame::getDefaultWidth(),minWidth);
+}
+
+FXint FXLFOParamValue::getDefaultHeight()
+{
+	return max(FXVerticalFrame::getDefaultHeight(),minHeight);
+}
+
+void FXLFOParamValue::setMinSize(FXint _minWidth,FXint _minHeight)
+{
+	minWidth=_minWidth;
+	minHeight=_minHeight;
+}
+
 long FXLFOParamValue::onLFOTypeChange(FXObject *sender,FXSelector sel,void *ptr)
 {
-	if((size_t)(LFOTypeComboBox->getItemData(LFOTypeComboBox->getCurrentItem()))==0)
+	if((size_t)(LFOTypeComboBox->getItemData(LFOTypeComboBox->getCurrentItem()))==3)
 	{ // constant needs only to have an amplitude setting
 		amplitudeSlider->enable();
 		frequencySlider->disable();
@@ -131,6 +170,21 @@ const string FXLFOParamValue::getName() const
 {
 	return name;
 }
+
+void FXLFOParamValue::enable()
+{
+	FXVerticalFrame::enable();
+	enableAllChildren(this);
+
+	onLFOTypeChange(NULL,0,NULL);
+}
+
+void FXLFOParamValue::disable()
+{
+	FXVerticalFrame::disable();
+	disableAllChildren(this);
+}
+
 
 /*
 void FXLFOParamValue::setTipText(const FXString &text)
@@ -166,7 +220,8 @@ void FXLFOParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 	{
 		LFOTypeComboBox->setCurrentItem(0); // default to the first position which should be sine
 	}
-	onLFOTypeChange(NULL,0,NULL);
+	if(isEnabled())
+		onLFOTypeChange(NULL,0,NULL);
 
 	if(amplitudeSlider->getName()!="")
 		amplitudeSlider->readFromFile(key,f);

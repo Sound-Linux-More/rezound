@@ -51,6 +51,8 @@
 	#error unimplemented for win32 platform (yet)
 #endif
 
+#include <stdio.h> /* for popen/pclose */
+
 #include <stdexcept>
 #include <string>
 
@@ -263,6 +265,46 @@ public:
 	bool isDevice() const
 	{
 		return S_ISCHR(statBuf.st_mode) || S_ISBLK(statBuf.st_mode);
+	}
+
+	/* returns a string containing the first time the executable 'exeName' is found on $PATH */
+	static const string which(const string exeName)
+	{
+		/*??? would have to change implementation if WIN32 was ACTUALLY supported */
+		string ret;
+		FILE *p=popen(("which '"+exeName+"' 2>/dev/null").c_str(),"r");
+
+		char buffer[4096+1];
+		redo:
+		buffer[0]=0;
+		if(p!=NULL && fgets(buffer,4096,p))
+		{
+			// remove \n at end
+			if(strlen(buffer)>0)
+				buffer[strlen(buffer)-1]=0;
+
+#if defined(rez_OS_LINUX)
+			// on linux which simply returns no stdout when not found
+			ret=buffer;
+#elif defined(rez_OS_BSD)
+			// on bsd which returns "XXX: Command not found." when not found
+			if(strstr(buffer,": Command not found.")==NULL)
+				ret=buffer;
+#elif defined(rez_OS_SOLARIS)
+			// on solaris if the path is really long it puts "Warning: ..." on the first line
+			if(strncmp(buffer,"Warning: ",9)==0)
+				goto redo;
+
+			// on solaris which returns "no XXX in ..." when not found
+			if(strncmp(buffer,"no ",3)!=0)
+				ret=buffer;
+#else
+			#error CPath::which needs to be implemented on this platform
+#endif
+		}
+		pclose(p);
+
+		return ret;
 	}
 
 private:

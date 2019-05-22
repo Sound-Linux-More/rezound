@@ -54,6 +54,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -71,6 +72,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -101,6 +104,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -185,6 +190,7 @@ noinst_HEADERS = \
 		CCompressorAction.h \
 		CNormalizeAction.h \
 		CResampleAction.h \
+		CMarkQuietAreasAction.h \
 		RemasterActions.h
 
 
@@ -197,7 +203,8 @@ libRemaster_la_SOURCES = \
 			CUnclipAction.cpp \
 			CCompressorAction.cpp \
 			CNormalizeAction.cpp \
-			CResampleAction.cpp 
+			CResampleAction.cpp \
+			CMarkQuietAreasAction.cpp 
 
 subdir = src/backend/Remaster
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -209,7 +216,8 @@ libRemaster_la_LDFLAGS =
 libRemaster_la_LIBADD =
 am_libRemaster_la_OBJECTS = CBalanceAction.lo CMonoizeAction.lo \
 	CNoiseGateAction.lo CRemoveDCAction.lo CUnclipAction.lo \
-	CCompressorAction.lo CNormalizeAction.lo CResampleAction.lo
+	CCompressorAction.lo CNormalizeAction.lo CResampleAction.lo \
+	CMarkQuietAreasAction.lo
 libRemaster_la_OBJECTS = $(am_libRemaster_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
@@ -217,6 +225,7 @@ depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CBalanceAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCompressorAction.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CMarkQuietAreasAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMonoizeAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CNoiseGateAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CNormalizeAction.Plo \
@@ -267,6 +276,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CBalanceAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCompressorAction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMarkQuietAreasAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMonoizeAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CNoiseGateAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CNormalizeAction.Plo@am__quote@

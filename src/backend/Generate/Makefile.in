@@ -54,6 +54,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -71,6 +72,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -101,6 +104,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -178,13 +183,15 @@ pkgdocdir = $(prefix)/doc/@PACKAGE@
 
 noinst_HEADERS = \
 		CGenerateNoiseAction.h \
+		CGenerateToneAction.h \
 		GenerateActions.h
 
 
 noinst_LTLIBRARIES = libGenerate.la
 
 libGenerate_la_SOURCES = \
-		CGenerateNoiseAction.cpp 
+		CGenerateNoiseAction.cpp \
+		CGenerateToneAction.cpp 
 
 subdir = src/backend/Generate
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -194,13 +201,15 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 
 libGenerate_la_LDFLAGS =
 libGenerate_la_LIBADD =
-am_libGenerate_la_OBJECTS = CGenerateNoiseAction.lo
+am_libGenerate_la_OBJECTS = CGenerateNoiseAction.lo \
+	CGenerateToneAction.lo
 libGenerate_la_OBJECTS = $(am_libGenerate_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CGenerateNoiseAction.Plo
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CGenerateNoiseAction.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CGenerateToneAction.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
@@ -244,6 +253,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CGenerateNoiseAction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CGenerateToneAction.Plo@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)

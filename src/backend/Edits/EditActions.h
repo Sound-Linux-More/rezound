@@ -35,11 +35,13 @@
 #include "CRotateEdit.h"
 #include "CSwapChannelsEdit.h"
 #include "CAddChannelsEdit.h"
+#include "CDuplicateChannelEdit.h"
 #include "CRemoveChannelsEdit.h"
 
 // ---------- does not appear actually under the Edit menu
 #include "CSaveSelectionAsAction.h"
 #include "CSaveAsMultipleFilesAction.h"
+#include "CBurnToCDAction.h"
 
 
 #endif

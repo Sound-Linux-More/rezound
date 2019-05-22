@@ -24,8 +24,6 @@
 #include "../../config/common.h"
 #include "fox_compat.h"
 
-#include <fox/fx.h>
-
 class CLoadedSound;
 #include "../backend/CSound_defs.h"
 
@@ -49,7 +47,15 @@ public:
 
 	void setHorzZoom(double v,FXWaveCanvas::HorzRecenterTypes horzRecenterType);
 	double getHorzZoom() const;
-	void setVertZoom(double v);
+
+	void setVertZoom(float v);
+	float getVertZoom() const;
+
+	void setHorzOffset(const sample_pos_t offset);
+	sample_pos_t getHorzOffset() const;
+
+	void setVertOffset(const int offset);
+	int getVertOffset() const;
 
 	void drawPlayPosition(sample_pos_t dataPosition,bool justErasing,bool scrollToMakeVisible);
 
@@ -60,7 +66,7 @@ public:
 	void redraw();
 
 	void updateFromSelectionChange(FXWaveCanvas::LastChangedPositions lastChangedPosition=FXWaveCanvas::lcpNone);
-	void updateFromEdit();
+	void updateFromEdit(bool undoing=false);
 
 	void updateRuler();
 	void updateRulerFromScroll(int deltaX,FXEvent *event);

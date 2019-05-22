@@ -55,6 +55,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -72,6 +73,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -102,6 +105,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -184,6 +189,7 @@ libfrontend_la_SOURCES = \
 			CChannelSelectDialog.cpp \
 			CCrossfadeEdgesDialog.cpp \
 			CActionParamDialog.cpp \
+			AActionParamMapper.cpp \
 			CCueDialog.cpp \
 			CCueListDialog.cpp \
 			CMainWindow.cpp \
@@ -203,6 +209,7 @@ libfrontend_la_SOURCES = \
 			CMp3Dialog.cpp \
 			CJACKPortChoiceDialog.cpp \
 			CMIDIDumpSampleIdDialog.cpp \
+			ClibaudiofileSaveParametersDialog.cpp \
 			drawPortion.cpp \
 			EditActionDialogs.cpp \
 			EffectActionDialogs.cpp \
@@ -218,10 +225,12 @@ libfrontend_la_SOURCES = \
 			FXCheckBoxParamValue.cpp \
 			FXGraphParamValue.cpp \
 			FXLFOParamValue.cpp \
+			FXPluginRoutingParamValue.cpp \
 			FXModalDialogBox.cpp \
 			FXRezWaveView.cpp \
 			FXWaveScrollArea.cpp \
 			FXWaveCanvas.cpp \
+			CLADSPAActionDialog.cpp \
 			rememberShow.cpp \
 			settings.cpp
 
@@ -230,7 +239,7 @@ bin_PROGRAMS = rezound
 
 rezound_SOURCES = main.cpp 
 
-rezound_LDADD = libfrontend.la\
+_rezound_LDADD = libfrontend.la\
 	$(top_builddir)/src/backend/libbackend.la \
 	$(top_builddir)/src/backend/Edits/libEdits.la \
 	$(top_builddir)/src/backend/Effects/libEffects.la \
@@ -238,11 +247,16 @@ rezound_LDADD = libfrontend.la\
 	$(top_builddir)/src/backend/Looping/libLooping.la \
 	$(top_builddir)/src/backend/Remaster/libRemaster.la \
 	$(top_builddir)/src/backend/Generate/libGenerate.la \
+	@MAYBE_LADSPA_LIB@ \
 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
-	$(top_builddir)/src/PoolFile/libPoolFile.la @FOX_LIBS@
+	$(top_builddir)/src/PoolFile/libPoolFile.la
 
 
-rezound_CXXFLAGS = @FOX_CXXFLAGS@
+rezound_LDADD = $(_rezound_LDADD) @FOX_1_1_LIBS@ @FOX_LIBS@
+
+rezound_DEPENDENCIES = $(_rezound_LDADD)
+
+AM_CXXFLAGS = @FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
 
 noinst_HEADERS = \
 	fox_compat.h \
@@ -251,6 +265,7 @@ noinst_HEADERS = \
 	CChannelSelectDialog.h \
 	CCrossfadeEdgesDialog.h \
 	CActionParamDialog.h \
+	AActionParamMapper.h \
 	CCueDialog.h \
 	CCueListDialog.h \
 	CMainWindow.h \
@@ -270,6 +285,7 @@ noinst_HEADERS = \
 	CMp3Dialog.h \
 	CJACKPortChoiceDialog.h \
 	CMIDIDumpSampleIdDialog.h \
+	ClibaudiofileSaveParametersDialog.h \
 	EditActionDialogs.h \
 	EffectActionDialogs.h \
 	FilterActionDialogs.h \
@@ -278,6 +294,7 @@ noinst_HEADERS = \
 	LoopingActionDialogs.h \
 	CAboutDialog.h \
 	FXConstantParamValue.h \
+	FXPluginRoutingParamValue.h \
 	FXTextParamValue.h \
 	FXDiskEntityParamValue.h \
 	FXComboTextParamValue.h \
@@ -288,11 +305,14 @@ noinst_HEADERS = \
 	FXRezWaveView.h \
 	FXWaveScrollArea.h \
 	FXWaveCanvas.h \
+	CLADSPAActionDialog.h \
 	FXPopupHint.h \
+	FXBackBufferedCanvas.h \
 	drawPortion.h \
 	rememberShow.h \
 	custom_cursors.h \
 	utils.h \
+	ActionParamMappers.h \
 	settings.h 
 
 
@@ -307,43 +327,36 @@ libfrontend_la_LDFLAGS =
 libfrontend_la_LIBADD =
 am_libfrontend_la_OBJECTS = CFOXIcons.lo CActionMenuCommand.lo \
 	CChannelSelectDialog.lo CCrossfadeEdgesDialog.lo \
-	CActionParamDialog.lo CCueDialog.lo CCueListDialog.lo \
-	CMainWindow.lo CNewSoundDialog.lo CRecordDialog.lo \
-	CPasteChannelsDialog.lo CProgressDialog.lo CSoundFileManager.lo \
-	CFrontendHooks.lo CSoundWindow.lo CMetersWindow.lo \
-	CStatusComm.lo CUserNotesDialog.lo CRawDialog.lo CVoxDialog.lo \
-	COggDialog.lo CMp3Dialog.lo CJACKPortChoiceDialog.lo \
-	CMIDIDumpSampleIdDialog.lo drawPortion.lo EditActionDialogs.lo \
-	EffectActionDialogs.lo FilterActionDialogs.lo \
-	GenerateActionDialogs.lo RemasterActionDialogs.lo \
-	LoopingActionDialogs.lo CAboutDialog.lo FXConstantParamValue.lo \
-	FXTextParamValue.lo FXDiskEntityParamValue.lo \
-	FXComboTextParamValue.lo FXCheckBoxParamValue.lo \
-	FXGraphParamValue.lo FXLFOParamValue.lo FXModalDialogBox.lo \
+	CActionParamDialog.lo AActionParamMapper.lo CCueDialog.lo \
+	CCueListDialog.lo CMainWindow.lo CNewSoundDialog.lo \
+	CRecordDialog.lo CPasteChannelsDialog.lo CProgressDialog.lo \
+	CSoundFileManager.lo CFrontendHooks.lo CSoundWindow.lo \
+	CMetersWindow.lo CStatusComm.lo CUserNotesDialog.lo \
+	CRawDialog.lo CVoxDialog.lo COggDialog.lo CMp3Dialog.lo \
+	CJACKPortChoiceDialog.lo CMIDIDumpSampleIdDialog.lo \
+	ClibaudiofileSaveParametersDialog.lo drawPortion.lo \
+	EditActionDialogs.lo EffectActionDialogs.lo \
+	FilterActionDialogs.lo GenerateActionDialogs.lo \
+	RemasterActionDialogs.lo LoopingActionDialogs.lo \
+	CAboutDialog.lo FXConstantParamValue.lo FXTextParamValue.lo \
+	FXDiskEntityParamValue.lo FXComboTextParamValue.lo \
+	FXCheckBoxParamValue.lo FXGraphParamValue.lo FXLFOParamValue.lo \
+	FXPluginRoutingParamValue.lo FXModalDialogBox.lo \
 	FXRezWaveView.lo FXWaveScrollArea.lo FXWaveCanvas.lo \
-	rememberShow.lo settings.lo
+	CLADSPAActionDialog.lo rememberShow.lo settings.lo
 libfrontend_la_OBJECTS = $(am_libfrontend_la_OBJECTS)
 bin_PROGRAMS = rezound$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
-am_rezound_OBJECTS = rezound-main.$(OBJEXT)
+am_rezound_OBJECTS = main.$(OBJEXT)
 rezound_OBJECTS = $(am_rezound_OBJECTS)
-rezound_DEPENDENCIES = libfrontend.la \
-	$(top_builddir)/src/backend/libbackend.la \
-	$(top_builddir)/src/backend/Edits/libEdits.la \
-	$(top_builddir)/src/backend/Effects/libEffects.la \
-	$(top_builddir)/src/backend/Filters/libFilters.la \
-	$(top_builddir)/src/backend/Looping/libLooping.la \
-	$(top_builddir)/src/backend/Remaster/libRemaster.la \
-	$(top_builddir)/src/backend/Generate/libGenerate.la \
-	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
-	$(top_builddir)/src/PoolFile/libPoolFile.la
 rezound_LDFLAGS =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CAboutDialog.Plo \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/AActionParamMapper.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CAboutDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CActionMenuCommand.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CActionParamDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CChannelSelectDialog.Plo \
@@ -353,6 +366,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CFOXIcons.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CFrontendHooks.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CJACKPortChoiceDialog.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CLADSPAActionDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMIDIDumpSampleIdDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMainWindow.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMetersWindow.Plo \
@@ -368,6 +382,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CStatusComm.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CUserNotesDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CVoxDialog.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/ClibaudiofileSaveParametersDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/EditActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/EffectActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXCheckBoxParamValue.Plo \
@@ -377,6 +392,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/FXGraphParamValue.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXLFOParamValue.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXModalDialogBox.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/FXPluginRoutingParamValue.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXRezWaveView.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXTextParamValue.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXWaveCanvas.Plo \
@@ -385,9 +401,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/GenerateActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/LoopingActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/RemasterActionDialogs.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/drawPortion.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/drawPortion.Plo ./$(DEPDIR)/main.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/rememberShow.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/rezound-main.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/settings.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -463,6 +478,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AActionParamMapper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CAboutDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CActionMenuCommand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CActionParamDialog.Plo@am__quote@
@@ -473,6 +489,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CFOXIcons.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CFrontendHooks.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CJACKPortChoiceDialog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLADSPAActionDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMIDIDumpSampleIdDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMainWindow.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMetersWindow.Plo@am__quote@
@@ -488,6 +505,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CStatusComm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CUserNotesDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CVoxDialog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClibaudiofileSaveParametersDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EditActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EffectActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXCheckBoxParamValue.Plo@am__quote@
@@ -497,6 +515,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXGraphParamValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXLFOParamValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXModalDialogBox.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXPluginRoutingParamValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXRezWaveView.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXTextParamValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXWaveCanvas.Plo@am__quote@
@@ -506,8 +525,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LoopingActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RemasterActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/drawPortion.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rememberShow.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rezound-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/settings.Plo@am__quote@
 
 distclean-depend:
@@ -545,39 +564,6 @@ distclean-depend:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ `test -f '$<' || echo '$(srcdir)/'`$<
-
-rezound-main.o: main.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rezound_CXXFLAGS) $(CXXFLAGS) -MT rezound-main.o -MD -MP -MF "$(DEPDIR)/rezound-main.Tpo" \
-@am__fastdepCXX_TRUE@	  -c -o rezound-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp; \
-@am__fastdepCXX_TRUE@	then mv "$(DEPDIR)/rezound-main.Tpo" "$(DEPDIR)/rezound-main.Po"; \
-@am__fastdepCXX_TRUE@	else rm -f "$(DEPDIR)/rezound-main.Tpo"; exit 1; \
-@am__fastdepCXX_TRUE@	fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='rezound-main.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/rezound-main.Po' tmpdepfile='$(DEPDIR)/rezound-main.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rezound_CXXFLAGS) $(CXXFLAGS) -c -o rezound-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-
-rezound-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rezound_CXXFLAGS) $(CXXFLAGS) -MT rezound-main.obj -MD -MP -MF "$(DEPDIR)/rezound-main.Tpo" \
-@am__fastdepCXX_TRUE@	  -c -o rezound-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv "$(DEPDIR)/rezound-main.Tpo" "$(DEPDIR)/rezound-main.Po"; \
-@am__fastdepCXX_TRUE@	else rm -f "$(DEPDIR)/rezound-main.Tpo"; exit 1; \
-@am__fastdepCXX_TRUE@	fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='rezound-main.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/rezound-main.Po' tmpdepfile='$(DEPDIR)/rezound-main.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rezound_CXXFLAGS) $(CXXFLAGS) -c -o rezound-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-
-rezound-main.lo: main.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rezound_CXXFLAGS) $(CXXFLAGS) -MT rezound-main.lo -MD -MP -MF "$(DEPDIR)/rezound-main.Tpo" \
-@am__fastdepCXX_TRUE@	  -c -o rezound-main.lo `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp; \
-@am__fastdepCXX_TRUE@	then mv "$(DEPDIR)/rezound-main.Tpo" "$(DEPDIR)/rezound-main.Plo"; \
-@am__fastdepCXX_TRUE@	else rm -f "$(DEPDIR)/rezound-main.Tpo"; exit 1; \
-@am__fastdepCXX_TRUE@	fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='rezound-main.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/rezound-main.Plo' tmpdepfile='$(DEPDIR)/rezound-main.TPlo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rezound_CXXFLAGS) $(CXXFLAGS) -c -o rezound-main.lo `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

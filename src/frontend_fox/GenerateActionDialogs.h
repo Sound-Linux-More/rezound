@@ -31,9 +31,32 @@
 
 class CGenerateNoiseDialog : public CActionParamDialog
 {
+	FXDECLARE(CGenerateNoiseDialog);
 public:
 	CGenerateNoiseDialog(FXWindow *mainWindow);
 	virtual ~CGenerateNoiseDialog(){}
+
+	long onNoiseColorChange(FXObject *sender,FXSelector sel,void *ptr);
+
+	enum {
+		ID_NOISE_COLOR_COMBOBOX=CActionParamDialog::ID_LAST
+	};
+
+protected:
+	CGenerateNoiseDialog() {}
+};
+
+// --- Generate Tone --------------------
+
+class CGenerateToneDialog : public CActionParamDialog
+{
+	FXDECLARE(CGenerateToneDialog);
+public:
+	CGenerateToneDialog(FXWindow *mainWindow);
+	virtual ~CGenerateToneDialog(){}
+
+protected:
+	CGenerateToneDialog() {}
 };
 
 #endif

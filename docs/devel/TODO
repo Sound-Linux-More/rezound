@@ -1,6 +1,14 @@
 --- THINGS TO DO FOR SURE ---
 
+	- Create an implementation of CRWLock (rename to CRWMutex) that doesn't use rwlock's when they're unavailable (netbsd)
+
+	- need a prefix flag for fftw libs in configure.ac
+		- or see if there's an .m4 that comes with the lib
+
+
 	- Create a crossfade feature when pasting and a gain parameter.
+
+	- change --with-FOX-path and include to just --with-FOX-prefix like the rest
 
 	- When they're all implemented, I need to update the description to something like: 
 		... Including features such as: Recording, Effects Previews, Realistic Reverbs, Convolution, Custom FIR Filters, Several IIR Filters, Many Supported Audio Formats, LADSPA Support, Undo/Redo, Level Meters & Frequency Analyzer, Seek Shuttle Wheel, Loads of Editing Tools, Dynamic Range Compressor, and Many Other Tools
@@ -97,6 +105,14 @@
 
 
 --- POSSIBLE THINGS TO DO ---
+
+	- at some point I need to decide on a rounding function to use everywhere instead of using rint, round or nearbyint arbitrarily
+		- make a define in platform or something
+
+	- Now in at least two modules (LADSPA and CSoundPlayerChannel) and then perhaps in more than one place in each module I iterate over the sound in either looped or non-looped mode
+		- I could create an iterator for a CSound object that would return data in the native format
+		- In LADSPA where I might produce silence, I could either have the iterator that doesn't loop return zeros, or just check for end and produce zeros in the LADSPA code itself
+		- If I implemented the pause before looping and durring selection I could even theoretically use that in LADSPA actions (although I don't know why)
 
 	- There is a project called 'audiere' which I might be able to use to load .s3m, .it, .mod, etc if it was found.  I couldn't save, but I could at least load.
 

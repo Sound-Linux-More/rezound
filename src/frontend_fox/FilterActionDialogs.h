@@ -39,14 +39,13 @@ public:
 
 // --- arbitrary FIR filter --------------
 
+class CActionParamMapper_arbitraryFIRFilter_freq;
 class CArbitraryFIRFilterDialog : public CActionParamDialog
 {
 	FXDECLARE(CArbitraryFIRFilterDialog);
 public:
 	CArbitraryFIRFilterDialog(FXWindow *mainWindow);
 	virtual ~CArbitraryFIRFilterDialog(){}
-
-	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
 
 	long onFrequencyRangeChange(FXObject *sender,FXSelector sel,void *ptr);
 
@@ -59,6 +58,44 @@ public:
 
 protected:
 	CArbitraryFIRFilterDialog() {}
+
+	CActionParamMapper_arbitraryFIRFilter_freq *freqMapper;
+};
+
+
+// --- morphing arbitrary FIR filter --------------
+
+class CMorphingArbitraryFIRFilterDialog : public CActionParamDialog
+{
+	FXDECLARE(CMorphingArbitraryFIRFilterDialog);
+public:
+	CMorphingArbitraryFIRFilterDialog(FXWindow *mainWindow);
+	virtual ~CMorphingArbitraryFIRFilterDialog(){}
+
+	long onFrequencyRangeChange(FXObject *sender,FXSelector sel,void *ptr);
+	long onUseLFOCheckBox(FXObject *sender,FXSelector sel,void *ptr);
+	long on1To2Button(FXObject *sender,FXSelector sel,void *ptr); // handles several operations between response1 and response2
+
+	enum
+	{
+		ID_BASE_FREQUENCY=CActionParamDialog::ID_LAST,
+		ID_NUMBER_OF_OCTAVES,
+		ID_USE_LFO_CHECKBOX,
+		ID_COPY_1_TO_2,
+		ID_COPY_2_TO_1,
+		ID_SWAP_1_AND_2,
+		ID_LAST
+	};
+
+protected:
+	CMorphingArbitraryFIRFilterDialog() {}
+
+	// gets called by FXModalDialogBox before the okay button is accepted
+	bool validateOnOkay();
+
+	const string getExplanation() const;
+
+	CActionParamMapper_arbitraryFIRFilter_freq *freqMapper;
 };
 
 

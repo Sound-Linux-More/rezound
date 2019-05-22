@@ -54,6 +54,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -71,6 +72,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -101,6 +104,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -183,7 +188,8 @@ SUBDIRS = \
 	Filters \
 	Looping \
 	Generate \
-	Remaster
+	Remaster \
+	@MAYBE_LADSPA_DIR@
 
 
 # this makes makedist happy
@@ -215,6 +221,7 @@ noinst_HEADERS = \
 	   CLoadedSound.h \
 	   CNativeSoundClipboard.h \
 	   Cold_rezSoundTranslator.h \
+	   CNULLSoundPlayer.h \
 	   COSSSoundPlayer.h \
 	   COSSSoundRecorder.h \
 	   CPortAudioSoundPlayer.h \
@@ -228,6 +235,7 @@ noinst_HEADERS = \
 	   CSound.h \
 	   CSoundPlayerChannel.h \
 	   CTrigger.h \
+	   CPluginMapping.h \
 	   CvoxSoundTranslator.h \
 	   initialize.h \
 	   license.h \
@@ -273,6 +281,7 @@ libbackend_la_SOURCES = \
 			CSound.cpp  \
 			CSoundPlayerChannel.cpp \
 			CTrigger.cpp \
+			CPluginMapping.cpp \
 			CvoxSoundTranslator.cpp \
 		        initialize.cpp \
 			main_controls.cpp \
@@ -304,8 +313,9 @@ am_libbackend_la_OBJECTS = AAction.lo AActionDialog.lo AFrontendHooks.lo \
 	CPortAudioSoundRecorder.lo CJACKSoundPlayer.lo \
 	CJACKSoundRecorder.lo CrawSoundTranslator.lo \
 	CRecordSoundClipboard.lo CrezSoundTranslator.lo CSound.lo \
-	CSoundPlayerChannel.lo CTrigger.lo CvoxSoundTranslator.lo \
-	initialize.lo main_controls.lo mypopen.lo settings.lo
+	CSoundPlayerChannel.lo CTrigger.lo CPluginMapping.lo \
+	CvoxSoundTranslator.lo initialize.lo main_controls.lo \
+	mypopen.lo settings.lo
 libbackend_la_OBJECTS = $(am_libbackend_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
@@ -332,6 +342,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CNativeSoundClipboard.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/COSSSoundPlayer.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/COSSSoundRecorder.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CPluginMapping.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CPortAudioSoundPlayer.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CPortAudioSoundRecorder.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRecordSoundClipboard.Plo \
@@ -419,6 +430,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CNativeSoundClipboard.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/COSSSoundPlayer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/COSSSoundRecorder.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPluginMapping.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPortAudioSoundPlayer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPortAudioSoundRecorder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRecordSoundClipboard.Plo@am__quote@

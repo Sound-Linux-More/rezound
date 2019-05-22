@@ -55,6 +55,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDRDAO = @CDRDAO@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -72,6 +73,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
+FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -102,6 +105,8 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_LADSPA_DIR = @MAYBE_LADSPA_DIR@
+MAYBE_LADSPA_LIB = @MAYBE_LADSPA_LIB@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
@@ -194,17 +199,20 @@ pkgdoc_DATA = \
 pkgdata_DATA = \
 	share/presets.dat \
 	share/menu.dat \
-	share/impulse_hall1.wav
+	share/impulse_hall1.wav \
+	src/images/icon_logo_32.gif
 
 
 EXTRA_DIST = \
 	config/m4 \
 	config/common.h \
+	config/platform \
 	docs \
 	share \
 	bootstrap \
 	libtool.GL.patch \
-	README.GL_PROBLEMS
+	README.GL_PROBLEMS \
+	packaging
 
 
 ACLOCAL_AMFLAGS = -I config/m4
@@ -246,7 +254,7 @@ $(top_builddir)/config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 $(srcdir)/configure:  $(srcdir)/configure.ac $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
 	cd $(srcdir) && $(AUTOCONF)
 
-$(ACLOCAL_M4):  configure.ac config/m4/ac_define_dir.m4 config/m4/audiofile.m4 config/m4/codeset.m4 config/m4/cxx-lib.m4 config/m4/cxx.m4 config/m4/gettext.m4 config/m4/glibc21.m4 config/m4/iconv.m4 config/m4/intdiv0.m4 config/m4/inttypes-pri.m4 config/m4/inttypes.m4 config/m4/inttypes_h.m4 config/m4/isc-posix.m4 config/m4/lcmessage.m4 config/m4/lib-ld.m4 config/m4/lib-link.m4 config/m4/lib-prefix.m4 config/m4/libFLAC++.m4 config/m4/libFLAC.m4 config/m4/ogg.m4 config/m4/progtest.m4 config/m4/sstream.m4 config/m4/stdint_h.m4 config/m4/uintmax_t.m4 config/m4/ulonglong.m4 config/m4/vorbis.m4
+$(ACLOCAL_M4):  configure.ac config/m4/ac_define_dir.m4 config/m4/audiofile.m4 config/m4/codeset.m4 config/m4/cxx-lib.m4 config/m4/cxx.m4 config/m4/gettext.m4 config/m4/glibc21.m4 config/m4/iconv.m4 config/m4/intdiv0.m4 config/m4/inttypes-pri.m4 config/m4/inttypes.m4 config/m4/inttypes_h.m4 config/m4/isc-posix.m4 config/m4/lcmessage.m4 config/m4/lib-ld.m4 config/m4/lib-link.m4 config/m4/lib-prefix.m4 config/m4/libFLAC++.m4 config/m4/libFLAC.m4 config/m4/ogg.m4 config/m4/progtest.m4 config/m4/stdint_h.m4 config/m4/uintmax_t.m4 config/m4/ulonglong.m4 config/m4/vorbis.m4
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 
 config/config.h: config/stamp-h1
@@ -662,6 +670,13 @@ distcleancheck:
 
 POTFILES.in:
 	cd $(top_srcdir) && (grep "^#" po/POTFILES.in ; find src -name "*.cpp" ; find src -name "*.h") > POTFILES.in && mv -f POTFILES.in po/POTFILES.in
+
+install-kde-parts:
+	$(mkinstalldirs) $(DESTDIR)$(datadir)/mimelnk/audio
+	${INSTALL} -m 644 $(srcdir)/packaging/generic_rpm/kde/x-rez.desktop $(DESTDIR)$(datadir)/mimelnk/audio/x-rez.desktop
+	${INSTALL} -m 644 $(srcdir)/packaging/generic_rpm/kde/x-rez.kdelnk $(DESTDIR)$(datadir)/mimelnk/audio/x-rez.kdelnk
+	$(mkinstalldirs) $(DESTDIR)$(datadir)/applnk/Multimedia
+	${INSTALL} -m 644 $(srcdir)/packaging/generic_rpm/kde/rezound.desktop $(DESTDIR)$(datadir)/applnk/Multimedia/rezound.desktop
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

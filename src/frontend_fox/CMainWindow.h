@@ -28,8 +28,6 @@
 #include <vector>
 #include <string>
 
-#include <fox/fx.h>
-
 class CSoundWindow;
 class CMetersWindow;
 class CActionMenuCommand;
@@ -116,6 +114,7 @@ public:
 		ID_PLAY_SELECTION_LOOPED,
 		ID_PLAY_SELECTION_LOOPED_SKIP_MOST,
 		ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,
+		ID_PLAY_SELECTION_START_TO_END,
 
 		ID_STOP,
 		ID_PAUSE,

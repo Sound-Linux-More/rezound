@@ -56,6 +56,8 @@ string gSysPresetsFilename="";
 CNestedDataFile *gSysPresetsFile=NULL;
 
 
+string gDefaultAudioMethod="";
+
 unsigned gDesiredOutputSampleRate=44100;
 unsigned gDesiredOutputChannelCount=2;
 int gDesiredOutputBufferCount=2;
@@ -100,6 +102,7 @@ double gMaxPeakFallRate=0.02;
 
 bool gStereoPhaseMetersEnabled=true;
 unsigned gStereoPhaseMeterPointCount=100;
+bool gStereoPhaseMeterUnrotate=true;
 
 bool gFrequencyAnalyzerEnabled=true;
 unsigned gAnalyzerPeakFallDelayTime=400;
@@ -260,6 +263,7 @@ void readBackendSettings()
 
 	GET_SETTING("Meters" DOT "StereoPhase" DOT "enabled",gStereoPhaseMetersEnabled,bool)
 	GET_SETTING("Meters" DOT "StereoPhase" DOT "pointCount",gStereoPhaseMeterPointCount,unsigned)
+	GET_SETTING("Meters" DOT "StereoPhase" DOT "unrotate",gStereoPhaseMeterUnrotate,bool)
 
 	GET_SETTING("Meters" DOT "Analyzer" DOT "enabled",gFrequencyAnalyzerEnabled,bool)
 	GET_SETTING("Meters" DOT "Analyzer" DOT "peakFallDelayTime",gAnalyzerPeakFallDelayTime,unsigned)
@@ -341,6 +345,7 @@ void writeBackendSettings()
 
 	gSettingsRegistry->createValue<bool>("Meters" DOT "StereoPhase" DOT "enabled",gStereoPhaseMetersEnabled);
 	gSettingsRegistry->createValue<unsigned>("Meters" DOT "StereoPhase" DOT "pointCount",gStereoPhaseMeterPointCount);
+	gSettingsRegistry->createValue<bool>("Meters" DOT "StereoPhase" DOT "unrotate",gStereoPhaseMeterUnrotate);
 
 	gSettingsRegistry->createValue<bool>("Meters" DOT "Analyzer" DOT "enabled",gFrequencyAnalyzerEnabled);
 	gSettingsRegistry->createValue<unsigned>("Meters" DOT "Analyzer" DOT "peakFallDelayTime",gAnalyzerPeakFallDelayTime);

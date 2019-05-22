@@ -72,11 +72,11 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 	const string tempFilename=gFallbackWorkDir+"/filter_kernel_"+CPath(filename).baseName();
 
 	// for lack of a better way.. I just make a link of the file and load that temp file incase it's already opened.. perhaps I should use the loaded CSound object if it exists (but right now there's not an easy way to do that)
-	// 	in which cause I would need a pointer to the gSoundFileManager which could be passed to the factory object when it's constructed in CMainWindow.cpp
+	// 	in which case I would need a pointer to the gSoundFileManager which could be passed to the factory object when it's constructed in CMainWindow.cpp
 	symlink(filename.c_str(),tempFilename.c_str());
 	try
 	{
-		const ASoundTranslator *translator=ASoundTranslator::findTranslator(tempFilename,openFilterKernelAsRaw);
+		const ASoundTranslator *translator=ASoundTranslator::findTranslator(tempFilename,false,openFilterKernelAsRaw);
 
 		CSound filterKernelFile;
 		try
@@ -106,11 +106,11 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 					const sample_pos_t filterKernelLength=(sample_pos_t)(filterKernelAccesser.getSize()*rateAdjustment/filterKernelRate);
 					TAutoBuffer<float> filterKernel(filterKernelLength);
 
-					TSoundStretcher<CRezPoolAccesser> filterKernelStretcher(filterKernelAccesser,0,filterKernelAccesser.getSize(),filterKernelLength);
+					TSoundStretcher<const CRezPoolAccesser> filterKernelStretcher(filterKernelAccesser,0,filterKernelAccesser.getSize(),filterKernelLength);
 
 					TDSPSinglePoleLowpassFilter<float,float> filterKernelLowpassFilter(freq_to_fraction(filterKernelLowpassFreq,filterKernelFile.getSampleRate()));
 					for(sample_pos_t t=0;t<filterKernelLength;t++)
-						filterKernel[t]=filterKernelLowpassFilter.processSample(((float)filterKernelStretcher.getSample()/(float)MAX_SAMPLE)*filterKernelGain);
+						filterKernel[t]=filterKernelLowpassFilter.processSample(convert_sample<sample_t,float>(filterKernelStretcher.getSample())*filterKernelGain);
 
 					if(reverseFilterKernel)
 					{
@@ -153,7 +153,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 					sample_pos_t prevCount=0; // only needed in the wrapDecay section to know what size the last chunk was
 					while(destPos<=stop)
 					{
-						const sample_pos_t count=min(convolver.getChunkSize(),stop-destPos+1);
+						const sample_pos_t count=min((sample_pos_t)convolver.getChunkSize(),stop-destPos+1);
 						prevCount=count;
 
 						// write to the convolver

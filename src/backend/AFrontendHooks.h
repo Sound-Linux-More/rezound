@@ -30,6 +30,11 @@ class AFrontendHooks;
 
 #include "CSound_defs.h"
 
+#ifdef USE_LADSPA
+	#include "AActionDialog.h"
+	#include "LADSPA/ladspa.h"
+#endif
+
 class ASoundRecorder;
 
 extern AFrontendHooks *gFrontendHooks;
@@ -156,6 +161,14 @@ public:
 	virtual bool promptForVoxParameters(VoxParameters &parameters)=0;
 
 
+	// stuff to handle frontend interfaces to LADSPA plugins
+#ifdef USE_LADSPA
+	virtual AActionDialog *getChannelSelectDialog()=0;
+	// should return a frontend dialog which can handle the given LADSPA plugin descriptor
+		// the backend will be responsible for deleteing the returned object
+	virtual AActionDialog *getLADSPAActionDialog(const LADSPA_Descriptor *desc)=0;
+#endif
+
 	// -1 can be passed for the parameters not be be changed from the previous values on the dialog
 	// if Id comes back -1, then just wait for one
 	// if false is returned, then cancel was pressed
@@ -165,6 +178,23 @@ public:
 	// if false is returned, then cancel was pressed
 	virtual bool promptForSaveMIDISampleDump(int &sysExChannel,int &waveformId,int &loopType)=0;
 
+
+	// called when the user is saving an format with libaudiofile
+	struct libaudiofileSaveParameters
+	{
+		int sampleFormat;	// AF_SAMPFMT_xxx
+			int defaultSampleFormatIndex; // of signed, unsigned, float, double
+		int sampleWidth;	// bit rate
+			int defaultSampleWidthIndex; // of 8, 16, 24, 32
+
+		// this is an input value that indicates which compression types are supported
+		// pair: name of compression type, audiofiles enum value for it
+		vector<pair<string,int> > supportedCompressionTypes; 
+
+			int defaultCompressionTypeIndex; // of the items in the vector
+		int compressionType;	// AF_COMPRESSION_xxx
+	};
+	virtual bool promptForlibaudiofileSaveParameters(libaudiofileSaveParameters &parameters,const string formatName)=0;
 };
 
 #endif

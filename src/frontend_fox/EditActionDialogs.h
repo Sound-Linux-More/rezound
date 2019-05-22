@@ -73,6 +73,20 @@ public:
 
 
 
+// --- duplicate channel -----------------
+
+class CDuplicateChannelDialog : public CActionParamDialog
+{
+public:
+	CDuplicateChannelDialog(FXWindow *mainWindow);
+	virtual ~CDuplicateChannelDialog(){}
+
+	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
+};
+
+
+
+
 
 // --- save as multiple filenames --------
 
@@ -83,6 +97,28 @@ public:
 	virtual ~CSaveAsMultipleFilesDialog(){}
 
 protected:
+	const string getExplanation() const;
+};
+
+
+// --- burn to CD ------------------------
+
+class CBurnToCDDialog : public CActionParamDialog
+{
+	FXDECLARE(CBurnToCDDialog);
+public:
+	CBurnToCDDialog(FXWindow *mainWindow);
+	virtual ~CBurnToCDDialog(){}
+
+	enum {
+		ID_DETECT_DEVICE_BUTTON=CActionParamDialog::ID_LAST,
+	};
+
+	long onDetectDeviceButton(FXObject *object,FXSelector sel,void *ptr);
+
+protected:
+	CBurnToCDDialog::CBurnToCDDialog() {}
+
 	const string getExplanation() const;
 };
 

@@ -39,10 +39,12 @@ class CActionParamDialog;
 #include "FXCheckBoxParamValue.h"
 #include "FXGraphParamValue.h"
 #include "FXLFOParamValue.h"
+#include "FXPluginRoutingParamValue.h"
 
 #include "../backend/AActionDialog.h"
 #include "../backend/CGraphParamValueNode.h"
 
+#include "AActionParamMapper.h"
 
 class CNestedDataFile;
 
@@ -52,7 +54,8 @@ class CActionParamDialog : public FXModalDialogBox, public AActionDialog
 public:
 	typedef const double (*f_at_x)(const double x);
 
-	CActionParamDialog(FXWindow *mainWindow,bool showPresetPanel=true,FXModalDialogBox::ShowTypes showType=FXModalDialogBox::stRememberSizeAndPosition);
+	// the presetPrefix value will get prefixed to all the read/writes on the presets file
+	CActionParamDialog(FXWindow *mainWindow,bool showPresetPanel=true,const string presetPrefix="",FXModalDialogBox::ShowTypes showType=FXModalDialogBox::stRememberSizeAndPosition);
 	virtual ~CActionParamDialog();
 
 	// these are used to create new parents for the controls
@@ -61,19 +64,25 @@ public:
 	FXPacker *newHorzPanel(void *parent,bool createBorder=true);
 	FXPacker *newVertPanel(void *parent,bool createBorder=true);
 
-	void addSlider(void *parent,const string name,const string units,FXConstantParamValue::f_at_xs interpretValue,FXConstantParamValue::f_at_xs uninterpretValue,f_at_x optRetValueConv,const double initialValue,const int minScalar,const int maxScalar,const int initScalar,bool showInverseButton);
-	void addNumericTextEntry(void *parent,const string name,const string units,const double initialValue,const double minValue,const double maxValue,const string unitsTipText="");
-	void addStringTextEntry(void *parent,const string name,const string initialValue,const string unitsTipText="");
+	FXConstantParamValue *addSlider(void *parent,const string name,const string units,AActionParamMapper *valueMapper,f_at_x optRetValueConv,bool showInverseButton);
+		FXConstantParamValue *getSliderParam(const string name);
+	FXTextParamValue *addNumericTextEntry(void *parent,const string name,const string units,const double initialValue,const double minValue,const double maxValue,const string unitsTipText="");
+	FXTextParamValue *addStringTextEntry(void *parent,const string name,const string initialValue,const string tipText="");
 		FXTextParamValue *getTextParam(const string name);
-	void addDiskEntityEntry(void *parent,const string name,const string intialEntityName,FXDiskEntityParamValue::DiskEntityTypes entityType,const string tipText="");
+	FXDiskEntityParamValue *addDiskEntityEntry(void *parent,const string name,const string intialEntityName,FXDiskEntityParamValue::DiskEntityTypes entityType,const string tipText="");
+		FXDiskEntityParamValue *getDiskEntityParam(const string name);
 		/* is isEditable then the value is an integer of the actual value, if isEditable is false, then the integer value is the index of the items */
-	void addComboTextEntry(void *parent,const string name,const vector<string> &items,const string tipText="",bool isEditable=false);
+	FXComboTextParamValue *addComboTextEntry(void *parent,const string name,const vector<string> &items,const string tipText="",bool isEditable=false);
 		FXComboTextParamValue *getComboText(const string name); // so a derived class can set the values
-	void addCheckBoxEntry(void *parent,const string name,const bool checked,const string tipText="");
-	void addGraph(void *parent,const string name,const string horzAxisLabel,const string horzUnits,FXGraphParamValue::f_at_xs horzInterpretValue,FXGraphParamValue::f_at_xs horzUninterpretValue,const string vertAxisLabel,const string vertUnits,FXGraphParamValue::f_at_xs vertInterpretValue,FXGraphParamValue::f_at_xs vertUninterpretValue,f_at_x optRetValueConv,const int minScalar,const int maxScalar,const int initialScalar);
+	FXCheckBoxParamValue *addCheckBoxEntry(void *parent,const string name,const bool checked,const string tipText="");
+		FXCheckBoxParamValue *getCheckBoxParam(const string name);
+	FXGraphParamValue *addGraph(void *parent,const string name,const string horzAxisLabel,const string horzUnits,AActionParamMapper *horzValueMapper,const string vertAxisLabel,const string vertUnits,AActionParamMapper *vertValueMapper,f_at_x optRetValueConv);
 		FXGraphParamValue *getGraphParam(const string name); // so a derived class can set some ranges
-	void addGraphWithWaveform(void *parent,const string name,const string vertAxisLabel,const string vertUnits,FXGraphParamValue::f_at_xs vertInterpretValue,FXGraphParamValue::f_at_xs vertUninterpretValue,f_at_x optRetValueConv,const int minScalar,const int maxScalar,const int initialScalar);
-	void addLFO(void *parent,const string name,const string ampUnits,const string ampTitle,const double maxAmp,const string freqUnits,const double maxFreq,const bool hideBipolarLFOs);
+	FXGraphParamValue *addGraphWithWaveform(void *parent,const string name,const string vertAxisLabel,const string vertUnits,AActionParamMapper *vertValueMapper,f_at_x optRetValueConv);
+	FXLFOParamValue *addLFO(void *parent,const string name,const string ampUnits,const string ampTitle,const double maxAmp,const string freqUnits,const double maxFreq,const bool hideBipolarLFOs);
+		FXLFOParamValue *getLFOParam(const string name); 
+	FXPluginRoutingParamValue *addPluginRoutingParam(void *parent,const string name,const LADSPA_Descriptor *desc);
+		FXPluginRoutingParamValue *getPluginRoutingParam(const string name); 
 
 	// show or hide a control
 	void showControl(const string name,bool show);
@@ -94,6 +103,7 @@ public:
 	void setMargin(FXint margin); // will add a margin the left and right of all the controls
 
 	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
+	void hide();
 
 	enum 
 	{
@@ -144,7 +154,8 @@ private:
 		ptCheckBox,
 		ptGraph,
 		ptGraphWithWaveform,
-		ptLFO
+		ptLFO,
+		ptPluginRouting
 	};
 
 	// the void * points to either an FXConstantParamValue, FXTextParamValue, FXComboTextParamValue, FXCheckBoxParamValue or an FXGraphParamValue
@@ -160,12 +171,14 @@ private:
 			FXList *nativePresetList;
 			FXList *userPresetList;
 
-	bool shrinkPresetsFrame;
+	const string presetPrefix;
 
 	void buildPresetLists();
 	void buildPresetList(CNestedDataFile *f,FXList *list);
 
 	unsigned findParamByName(const string name) const;
+
+	bool firstShowing;
 
 };
 

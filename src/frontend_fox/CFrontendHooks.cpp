@@ -35,10 +35,9 @@
 #include "CMp3Dialog.h"
 #include "CVoxDialog.h"
 #include "CMIDIDumpSampleIdDialog.h"
+#include "ClibaudiofileSaveParametersDialog.h"
 
 #include "../backend/ASoundTranslator.h"
-
-#include <fox/fx.h>
 
 
 CFrontendHooks::CFrontendHooks(FXWindow *_mainWindow) :
@@ -55,7 +54,8 @@ CFrontendHooks::CFrontendHooks(FXWindow *_mainWindow) :
 	oggDialog(NULL),
 	mp3Dialog(NULL),
 	voxDialog(NULL),
-	MIDIDumpSampleIdDialog(NULL)
+	MIDIDumpSampleIdDialog(NULL),
+	libaudiofileSaveParametersDialog(NULL)
 {
 	dirDialog=new FXDirDialog(mainWindow,_("Select Directory"));
 
@@ -74,6 +74,7 @@ CFrontendHooks::~CFrontendHooks()
 	delete mp3Dialog;
 	delete voxDialog;
 	delete MIDIDumpSampleIdDialog;
+	delete libaudiofileSaveParametersDialog;
 }
 
 void CFrontendHooks::doSetupAfterBackendIsSetup()
@@ -87,6 +88,9 @@ void CFrontendHooks::doSetupAfterBackendIsSetup()
 		FXVerticalFrame *f=new FXVerticalFrame(openDialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0, 0,0,0,0, 0,0);
 		openDialog->childAtIndex(0)->reparent(f);
 		openAsRawCheckButton=new FXCheckButton(new FXPacker(f,0, 0,0,0,0, DEFAULT_SPACING*2,0,0),_("Open as Raw"),NULL,0,CHECKBUTTON_NORMAL);
+
+		if(!ASoundTranslator::findRawTranslator()) // hide if we can't handle it
+			f->hide();
 	}
 	if(openDialog->getDirectory()!=gPromptDialogDirectory.c_str())
 		openDialog->setDirectory(gPromptDialogDirectory.c_str());
@@ -100,6 +104,9 @@ void CFrontendHooks::doSetupAfterBackendIsSetup()
 		FXVerticalFrame *f=new FXVerticalFrame(saveDialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0, 0,0,0,0, 0,0);
 		saveDialog->childAtIndex(0)->reparent(f);
 		saveAsRawCheckButton=new FXCheckButton(new FXPacker(f,0, 0,0,0,0, DEFAULT_SPACING*2,0,0),_("Save as Raw"),NULL,0,CHECKBUTTON_NORMAL);
+
+		if(!ASoundTranslator::findRawTranslator()) // hide if we can't handle it
+			f->hide();
 	}
 
 	newSoundDialog=new CNewSoundDialog(mainWindow);
@@ -110,6 +117,8 @@ void CFrontendHooks::doSetupAfterBackendIsSetup()
 	voxDialog=new CVoxDialog(mainWindow);
 	
 	MIDIDumpSampleIdDialog=new CMIDIDumpSampleIdDialog(mainWindow);
+
+	libaudiofileSaveParametersDialog=new ClibaudiofileSaveParametersDialog(mainWindow);
 }
 
 const string CFrontendHooks::getFOXFileTypes() const
@@ -316,6 +325,33 @@ bool CFrontendHooks::promptForVoxParameters(VoxParameters &parameters)
 	return voxDialog->show(parameters);
 }
 
+#ifdef USE_LADSPA
+
+#include "CChannelSelectDialog.h"
+#include "CLADSPAActionDialog.h"
+AActionDialog *CFrontendHooks::getChannelSelectDialog()
+{
+	return gChannelSelectDialog;
+}
+
+AActionDialog *CFrontendHooks::getLADSPAActionDialog(const LADSPA_Descriptor *desc)
+{
+	return new CLADSPAActionDialog(mainWindow,desc);
+#if 0 // nah
+	// only return a dialog if there is at least one input control ports
+	for(unsigned t=0;t<desc->PortCount;t++)
+	{
+		const LADSPA_PortDescriptor portDesc=desc->PortDescriptors[t];
+		if(LADSPA_IS_PORT_CONTROL(portDesc) && LADSPA_IS_PORT_INPUT(portDesc))
+			return new CLADSPAActionDialog(mainWindow,desc);
+	}
+	return NULL;
+#endif
+}
+
+#endif
+
+
 bool CFrontendHooks::promptForOpenMIDISampleDump(int &sysExChannel,int &waveformId)
 {
 	return MIDIDumpSampleIdDialog->showForOpen(sysExChannel,waveformId);
@@ -324,5 +360,10 @@ bool CFrontendHooks::promptForOpenMIDISampleDump(int &sysExChannel,int &waveform
 bool CFrontendHooks::promptForSaveMIDISampleDump(int &sysExChannel,int &waveformId,int &loopType)
 {
 	return MIDIDumpSampleIdDialog->showForSave(sysExChannel,waveformId,loopType);
+}
+
+bool CFrontendHooks::promptForlibaudiofileSaveParameters(libaudiofileSaveParameters &parameters,const string formatName)
+{
+	return libaudiofileSaveParametersDialog->show(parameters,formatName);
 }
 

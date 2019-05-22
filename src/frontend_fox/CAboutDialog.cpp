@@ -98,7 +98,7 @@ CAboutDialog::CAboutDialog(FXWindow *mainWindow) :
 		MAKE_TEXT(t,_("Artistic Consultant"),"Will Jayroe");
 		MAKE_LINK(t,_("Home Page"),"http://rezound.sourceforge.net");
 		MAKE_LINK(t,_("Mailing List"),"http://lists.sourceforge.net/lists/listinfo/rezound-users");
-		MAKE_LINK(t,_("Bug Reports"),"http://sourceforge.net/tracker/?atid=105056&group_id=5056");
+		MAKE_LINK(t,_("Bug Reports"),PACKAGE_BUGREPORT);
 		MAKE_LINK(t,_("Support Requests"),"http://sourceforge.net/tracker/?atid=205056&group_id=5056");
 		MAKE_LINK(t,_("Feature Requests"),"http://sourceforge.net/tracker/?atid=355056&group_id=5056");
 		MAKE_LINK(t,"","");
@@ -109,6 +109,9 @@ CAboutDialog::CAboutDialog(FXWindow *mainWindow) :
 	{
 		FXMatrix *t=new FXMatrix(tabs,2,MATRIX_BY_COLUMNS | LAYOUT_FILL_X | FRAME_RAISED|FRAME_THICK);
 
+		MAKE_TEXT(t,"Alexandre Prokoudine",_("Russian Translation"));
+		MAKE_TEXT(t,"Joost Andrae",_("German Translation"));
+		MAKE_TEXT(t,"Guenter Geiger",_("Testing/Porting"));
 		MAKE_TEXT(t,"Richard Lovison",_("Bug Finding"));
 		MAKE_TEXT(t,"Veres Imre",_("Bug Finding"));
 		MAKE_TEXT(t,"Götz Waschk",_("Bug Finding"));
@@ -129,6 +132,8 @@ CAboutDialog::CAboutDialog(FXWindow *mainWindow) :
 
 	FXPacker *lowerFrame=new FXHorizontalFrame(contents,FRAME_RAISED|FRAME_THICK | LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT, 0,0,0,55);
 		FXButton *okayButton=new FXButton(lowerFrame,_("&Close"),FOXIcons->GreenCheck1,this,ID_ACCEPT,FRAME_RAISED|FRAME_THICK | JUSTIFY_NORMAL | ICON_BEFORE_TEXT | LAYOUT_CENTER_X|LAYOUT_CENTER_Y, 0,0,0,0, 10,10,5,5);
+
+	FOXIcons->logo->setTransparentColor(FXRGB(255,0,255));
 }
 
 CAboutDialog::~CAboutDialog()

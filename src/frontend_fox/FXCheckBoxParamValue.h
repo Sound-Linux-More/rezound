@@ -26,8 +26,6 @@
 
 #include <string>
 
-#include <fox/fx.h>
-
 class CNestedDataFile;
 
 class FXCheckBoxParamValue : public FXVerticalFrame
@@ -36,6 +34,8 @@ class FXCheckBoxParamValue : public FXVerticalFrame
 public:
 	FXCheckBoxParamValue(FXComposite *p,int opts,const char *name,bool checked);
 	virtual ~FXCheckBoxParamValue();
+
+	long onCheckBox(FXObject *sender,FXSelector sel,void *ptr);
 
 	const bool getValue();
 	void setValue(const bool checked);
@@ -47,6 +47,11 @@ public:
 
 	void readFromFile(const string &prefix,CNestedDataFile *f);
 	void writeToFile(const string &prefix,CNestedDataFile *f);
+
+	enum {
+		ID_CHECKBOX=FXVerticalFrame::ID_LAST,
+		ID_LAST
+	};
 
 protected:
 	FXCheckBoxParamValue() {}

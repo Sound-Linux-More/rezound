@@ -48,13 +48,17 @@ public:
 	void untoggleActiveForAllSoundWindows(CSoundWindow *exceptThisOne);
 	
 	const size_t getOpenedCount() const;
+	CLoadedSound *getSound(size_t index);
 	CSoundWindow *getSoundWindow(size_t index);
 
 	CSoundWindow *getSoundWindow(CLoadedSound *loadedSound);
 
 	CLoadedSound *getActive();
 	CSoundWindow *getActiveWindow();
-	void updateAfterEdit(CLoadedSound *soundToUpdate=NULL); // if NULL, then use the active one
+	void updateAfterEdit(CLoadedSound *soundToUpdate=NULL,bool undoing=false); // if NULL, then use the active one
+
+	const map<string,string> getPositionalInfo(CLoadedSound *sound=NULL);
+	void setPositionalInfo(const map<string,string> positionalInfo,CLoadedSound *sound=NULL);
 
 	bool isValidLoadedSound(const CLoadedSound *sound) const;
 

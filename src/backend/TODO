@@ -1,11 +1,31 @@
 
 --- THINGS TO DO FOR SURE ---
 
-	- possibly rename ClibvorbisSoundTranslator.* to COggVorbisSoundTranslator.*
+	- See if I can speed up the loading of .rez files it seems much slower than simply loading a .wav
 
-	- I should make an f(x) feature for CGraphParamValueNodes which will return y given x and it should be implemented for line segments, cos, or bicubic interpretation of the nodes
-		- I should reimplement the Distortion module to use this
-		- But I don't guess I should implement f(x) unless anything else were already going to use it
+	- oops.. many actions don't use 'const CActionSound &actionSound', instead they're using a copy not a reference
+		- fix that
+
+	- in AActionFactory instead of having two bools in the construct and one or two overloadable methods in AAction for settings flags, I could have an ORed set of enums for setting flags like that .. a single parameter to the AActionFactory at construction
+
+	- grep for CRezPoolAccessor and make sure that all accessors that are only used for reading are const (and const *s if new-ed)
+
+	- I could write some template functions for converting various types to the native type
+		- I would implement specializations for each type to the native type
+		- I would implement the unspecialized version to cause a compiler error
+		- I could either use an integer/enum/#define to define the types that should be converted to the native type
+			or try to use the type of the parameter
+			- if I used the type of the parameter, then going from native back to the various could use the return type to infer the appropriate specialization
+			- not using some integer/enum/#define wouldn't allow me to use 24bit since there's no native C type for 24 bit ints
+			- using an integer/enum/#define, I could save that value into the native saved files and know how to load or save it 
+
+		- when I do this I should use in it the Edit/CBurnToCDAction instead of the macro I wrote
+
+		- since floats store in [-1,1] but can actually contain a value outside the range, I need to be sure to clip the value when going from an float type to an integer type efficiently
+	
+	- definiately look into prebuffering a lot more data to the card, but knowing the sample rate (and remembering past chunks' positions written to the card) and the time passed since last redrawing the play position estimate the current output position in the file.  This will allow much more data to be buffered and remove those pesky audio output glitches people are complaining about.
+
+	- possibly rename ClibvorbisSoundTranslator.* to COggVorbisSoundTranslator.*
 
 	- Added a "Lock Channels" check box feature to the noise gate, also it would be better if noise gate has a choice of dBFS or percent for the threshold
 
@@ -50,6 +70,13 @@ or sample values to follow
 
 
 --- POSSIBLE THINGS TO DO ---
+
+	- after evolution of the code, some TAutoBuffers might now be trivially turned into stack arrays
+
+	- consider moving the cue oriented actions to a Cue directory or something
+	- if no more looping actions get created, consider moving the make symetric action under effects
+
+	- play with morphing from one filter kernel to another filter kernel when doing convolution for reverb, could invent some interesting new effects
 
 	- The ASoundClipboard::temporarilyShortenLength() method could be removed (and it's a significant implemenation) if CSound::mixSound() had a srcLength parameter telling it how much of the src to regard instead of my having to use the method of the clipboard in fit mix paste when there is a non-integer repeat count
 
@@ -302,4 +329,9 @@ or sample values to follow
 	- Add a feature to ASoundRecorder that tells it to start when a certain threshold is hit in percent or dBFS
 
 	- in order to implement a "Save Selection" under the editing menu, I should make the sound translator objects accept a start and stop paramater in the save methods (and even later, a vector of starts and stops for multiple selected regions or something)
+
+	- I ended up implementing an iterator class for this job:
+		- I should make an f(x) feature for CGraphParamValueNodes which will return y given x and it should be implemented for line segments, cos, or bicubic interpretation of the nodes
+			- I should reimplement the Distortion module to use this
+			- But I don't guess I should implement f(x) unless anything else were already going to use it
 

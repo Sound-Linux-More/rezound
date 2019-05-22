@@ -20,18 +20,27 @@
 
 #include "CMetersWindow.h"
 
+/* 
+ * I would put this in fox_compat.h, but then I get 'multiple definitions' linker errors, this also means 
+ * that I will need to do something different if I start to use it in more than just CMetersWindow.cpp 
+ */
+#ifndef FXBACKBUFFEREDCANVAS_H
+	// if Jeroen hasn't added it yet to libfox, include my implementation of it
+	#include "FXBackBufferedCanvas.h"
+#endif
+
+
 #include <math.h>
 
 #include <stdexcept>
 #include <algorithm>
-
-#include <fox/FXBackBufferedCanvas.h>
 
 #include "../backend/CSound_defs.h"
 #include "../backend/unit_conv.h"
 #include "../backend/ASoundPlayer.h"
 
 #include "settings.h"
+
 
 /*
 ??? I need to make this more general so I can use it for recording or playback
@@ -156,7 +165,7 @@ public:
 
 
 		// draw RMS level indication
-		FXint x=(RMSLevel*width/MAX_SAMPLE);
+		FXint x=(FXint)(RMSLevel*width/MAX_SAMPLE);
 		dc.setFillStyle(FILL_STIPPLED);
 		dc.setStipple(stipplePattern);
 		if(x>(width*3/4))
@@ -183,7 +192,7 @@ public:
 
 		// draw peak indication
 		FXint y=height/2;
-		x=(peakLevel*width/MAX_SAMPLE);
+		x=(FXint)(peakLevel*width/MAX_SAMPLE);
 		dc.setFillStyle(FILL_SOLID);
 		if(x>(width*3/4))
 		{
@@ -211,7 +220,7 @@ public:
 		}
 
 		// draw the max peak indicator
-		x=(maxPeakLevel*width/MAX_SAMPLE);
+		x=(FXint)(maxPeakLevel*width/MAX_SAMPLE);
 		dc.setFillStyle(FILL_SOLID);
 		if(x>(width*3/4))
 			dc.setForeground(M_BRT_RED);
@@ -424,8 +433,8 @@ public:
 
 	void setBalance(sample_t leftRMSLevel,sample_t rightRMSLevel,sample_t leftPeakLevel,sample_t rightPeakLevel)
 	{
-		RMSBalance=((float)rightRMSLevel-(float)leftRMSLevel)/(float)MAX_SAMPLE;
-		peakBalance=((float)rightPeakLevel-(float)leftPeakLevel)/(float)MAX_SAMPLE;
+		RMSBalance=((float)rightRMSLevel-(float)leftRMSLevel)/MAX_SAMPLE;
+		peakBalance=((float)rightPeakLevel-(float)leftPeakLevel)/MAX_SAMPLE;
 		canvas->update(); // flag for repainting
 	}
 
@@ -473,6 +482,7 @@ public:
 		FXHorizontalFrame(parent,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0),
 		canvasFrame(new FXVerticalFrame(this,LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|FRAME_THICK,0,0,0,0, 2,2,2,2, 0,1)),
 			canvas(new FXBackBufferedCanvas(canvasFrame,this,ID_CANVAS,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
+		zoomDial(new FXDial(this,this,ID_ZOOM_DIAL,DIAL_VERTICAL|DIAL_HAS_NOTCH|LAYOUT_FILL_Y|LAYOUT_FIX_WIDTH,0,0,16,0)),
 
 		statusFont(getApp()->getNormalFont()),
 
@@ -494,6 +504,13 @@ public:
 		canvas->setBackBufferOptions(IMAGE_OWNED); /* 1.1.29 and later always has 32bit image data */
 #endif
 
+		zoomDial->setRange(100,400);
+		zoomDial->setValue(100);
+		zoomDial->setRevolutionIncrement((400-100+10)*2);
+		zoomDial->setTipText(_("Adjust Zoom Factor for Stereo Phase Meter\nAll the way down means no zooming"));
+		zoom=((float)zoomDial->getValue())/100.0f;
+
+
 		// create the font to use for numbers
 		FXFontDesc d;
 		statusFont->getFontDesc(d);
@@ -507,10 +524,18 @@ public:
 		delete statusFont;
 	}
 
+	long CStereoPhaseMeter::onZoomDial(FXObject *sender,FXSelector sel,void *ptr)
+	{
+		zoom=((float)zoomDial->getValue())/100.0f;
+		canvas->update(); // not really necessary since we're doing it several times a second anyway
+		return 1;
+	}
+
 	long CStereoPhaseMeter::onResize(FXObject *sender,FXSelector sel,void *ptr)
 	{
 		// make square
-		resize(getHeight(),getHeight());
+		resize(getHeight()+getHSpacing()+zoomDial->getWidth(),getHeight());
+		recalcRotateLookup();
 		clearCanvas();
 		return 1;
 	}
@@ -550,13 +575,57 @@ public:
 		// draw the points
 		for(size_t t=0;t<samplingNFrames;t++)
 		{
-			// let x and y be the normalized (1.0) sample values (x:left y:right) then scaled up to the canvas width/height and centered in the square
-			const FXint x= (FXint)(samplingBuffer[t*samplingNChannels+samplingLeftChannel ]*(int)canvasSize/2/MAX_SAMPLE + canvasSize/2);
-			const FXint y=(FXint)(-samplingBuffer[t*samplingNChannels+samplingRightChannel]*(int)canvasSize/2/MAX_SAMPLE + canvasSize/2); // negation because increasing values go down on the screen which is up-side-down from the Cartesian plane
+			// let x and y be the normalized (1.0) sample values (x:right y:left) then scaled up to the canvas width/height and centered in the square
+			const FXint x=(FXint)( (zoom*samplingBuffer[t*samplingNChannels+samplingRightChannel])*canvasSize/2/MAX_SAMPLE) + canvasSize/2;
+			const FXint y=(FXint)(-(zoom*samplingBuffer[t*samplingNChannels+samplingLeftChannel ])*canvasSize/2/MAX_SAMPLE) + canvasSize/2; // negation because increasing values go down on the screen which is up-side-down from the Cartesian plane
+
 			if(x>=0 && x<canvasSize && y>=0 && y<canvasSize)
-				data[y*canvasSize+x]=M_BRT_GREEN;
+			{
+				if(gStereoPhaseMeterUnrotate)
+					data[unrotateMapping[y*canvasSize+x]]=M_BRT_GREEN;
+				else
+					data[y*canvasSize+x]=M_BRT_GREEN;
+
+			}
 		}
 
+		return 0;
+	}
+
+	long onPopupMenu(FXObject *object,FXSelector sel,void *ptr)
+	{
+		FXEvent *event=(FXEvent*)ptr;
+
+		FXMenuPane popupMenu(this);
+			// ??? make sure that these get deleted when gotoMenu is deleted
+#if REZ_FOX_VERSION>=10119
+			(new FXMenuCheck(&popupMenu,_("Unrotate from Natural 45 Degree Line"),this, ID_UNROTATE))->setCheck(gStereoPhaseMeterUnrotate);
+#else
+			FXMenuCommand *m=new FXMenuCommand(&popupMenu,_("Unrotate from Natural 45 Degree Line"),NULL,this, ID_UNROTATE);
+			if(gStereoPhaseMeterUnrotate)
+				m->check();
+			else
+				m->uncheck();
+#endif
+
+		popupMenu.create();
+		popupMenu.popup(NULL,event->root_x,event->root_y);
+		getApp()->runModalWhileShown(&popupMenu);
+
+		return 0;
+	}
+
+	long onUnrotateMenuItem(FXObject *object,FXSelector sel,void *ptr)
+	{
+#if REZ_FOX_VERSION>=10119
+		gStereoPhaseMeterUnrotate= ((FXMenuCheck *)object)->getCheck() ? true : false;
+#else
+		if(dynamic_cast<FXMenuCommand *>(object)->isChecked())
+			dynamic_cast<FXMenuCommand *>(object)->uncheck();
+		else
+			dynamic_cast<FXMenuCommand *>(object)->check();
+		gStereoPhaseMeterUnrotate= ((FXMenuCommand *)object)->isChecked() ? true : false;
+#endif
 		return 0;
 	}
 
@@ -573,6 +642,8 @@ public:
 	enum
 	{
 		ID_CANVAS=FXHorizontalFrame::ID_LAST,
+		ID_ZOOM_DIAL,
+		ID_UNROTATE,
 	};
 
 protected:
@@ -581,6 +652,7 @@ protected:
 private:
 	FXPacker *canvasFrame;
 		FXBackBufferedCanvas *canvas;
+	FXDial *zoomDial;
 	FXFont *statusFont;
 
 	const sample_t *samplingBuffer;
@@ -590,6 +662,47 @@ private:
 	const unsigned samplingRightChannel;
 
 	bool clear;
+
+	float zoom;
+
+	TAutoBuffer<FXint> unrotateMapping; // width*height number of pixels mapping
+
+	void recalcRotateLookup()
+	{
+		const FXint width=canvas->getWidth();
+		const FXint height=canvas->getHeight();
+
+		unrotateMapping.setSize(width*height);
+
+		const double ang=-M_PI_4; // -45 degrees
+
+		for(FXint sx=0;sx<width;sx++)
+		for(FXint sy=0;sy<height;sy++)
+		{
+			double wx=sx-width/2;
+			double wy=sy-height/2;
+
+			// shrink square so that the corners aren't cut off when rotated 
+			// (this also fixes the gaps between pixels if I don't shrink it)
+			wx*=(sqrt(2.0)/2.0); 
+			wy*=(sqrt(2.0)/2.0);
+
+			double rot_wx=wx*cos(ang)-wy*sin(ang);
+			double rot_wy=wx*sin(ang)+wy*cos(ang);
+
+			rot_wx+=width/2;
+			rot_wy+=height/2;
+
+			rot_wx=round(rot_wx);
+			rot_wy=round(rot_wy);
+			FXint offset=(FXint)(rot_wy*width+rot_wx);
+			if((rot_wx>=0 && rot_wx<width && rot_wy>=0 && rot_wy<height) && (offset>=0 && offset<(width*height)))
+				unrotateMapping[sy*width+sx]=offset;
+			else
+				unrotateMapping[sy*width+sx]=0;
+		}
+		
+	}
 };
 
 FXDEFMAP(CStereoPhaseMeter) CStereoPhaseMeterMap[]=
@@ -597,6 +710,9 @@ FXDEFMAP(CStereoPhaseMeter) CStereoPhaseMeterMap[]=
 	//	  Message_Type			ID				Message_Handler
 	FXMAPFUNC(SEL_PAINT,			CStereoPhaseMeter::ID_CANVAS,	CStereoPhaseMeter::onCanvasPaint),
 	FXMAPFUNC(SEL_CONFIGURE,		0,				CStereoPhaseMeter::onResize),
+	FXMAPFUNC(SEL_RIGHTBUTTONPRESS,		CStereoPhaseMeter::ID_CANVAS,	CStereoPhaseMeter::onPopupMenu),
+	FXMAPFUNC(SEL_COMMAND,			CStereoPhaseMeter::ID_UNROTATE,	CStereoPhaseMeter::onUnrotateMenuItem),
+	FXMAPFUNC(SEL_CHANGED,			CStereoPhaseMeter::ID_ZOOM_DIAL,CStereoPhaseMeter::onZoomDial),
 };
 
 FXIMPLEMENT(CStereoPhaseMeter,FXHorizontalFrame,CStereoPhaseMeterMap,ARRAYNUMBER(CStereoPhaseMeterMap))
@@ -620,7 +736,7 @@ public:
 			canvas(new FXBackBufferedCanvas(canvasFrame,this,ID_CANVAS,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
 			labelFrame(new FXHorizontalFrame(canvasFrame,LAYOUT_FILL_X|FRAME_NONE,0,0,0,0, 0,0,0,0, 0,0)),
 
-		zoomDial(new FXDial(this,this,ID_ZOOM_DIAL,DIAL_VERTICAL|DIAL_HAS_NOTCH|LAYOUT_FILL_Y|LAYOUT_FIX_WIDTH,0,0,18,0)),
+		zoomDial(new FXDial(this,this,ID_ZOOM_DIAL,DIAL_VERTICAL|DIAL_HAS_NOTCH|LAYOUT_FILL_Y|LAYOUT_FIX_WIDTH,0,0,16,0)),
 
 		statusFont(getApp()->getNormalFont()),
 
@@ -800,7 +916,7 @@ public:
 			peaks.clear();
 			for(size_t t=0;t<analysis.size();t++)
 			{
-				peaks.push_back(0.0);
+				peaks.push_back(0.0f);
 				peakFallDelayTimers.push_back(0);
 			}
 			rebuildLabels=true;
@@ -812,7 +928,7 @@ public:
 		{
 			peakFallDelayTimers[t]=max(0,peakFallDelayTimers[t]-1);
 			if(peakFallDelayTimers[t]==0) // only decrease the peak when the fall timer has reached zero
-				peaks[t]=max((float)0.0,(float)(peaks[t]-gAnalyzerPeakFallRate));
+				peaks[t]=max(0.0f,(float)(peaks[t]-gAnalyzerPeakFallRate));
 		}
 
 
@@ -1082,6 +1198,9 @@ void CMetersWindow::setSoundPlayer(ASoundPlayer *_soundPlayer)
 {
 	if(soundPlayer!=NULL)
 		throw runtime_error(string(__func__)+" -- internal error -- sound player already set -- perhaps I need to allow this");
+	if(_soundPlayer==NULL)
+		return;
+
 	soundPlayer=_soundPlayer;
 
 	for(size_t t=0;t<soundPlayer->devices[0].channelCount;t++)

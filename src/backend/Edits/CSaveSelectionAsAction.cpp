@@ -23,7 +23,7 @@
 #include "../ASoundFileManager.h"
 #include "../CActionParameters.h"
 
-CSaveSelectionAsAction::CSaveSelectionAsAction(const CActionSound actionSound,ASoundFileManager *_soundFileManager) :
+CSaveSelectionAsAction::CSaveSelectionAsAction(const CActionSound &actionSound,ASoundFileManager *_soundFileManager) :
 	AAction(actionSound),
 	soundFileManager(_soundFileManager)
 {
@@ -35,7 +35,7 @@ CSaveSelectionAsAction::~CSaveSelectionAsAction()
 
 bool CSaveSelectionAsAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
-	soundFileManager->savePartial(actionSound.sound,"",actionSound.start,actionSound.selectionLength());
+	soundFileManager->savePartial(actionSound.sound,"",actionSound.start,actionSound.selectionLength(),false);
 	return true;
 }
 

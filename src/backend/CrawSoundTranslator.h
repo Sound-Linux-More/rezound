@@ -35,7 +35,7 @@ public:
 
 	bool handlesExtension(const string extension,const string filename) const;
 	bool supportsFormat(const string filename) const;
-	bool handlesRaw() const { return(true); }
+	bool handlesRaw() const { return true; }
 
 	const vector<string> getFormatNames() const;
 	const vector<vector<string> > getFormatFileMasks() const;
@@ -43,7 +43,7 @@ public:
 protected:
 
 	bool onLoadSound(const string filename,CSound *sound) const;
-	bool onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength) const;
+	bool onSaveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs) const;
 
 private:
 

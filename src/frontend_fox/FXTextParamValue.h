@@ -26,8 +26,6 @@
 
 #include <string>
 
-#include <fox/fx.h>
-
 class CNestedDataFile;
 
 class FXTextParamValue : public FXHorizontalFrame
@@ -81,10 +79,11 @@ private:
 
 	double minValue,maxValue;
 
-	FXLabel *titleLabel;
-	FXTextField *valueTextBox;
-	FXSpinner *valueSpinner;
-	FXLabel *unitsLabel;
+	FXHorizontalFrame *panel;
+		FXLabel *titleLabel;
+		FXTextField *valueTextBox;
+		FXSpinner *valueSpinner;
+		FXLabel *unitsLabel;
 
 	void validateRange();
 

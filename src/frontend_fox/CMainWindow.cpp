@@ -22,6 +22,7 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <map>
 #include <string>
 
 #include <CPath.h>
@@ -54,7 +55,6 @@
 
 #include "rememberShow.h"
 
-
 /* TODO:
  * 	- it is necesary for the owner to specifically delete the FXMenuPane objects it creates
  */
@@ -86,6 +86,7 @@ FXDEFMAP(CMainWindow) CMainWindowMap[]=
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_ALL_ONCE,				CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_ALL_LOOPED,			CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_ONCE,			CMainWindow::onControlAction),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_START_TO_END,		CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_LOOPED,			CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_LOOPED_SKIP_MOST,	CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,CMainWindow::onControlAction),
@@ -156,8 +157,6 @@ FXDEFMAP(CMainWindow) CMainWindowMap[]=
 
 FXIMPLEMENT(CMainWindow,FXMainWindow,CMainWindowMap,ARRAYNUMBER(CMainWindowMap))
 
-#include <fox/fxkeys.h>
-
 #include "drawPortion.h" // for backgroundColor
 
 #include "custom_cursors.h"
@@ -197,10 +196,11 @@ CMainWindow::CMainWindow(FXApp* a) :
 		#define PLAY_CONTROLS_BUTTON_STYLE BUTTON_STYLE
 		new FXButton(playControlsFrame,FXString("\t")+_("Play All Once"),FOXIcons->play_all_once,this,ID_PLAY_ALL_ONCE,PLAY_CONTROLS_BUTTON_STYLE, 32,0,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Once"),FOXIcons->play_selection_once,this,ID_PLAY_SELECTION_ONCE,PLAY_CONTROLS_BUTTON_STYLE, 32+32,0,32,32);
-		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Looped and Play a Gap Before Repeating"),FOXIcons->play_selection_looped_gap_before_repeat,this,ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32,0,32,32);
+		new FXButton(playControlsFrame,FXString("\t")+_("Play from Selection Start to End"),FOXIcons->play_selection_start_to_end,this,ID_PLAY_SELECTION_START_TO_END,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32,0,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play All Looped"),FOXIcons->play_all_looped,this,ID_PLAY_ALL_LOOPED,PLAY_CONTROLS_BUTTON_STYLE, 32,32,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Looped"),FOXIcons->play_selection_looped,this,ID_PLAY_SELECTION_LOOPED,PLAY_CONTROLS_BUTTON_STYLE, 32+32,32,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Looped but Skip Most of the Middle"),FOXIcons->play_selection_looped_skip_most,this,ID_PLAY_SELECTION_LOOPED_SKIP_MOST,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32,32,32,32);
+		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Looped and Play a Gap Before Repeating"),FOXIcons->play_selection_looped_gap_before_repeat,this,ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32+32,32,32,32);
 
 		new FXButton(playControlsFrame,FXString("\t")+_("Stop"),FOXIcons->stop,this,ID_STOP,PLAY_CONTROLS_BUTTON_STYLE, 0,0,32,32),
 		new FXButton(playControlsFrame,FXString("\t")+_("Pause"),FOXIcons->pause,this,ID_PAUSE,PLAY_CONTROLS_BUTTON_STYLE, 0,32,32,32),
@@ -450,6 +450,7 @@ long CMainWindow::onSoundListHotKey(FXObject *sender,FXSelector sel,void *ptr)
 	up, down, tab, et al.
 	
 */
+
 long CMainWindow::onHotKeyFocusFixup(FXObject *sender,FXSelector sel,void *ptr)
 {
 	switch(((FXEvent*)ptr)->code)
@@ -669,6 +670,8 @@ void CMainWindow::actionMenuCommandTriggered(CActionMenuCommand *actionMenuComma
 #include "../backend/Remaster/RemasterActions.h"
 #include "RemasterActionDialogs.h"
 
+#include "../backend/LADSPA/LADSPAActions.h"
+
 #include "../backend/Generate/GenerateActions.h"
 #include "GenerateActionDialogs.h"
 
@@ -719,6 +722,7 @@ void CMainWindow::buildActionMap()
 	addToActionMap(N_("Save &As"),						new FXMenuCommand(dummymenu,														"...",		FOXIcons->file_save_as,						this,	ID_SAVE_FILE_AS),				menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CSaveSelectionAsActionFactory(),dummymenu,									"",		FOXIcons->file_save_as),												menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CSaveAsMultipleFilesActionFactory(new CSaveAsMultipleFilesDialog(this)),dummymenu,				"",		FOXIcons->file_save_as),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CBurnToCDActionFactory(new CBurnToCDDialog(this)),dummymenu,							"",		FOXIcons->file_burn),													menuItemRegistry);
 	addToActionMap(N_("&Close"),						new FXMenuCommand(dummymenu,														"\tCtrl+W",	FOXIcons->file_close,						this,	ID_CLOSE_FILE),					menuItemRegistry);
 	addToActionMap(N_("Re&vert"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->file_revert,						this,	ID_REVERT_FILE),				menuItemRegistry);
 	// -
@@ -748,7 +752,8 @@ void CMainWindow::buildActionMap()
 	addToActionMap(N_("Record"),						new FXMenuCommand(dummymenu,														"...",		FOXIcons->small_record,						this,	ID_RECORD),					menuItemRegistry);
 	addToActionMap(N_("Play All Once"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_all_once,					this,	ID_PLAY_ALL_ONCE),				menuItemRegistry);
 	addToActionMap(N_("Play All Looped"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_all_looped,				this,	ID_PLAY_ALL_LOOPED),				menuItemRegistry);
-	addToActionMap(N_("Play Selection Once"),				new FXMenuCommand(dummymenu,														"\ta",		FOXIcons->small_play_selection_once,				this,	ID_PLAY_SELECTION_ONCE),			menuItemRegistry);
+	addToActionMap(N_("Play Selection Once"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_once,				this,	ID_PLAY_SELECTION_ONCE),			menuItemRegistry);
+	addToActionMap(N_("Play from Selection Start to End"),			new FXMenuCommand(dummymenu,														"\ta",		FOXIcons->small_play_selection_start_to_end,			this,	ID_PLAY_SELECTION_START_TO_END),		menuItemRegistry);
 	addToActionMap(N_("Play Selection Looped"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_looped,				this,	ID_PLAY_SELECTION_LOOPED),			menuItemRegistry);
 	addToActionMap(N_("Loop Selection but Skip Most of the Middle"),	new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_looped_skip_most,		this,	ID_PLAY_SELECTION_LOOPED_SKIP_MOST),		menuItemRegistry);
 	addToActionMap(N_("Loop Selection and Play a Gap Before Repeating"),	new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_looped_gap_before_repeat,	this,	ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT),	menuItemRegistry);
@@ -807,6 +812,7 @@ void CMainWindow::buildActionMap()
 	addToActionMap(								new CActionMenuCommand(new CMuteEditFactory(gChannelSelectDialog),dummymenu,								"Ctrl+M"),																menuItemRegistry);
 	// -
 	addToActionMap(								new CActionMenuCommand(new CAddChannelsEditFactory(new CAddChannelsDialog(this)),dummymenu,						""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CDuplicateChannelEditFactory(new CDuplicateChannelDialog(this)),dummymenu,						""),																menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CRemoveChannelsEditFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CSwapChannelsEditFactory(new CSwapChannelsDialog(this)),dummymenu,						""),																	menuItemRegistry);
 	// -
@@ -845,6 +851,7 @@ void CMainWindow::buildActionMap()
 	// Filter
 	addToActionMap(								new CActionMenuCommand(new CConvolutionFilterFactory(gChannelSelectDialog,new CConvolutionFilterDialog(this)),dummymenu,		""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CArbitraryFIRFilterFactory(gChannelSelectDialog,new CArbitraryFIRFilterDialog(this)),dummymenu,		"",		FOXIcons->filter_custom),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMorphingArbitraryFIRFilterFactory(gChannelSelectDialog,new CMorphingArbitraryFIRFilterDialog(this)),dummymenu,"",		FOXIcons->filter_custom),												menuItemRegistry);
 	// -
 	addToActionMap(								new CActionMenuCommand(new CSinglePoleLowpassFilterFactory(gChannelSelectDialog,new CSinglePoleLowpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_lowpass),												menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CSinglePoleHighpassFilterFactory(gChannelSelectDialog,new CSinglePoleHighpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_highpass),												menuItemRegistry);
@@ -872,6 +879,7 @@ void CMainWindow::buildActionMap()
 	addToActionMap(								new CActionMenuCommand(new CNoiseGateActionFactory(gChannelSelectDialog,new CNoiseGateDialog(this)),dummymenu,				""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CCompressorActionFactory(gChannelSelectDialog,new CCompressorDialog(this)),dummymenu,			""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CNormalizeActionFactory(gChannelSelectDialog,new CNormalizeDialog(this)),dummymenu,				""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMarkQuietAreasActionFactory(new CMarkQuietAreasDialog(this)),dummymenu,					""),																	menuItemRegistry);
 	// -
 	addToActionMap(								new CActionMenuCommand(new CResampleActionFactory(gChannelSelectDialog,new CResampleDialog(this)),dummymenu,				""),																	menuItemRegistry);
 	// -
@@ -881,6 +889,7 @@ void CMainWindow::buildActionMap()
 
 	// Generate
 	addToActionMap(								new CActionMenuCommand(new CGenerateNoiseActionFactory(gChannelSelectDialog,new CGenerateNoiseDialog(this)),dummymenu,			""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CGenerateToneActionFactory(gChannelSelectDialog,new CGenerateToneDialog(this)),dummymenu,			""),																	menuItemRegistry);
 
 
 
@@ -905,7 +914,7 @@ void CMainWindow::buildMenu(FXMenuPane *menu,const CNestedDataFile *menuLayoutFi
 	}
 
 	// if the item is a submenu item, recur for each item in it; otherwise, add as normal menu item
-	if(menuLayoutFile->keyExists(menuKey))
+	if(menuLayoutFile->keyExists(menuKey)==CNestedDataFile::ktScope)
 	{	// add as a submenu
 		FXMenuPane *submenu=NULL;
 
@@ -942,11 +951,25 @@ void CMainWindow::buildMenu(FXMenuPane *menu,const CNestedDataFile *menuLayoutFi
 		if(menuItemRegistry.find(strippedItemName)!=menuItemRegistry.end())
 		{
 			if(menuItemRegistry[strippedItemName]->getParent()!=dummymenu) // just a check
-				printf("NOTE: registered menu item '%s' was mapped more than once in layout\n",strippedItemName.c_str());
+				printf("NOTE: registered menu item '%s' was mapped more than once in layout; only the last one will be effective\n",strippedItemName.c_str());
 			menuItemRegistry[strippedItemName]->reparent(menu);
+
+			// change menu name's caption if there is an alias defined: 'origMenuName="new menu name";' in the same scope as where menuitems is defined
+			if(menuLayoutFile->keyExists(menuKey)==CNestedDataFile::ktValue) 
+			{
+				FXMenuCaption *menuItem=menuItemRegistry[strippedItemName];
+				const string alias=menuLayoutFile->getValue<string>(menuKey);
+				menuItem->setText(gettext(alias.c_str()));
+			}
 		}
 		else
-			new FXMenuCommand(menu,(itemName+" (unregistered)").c_str(),NULL,this,0);
+		{
+			if(menu)
+				new FXMenuCommand(menu,(itemName+" (unregistered)").c_str(),NULL,this,0);
+			else
+				// since menu is NULL, this is a top-level menu without a defined body
+				new FXMenuTitle(menubar,(itemName+" (no subitems defined)").c_str(),NULL,new FXMenuPane(this));
+		}
 	}
 }
 
@@ -1000,6 +1023,76 @@ void CMainWindow::createMenus()
 		if(i->second->getParent()==dummymenu)
 			printf("NOTE: registered menu item '%s' was not mapped anywhere in '%s' in layout '%s'\n",i->first.c_str(),menuLayoutFilename.c_str(),menuLayout.c_str());
 	}
+
+#ifdef USE_LADSPA
+	// now stick the LADSPA menu in there if it needs to be
+	// ??? (with dynamic menus, maybe let the layout define WHERE the ladspa submenu goes, (except it might not always be compiled for ladspa, so we wouldn't want to add it to the map if USE_LADSPA wasn't defined)
+	FXMenuPane *menu=new FXMenuPane(this);
+	new FXMenuTitle(menubar,"L&ADSPA",NULL,menu);
+		const vector<CLADSPAActionFactory *> LADSPAActionFactories=getLADSPAActionFactories();
+		if(LADSPAActionFactories.size()<=0)
+		{
+			new FXMenuCaption(menu,"No LADSPA Plugins Found");
+			new FXMenuSeparator(menu);
+			new FXMenuCaption(menu,"Like PATH, set LADSPA_PATH to point");
+			new FXMenuCaption(menu,"to a directory(s) containing LADSPA");
+			new FXMenuCaption(menu,"plugin .so files");
+		}
+		else
+		{
+			if(LADSPAActionFactories.size()>20)
+			{
+				// add a submenu grouped by manufacturer
+				map<const string,map<const string,CLADSPAActionFactory *> > makerGrouped;
+				for(size_t t=0;t<LADSPAActionFactories.size();t++)
+				{
+					const string maker= LADSPAActionFactories[t]->getDescriptor()->Maker;
+					makerGrouped[maker][LADSPAActionFactories[t]->getName()]=LADSPAActionFactories[t];
+				}
+
+				if(makerGrouped.size()>1)
+				{ // more than one maker 
+					FXMenuPane *makerMenu=new FXMenuPane(this);
+					new FXMenuCascade(menu,"By Maker",NULL,makerMenu);
+
+					for(map<const string,map<const string,CLADSPAActionFactory *> >::iterator i=makerGrouped.begin();i!=makerGrouped.end();i++)
+					{
+						FXMenuPane *submenu=new FXMenuPane(this);
+						new FXMenuCascade(makerMenu,i->first.c_str(),NULL,submenu);
+	
+						for(map<const string,CLADSPAActionFactory *>::iterator t=i->second.begin();t!=i->second.end();t++)
+							new CActionMenuCommand(t->second,submenu,"");
+					}
+				}
+
+				new FXMenuSeparator(menu);
+
+				
+
+				// group by the first letter
+				map<const char,map<const string,CLADSPAActionFactory *> > nameGrouped;
+				for(size_t t=0;t<LADSPAActionFactories.size();t++)
+				{
+					const char letter= *(istring(LADSPAActionFactories[t]->getName()).upper()).begin();
+					nameGrouped[letter][LADSPAActionFactories[t]->getName()]=LADSPAActionFactories[t];
+				}
+
+				for(map<const char,map<const string,CLADSPAActionFactory *> >::iterator i=nameGrouped.begin();i!=nameGrouped.end();i++)
+				{
+					FXMenuPane *submenu=new FXMenuPane(this);
+					new FXMenuCascade(menu,string(&(i->first),1).c_str(),NULL,submenu);
+
+					for(map<const string,CLADSPAActionFactory *>::iterator t=i->second.begin();t!=i->second.end();t++)
+						new CActionMenuCommand(t->second,submenu,"");
+				}
+			}
+			else
+			{
+				for(size_t t=0;t<LADSPAActionFactories.size();t++)
+					new CActionMenuCommand(LADSPAActionFactories[t],menu,"");
+			}
+		}
+#endif
 
 	create(); // it is necessary to call create again which will call it for all new child windows
 }
@@ -1137,6 +1230,11 @@ long CMainWindow::onControlAction(FXObject *sender,FXSelector sel,void *ptr)
 	case ID_PLAY_SELECTION_ONCE:
 		metersWindow->resetGrandMaxPeakLevels();
 		play(gSoundFileManager,CSoundPlayerChannel::ltLoopNone,true);
+		break;
+
+	case ID_PLAY_SELECTION_START_TO_END:
+		metersWindow->resetGrandMaxPeakLevels();
+		play(gSoundFileManager,gSoundFileManager->getActive()->channel->getStartPosition());
 		break;
 
 	case ID_PLAY_SELECTION_LOOPED:

@@ -312,7 +312,7 @@ if(dataPos==getLength()-1)
 		if(lastChunk>peakChunkAccesser.getSize())
 			lastChunk=peakChunkAccesser.getSize();
 
-		// - we combine all the mins and maxes of the peak chunk information between firstChunk and lastChunk
+		// - we combine all the mins and maxes of the peak chunk information between [firstChunk and lastChunk)
 		// - Also, if any chunk is dirty along the way, we recalculate it
 		for(sample_pos_t t=firstChunk;t<lastChunk;t++)
 		{
@@ -401,12 +401,12 @@ void CSound::invalidateAllPeakData()
 }
 
 
-void CSound::addChannel()
+void CSound::addChannel(bool doZeroData)
 {
-	prvAddChannel(true);
+	prvAddChannel(true,doZeroData);
 }
 
-void CSound::prvAddChannel(bool addAudioSpaceForNewChannel)
+void CSound::prvAddChannel(bool addAudioSpaceForNewChannel,bool doZeroData)
 {
 	ASSERT_RESIZE_LOCK
 
@@ -430,7 +430,7 @@ void CSound::prvAddChannel(bool addAudioSpaceForNewChannel)
 		addedToChannelCount=true;
 
 		if(addAudioSpaceForNewChannel)
-			matchUpChannelLengths(getLength());
+			matchUpChannelLengths(getLength(),doZeroData);
 	}
 	catch(...)
 	{ // attempt to recover
@@ -447,7 +447,7 @@ void CSound::prvAddChannel(bool addAudioSpaceForNewChannel)
 	saveMetaInfo();
 }
 
-void CSound::addChannels(unsigned where,unsigned count)
+void CSound::addChannels(unsigned where,unsigned count,bool doZeroData)
 {
 	ASSERT_RESIZE_LOCK
 
@@ -468,7 +468,7 @@ void CSound::addChannels(unsigned where,unsigned count)
 	for(unsigned t=0;t<count;t++)
 	{
 		// add a channel to the end
-		addChannel();
+		addChannel(doZeroData);
 
 		// through a series of swaps move that channel to where+t
 		for(unsigned i=0;i<swapCount;i++)
@@ -599,7 +599,7 @@ void CSound::moveChannelsFromTemp(int tempAudioPoolKey,const bool whichChannels[
 	{
 		if(whichChannels[t])
 		{
-			prvAddChannel(false);
+			prvAddChannel(false,false);
 			moveDataIntoChannel(tempAudioPoolKey,getChannelCount()-1,getChannelCount()-1,0,getLength(),true);
 		}
 	}
@@ -1076,7 +1076,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		{
 			if(fitSrc==sftChangeRate)
 			{
-				TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
+				TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
 				const sample_pos_t last=where+length;
 				if(showProgressBar)
 				{
@@ -1098,7 +1098,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else if(srcSampleRate!=destSampleRate)
 		{ // do sample rate conversion
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
@@ -1128,7 +1128,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		{
 			if(fitSrc==sftChangeRate)
 			{
-				TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
+				TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
 				const sample_pos_t last=where+length;
 				if(showProgressBar)
 				{
@@ -1150,7 +1150,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else if(srcSampleRate!=destSampleRate)
 		{
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
@@ -1193,7 +1193,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		{
 			if(fitSrc==sftChangeRate)
 			{
-				TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
+				TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
 				const sample_pos_t last=where+length;
 				if(showProgressBar)
 				{
@@ -1215,7 +1215,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else if(srcSampleRate!=destSampleRate)
 		{
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
@@ -1258,7 +1258,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		{
 			if(fitSrc==sftChangeRate)
 			{
-				TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
+				TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
 				const sample_pos_t last=where+length;
 				if(showProgressBar)
 				{
@@ -1280,7 +1280,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else if(srcSampleRate!=destSampleRate)
 		{
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
@@ -1323,7 +1323,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		{
 			if(fitSrc==sftChangeRate)
 			{
-				TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
+				TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,src.getSize()-srcWhere,length);
 				const sample_pos_t last=where+length;
 				if(showProgressBar)
 				{
@@ -1345,7 +1345,7 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else if(srcSampleRate!=destSampleRate)
 		{
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<const CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
@@ -1403,7 +1403,7 @@ const string CSound::getTimePosition(sample_pos_t samplePos,int secondsDecimalPl
 
 	string time;
 
-	if(sTime>3600)
+	if(sTime>=3600)
 	{ // make it HH:MM:SS.sss
 		const int hours=(int)(sTime/3600);
 		const int mins=(int)((sTime-(hours*3600))/60);
@@ -1413,8 +1413,20 @@ const string CSound::getTimePosition(sample_pos_t samplePos,int secondsDecimalPl
 	}
 	else
 	{ // make it MM:SS.sss
-		const int mins=(int)(sTime/60);
-		const double secs=sTime-(mins*60);
+		int mins=(int)(sTime/60);
+		double secs=sTime-(mins*60);
+
+		/* 
+		 * if it's going to render (because of rounding in istring) as 3:60.000 
+		 * then make that 4:00.000 which would happen if the seconds had come out 
+		 * to 59.995 or more so that's (60 - .005) which is (60 - 5/(10^deciplaces))
+		 * (this probably needs to be done slimiarly in the HH:MM:SS.sss case too)
+		 */
+		if(secs >= 60.0-(5.0/pow(10.0,secondsDecimalPlaces)))
+		{
+			mins++;
+			secs=0;
+		}
 
 		time=istring(mins,2,true)+":"+istring(secs,3+secondsDecimalPlaces,secondsDecimalPlaces,true);
 	}
@@ -1548,7 +1560,18 @@ void CSound::flush()
 	directory should be writable and have free 
 	space of 110% of the given file's size
 */
-#include <sys/vfs.h>
+#if defined(rez_OS_SOLARIS)
+        #include <sys/statvfs.h>
+        #define statfs statvfs
+#elif defined(rez_OS_BSD)
+	#include <sys/param.h> /* I think there's a bug in sys/ucred.h because NGROUPS isn't defined by any previous include, so I include this to get it defined */
+        #include <sys/mount.h>
+#elif defined(rez_OS_LINUX)
+        #include <sys/statfs.h>
+#else
+	#error complier error imminent no xxxfs.h has been included
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -1637,6 +1660,7 @@ void CSound::createWorkingPoolFile(const string originalFilename,const unsigned 
 
 	createCueAccesser();
 
+/*??? maybe could speed things up by not zeroing the data here */
 	matchUpChannelLengths(NIL_SAMPLE_POS);
 
 	saveMetaInfo();
@@ -1860,7 +1884,7 @@ void CSound::removeAllTempAudioPools()
 
 
 // appends silence to the end of any channel that is shorter than the longest one
-void CSound::matchUpChannelLengths(sample_pos_t maxLength)
+void CSound::matchUpChannelLengths(sample_pos_t maxLength,bool doZeroData)
 {
 /*
 	if(maxLength>MAX_LENGTH)
@@ -1879,7 +1903,7 @@ void CSound::matchUpChannelLengths(sample_pos_t maxLength)
 		{
 			const sample_pos_t channelSize=getAudioInternal(t).getSize();
 			if(channelSize<maxAudioPoolSize)
-				addSpaceToChannel(t,channelSize,maxAudioPoolSize-channelSize,true);
+				addSpaceToChannel(t,channelSize,maxAudioPoolSize-channelSize,doZeroData);
 		}
 	}
 	else
@@ -1893,7 +1917,7 @@ void CSound::matchUpChannelLengths(sample_pos_t maxLength)
 			if(channelSize>maxAudioPoolSize)
 				removeSpaceFromChannel(t,maxAudioPoolSize,channelSize-maxAudioPoolSize);
 			else if(channelSize<maxAudioPoolSize)
-				addSpaceToChannel(t,channelSize,maxAudioPoolSize-channelSize,true);
+				addSpaceToChannel(t,channelSize,maxAudioPoolSize-channelSize,doZeroData);
 		}
 	}
 
@@ -2196,21 +2220,19 @@ const string CSound::getUserNotes() const
 {
 	if(poolFile.containsPool(NOTES_POOL_NAME))
 	{
-		const TStaticPoolAccesser<int8_t,PoolFile_t> a=poolFile.getPoolAccesser<int8_t>(NOTES_POOL_NAME);
+		const TStaticPoolAccesser<char,PoolFile_t> a=poolFile.getPoolAccesser<char>(NOTES_POOL_NAME);
 
 		string s;
 
 		char buffer[101];
 		for(size_t t=0;t<a.getSize()/100;t++)
 		{
-				// ??? here we need to assert that char and int8_t are the same
-			a.read((int8_t *)buffer,100);
+			a.read(buffer,100);
 			buffer[100]=0;
 			s+=buffer;
 		}
 		
-			// ??? here we need to assert that char and int8_t are the same
-		a.read((int8_t *)buffer,a.getSize()%100);
+		a.read(buffer,a.getSize()%100);
 		buffer[a.getSize()%100]=0;
 		s+=buffer;
 
@@ -2222,15 +2244,34 @@ const string CSound::getUserNotes() const
 
 void CSound::setUserNotes(const string &notes)
 {
-	TPoolAccesser<int8_t,PoolFile_t> a=poolFile.containsPool(NOTES_POOL_NAME) ? poolFile.getPoolAccesser<int8_t>(NOTES_POOL_NAME) : poolFile.createPool<int8_t>(NOTES_POOL_NAME);
+	TPoolAccesser<char,PoolFile_t> a=poolFile.containsPool(NOTES_POOL_NAME) ? poolFile.getPoolAccesser<char>(NOTES_POOL_NAME) : poolFile.createPool<char>(NOTES_POOL_NAME);
 
 	a.clear();
-		// ??? here we need to assert that char and int8_t are the same
-	a.write((int8_t *)notes.c_str(),notes.size());
+	a.write(notes.c_str(),notes.size());
 }
 
 
-// this is the explicit instantiation of the TPoolFile for CSound's purposes
+// this is the explicit instantiation of the TPoolFile for CSound's purposes 
 #include <TPoolFile.cpp>
 template class TPoolFile<sample_pos_t,uint64_t>;
+
+// Some explicit template method instantiations (not sure why some are necessary and some aren't)
+
+/* I'm not sure why, but when I enable float instead of int16_t as the native audio type, it complains that these methods weren't instantiated anywhere when linking .. fine, but I'm not explicitly instantiating them when the type if int16_t either */
+template TStaticPoolAccesser<int16_t,TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::createPool<int16_t>(const string, const bool);
+template TStaticPoolAccesser<int16_t,TPoolFile<sample_pos_t,uint64_t> > const TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<int16_t>(const string) const;
+
+
+#include <TStaticPoolAccesser.h>
+#include <TPoolAccesser.h>
+
+// I fairly certain that these are from calls to getGeneralDataAccesser<int>
+template void TPoolFile<sample_pos_t,uint64_t>::addAccesser<int>(TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const *);
+template void TPoolFile<sample_pos_t,uint64_t>::unreferenceCachedBlock<int>(TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const *);
+template void TPoolFile<sample_pos_t,uint64_t>::removeAccesser<int>(TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const *);
+template void TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> >::cacheBlock(const sample_pos_t) const;
+template void TPoolFile<sample_pos_t,uint64_t>::cacheBlock<int>(sample_pos_t, TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const *);
+template TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<int>(const string);
+template TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<int>(const string) const;
+template TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::createPool<int>(const string, const bool);
 

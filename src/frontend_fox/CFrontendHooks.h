@@ -44,6 +44,7 @@ class COggDialog;
 class CMp3Dialog;
 class CVoxDialog;
 class CMIDIDumpSampleIdDialog;
+class ClibaudiofileSaveParametersDialog;
 
 class CFrontendHooks : public AFrontendHooks
 {
@@ -72,8 +73,15 @@ public:
 	bool promptForMp3CompressionParameters(Mp3CompressionParameters &parameters);
 	bool promptForVoxParameters(VoxParameters &parameters);
 
+#ifdef USE_LADSPA
+	AActionDialog *getChannelSelectDialog();
+	AActionDialog *getLADSPAActionDialog(const LADSPA_Descriptor *desc);
+#endif
+
 	bool promptForOpenMIDISampleDump(int &sysExChannel,int &waveformId);
 	bool promptForSaveMIDISampleDump(int &sysExChannel,int &waveformId,int &loopType);
+
+	bool promptForlibaudiofileSaveParameters(libaudiofileSaveParameters &parameters,const string formatName);
 
 private:
 	FXWindow *mainWindow;
@@ -92,6 +100,7 @@ private:
 	CMp3Dialog *mp3Dialog;
 	CVoxDialog *voxDialog;
 	CMIDIDumpSampleIdDialog *MIDIDumpSampleIdDialog;
+	ClibaudiofileSaveParametersDialog *libaudiofileSaveParametersDialog;
 };
 
 #endif

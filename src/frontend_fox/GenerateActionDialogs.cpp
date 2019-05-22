@@ -21,15 +21,17 @@
 #include "GenerateActionDialogs.h"
 #include "../backend/unit_conv.h"
 
+#include "ActionParamMappers.h"
+
 // --- Generate Noise -------------------------
 
-	// x is 0 to 1 and should return the range of the units of this function's intented parameter
-static const double interpretValue_length(const double x,const int scalar) { return x*scalar; }
-	// inverse of interpretValue_length
-static const double uninterpretValue_length(const double x,const int scalar) { return x/scalar; }
-
-static const double interpretValue_volume(const double x,const int scalar) { return scalar_to_dB(x); }
-static const double uninterpretValue_volume(const double x,const int scalar) { return dB_to_scalar(x); }
+FXDEFMAP(CGenerateNoiseDialog) CGenerateNoiseDialogMap[]=
+{
+        //Message_Type                  ID                                                 Message_Handler
+	FXMAPFUNC(SEL_CHANGED,          CGenerateNoiseDialog::ID_NOISE_COLOR_COMBOBOX,     CGenerateNoiseDialog::onNoiseColorChange),
+};
+		
+FXIMPLEMENT(CGenerateNoiseDialog,CActionParamDialog,CGenerateNoiseDialogMap,ARRAYNUMBER(CGenerateNoiseDialogMap)) 
 
 CGenerateNoiseDialog::CGenerateNoiseDialog(FXWindow *mainWindow) :
 	CActionParamDialog(mainWindow)
@@ -39,29 +41,123 @@ CGenerateNoiseDialog::CGenerateNoiseDialog(FXWindow *mainWindow) :
 	void *p0=newVertPanel(NULL);
 		void *p1=newHorzPanel(p0);
 
-		addSlider(p1,N_("Length"),"s",interpretValue_length,uninterpretValue_length,NULL,1.0,1,10000,1,false);
+		addSlider(p1,
+			N_("Length"),
+			"s",
+			new CActionParamMapper_linear(1.0,1,1,10000),
+			NULL,
+			false
+		);
 
-		addSlider(p1,N_("Volume"),"dBFS",interpretValue_volume,uninterpretValue_volume,dB_to_scalar,-6.0,0,0,0,false);
+		addSlider(p1,
+			N_("Volume"),
+			"dBFS",
+			new CActionParamMapper_dBFS(-6.0),
+			dB_to_scalar,
+			false
+		);
+
+		addSlider(p1,
+			N_("Max Particle Velocity"),
+			"%",
+			new CActionParamMapper_linear(50.0,100),
+			NULL,
+			false
+		);
 
 	// these need to follow the order in the enum in CGenerateNoiseAction.cpp
 	items.clear();
-	items.push_back("White (Equal Energy per Frequency)");
-	items.push_back("Pink (Natural, Equal Energy per Octave)");
-	//items.push_back("Brown");
+	items.push_back(_("White (Equal Energy per Frequency)"));
+	items.push_back(_("Pink (Natural, Equal Energy per Octave; response: f^(-1))"));
+	items.push_back(_("Brown (as in Brownian Motion; response: f^(-2))"));
+	items.push_back(_("Black :)"));
 	//items.push_back("Green");
 	//items.push_back("Blue");
 	//items.push_back("Violet");
 	//items.push_back("Binary");
-	//items.push_back("Black");
-	addComboTextEntry(p0,"Noise Color",items);
+	FXComboTextParamValue *noiseColorComboBox=addComboTextEntry(p0,
+		N_("Noise Color"),
+		items
+	);
+		noiseColorComboBox->setTarget(this);
+		noiseColorComboBox->setSelector(ID_NOISE_COLOR_COMBOBOX);
+
+	onNoiseColorChange(noiseColorComboBox,0,NULL);
+	
 
 	// these need to follow the order in the enum in CGenerateNoiseAction.cpp
 	items.clear();
-	items.push_back("Independent Channels");
-	items.push_back("Mono");
-	items.push_back("Inverse Mono");
+	items.push_back(_("Independent Channels"));
+	items.push_back(_("Mono"));
+	items.push_back(_("Inverse Mono"));
 	//items.push_back("Spatial stereo");
-	addComboTextEntry(p0,"Stereo Image",items);
+	addComboTextEntry(p0,
+		_("Stereo Image"),
+		items
+	);
 		
+}
+
+long CGenerateNoiseDialog::onNoiseColorChange(FXObject *sender,FXSelector sel,void *ptr)
+{
+	if(((FXComboTextParamValue *)sender)->getValue()==2)
+		getSliderParam("Max Particle Velocity")->enable();
+	else
+		getSliderParam("Max Particle Velocity")->disable();
+	return 1;
+}
+
+
+// --- Generate Tone -------------------------
+
+FXDEFMAP(CGenerateToneDialog) CGenerateToneDialogMap[]=
+{
+        //Message_Type                  ID                                                 Message_Handler
+	//FXMAPFUNC(SEL_CHANGED,          CGenerateToneDialog::ID_NOISE_COLOR_COMBOBOX,     CGenerateToneDialog::onToneColorChange),
+};
+		
+FXIMPLEMENT(CGenerateToneDialog,CActionParamDialog,CGenerateToneDialogMap,ARRAYNUMBER(CGenerateToneDialogMap)) 
+
+CGenerateToneDialog::CGenerateToneDialog(FXWindow *mainWindow) :
+	CActionParamDialog(mainWindow)
+{
+#warning make some presets
+	void *p0=newVertPanel(NULL);
+		void *p1=newHorzPanel(p0);
+			addSlider(p1,
+				N_("Frequency"),
+				"Hz",
+				new CActionParamMapper_linear(60.0,440,0,48000),
+				NULL,
+				false
+			);
+
+			addSlider(p1,
+				N_("Length"),
+				"s",
+				new CActionParamMapper_linear(1.0,1,1,10000),
+				NULL,
+				false
+			);
+
+			addSlider(p1,
+				N_("Volume"),
+				"dBFS",
+				new CActionParamMapper_dBFS(-6.0),
+				dB_to_scalar,
+				false
+			);
+
+		vector<string> toneTypes;
+			// these must match the order that they're defined in CGenerateToneAction::ToneTypes
+		toneTypes.push_back(_("Sine Wave"));
+		toneTypes.push_back(_("Square Wave"));
+		toneTypes.push_back(_("Rising Sawtooth Wave"));
+		toneTypes.push_back(_("Falling Sawtooth Wave"));
+		toneTypes.push_back(_("Triangle Wave"));
+		addComboTextEntry(p0,
+			N_("Tone Type"),
+			toneTypes
+		); 
 }
 
