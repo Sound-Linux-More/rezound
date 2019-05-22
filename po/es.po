@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ReZound 0.9.0beta\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-10-21 19:35-0500\n"
+"POT-Creation-Date: 2004-10-26 10:32-0500\n"
 "PO-Revision-Date: 2004-01-29 16:29+0100\n"
 "Last-Translator: Bernardo Arlandis Mañó <berarma@ya.com>\n"
 "Language-Team: \n"
@@ -79,14 +79,14 @@ msgstr "¿Está seguro de que quiere volver a la última copia guardada de"
 msgid "Load sound from previous session?"
 msgstr "¿Cargar sonido de la sesión previa?"
 
-#: src/backend/ASoundPlayer.cpp:570
+#: src/backend/ASoundPlayer.cpp:571
 msgid ""
 "No audio output method could be initialized -- Playing will be disabled."
 msgstr ""
 "No se ha podido inicializar ningún método de salida de audio -- La "
 "reproducción estará desactivada."
 
-#: src/backend/ASoundPlayer.cpp:575
+#: src/backend/ASoundPlayer.cpp:576
 msgid ""
 "Either no audio output method was enabled at configure-time, or no method "
 "was recognized in the registry:AudioOutputMethods[] setting"
@@ -94,11 +94,11 @@ msgstr ""
 "Ningún método de salida de audio se ha habilitado en la configuración, o "
 "ningún método se ha reconocido en el registro: ajuste AudioOutputMethods[]"
 
-#: src/backend/ASoundRecorder.cpp:554
+#: src/backend/ASoundRecorder.cpp:555
 msgid "No audio input method could be initialized"
 msgstr "Ningún método de entrada de audio se ha podido inicializar"
 
-#: src/backend/ASoundRecorder.cpp:560
+#: src/backend/ASoundRecorder.cpp:561
 msgid ""
 "Either no audio input method was enabled at configure-time, or no method was "
 "recognized in the registry:AudioInputMethods[] setting"

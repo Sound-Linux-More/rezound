@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ru\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-10-21 19:35-0500\n"
+"POT-Creation-Date: 2004-10-26 10:32-0500\n"
 "PO-Revision-Date: 2003-08-28 18:45+0400\n"
 "Last-Translator: Alexandre Prokoudine <avp@altlinux.ru>\n"
 "Language-Team: Russian <ru@li.org>\n"
@@ -82,22 +82,22 @@ msgstr "Вы уверены, что хотите вернуться к последней сохранённой копии "
 msgid "Load sound from previous session?"
 msgstr "Загрузить звук из предыдущей сессии?"
 
-#: src/backend/ASoundPlayer.cpp:570
+#: src/backend/ASoundPlayer.cpp:571
 msgid ""
 "No audio output method could be initialized -- Playing will be disabled."
 msgstr ""
 
-#: src/backend/ASoundPlayer.cpp:575
+#: src/backend/ASoundPlayer.cpp:576
 msgid ""
 "Either no audio output method was enabled at configure-time, or no method "
 "was recognized in the registry:AudioOutputMethods[] setting"
 msgstr ""
 
-#: src/backend/ASoundRecorder.cpp:554
+#: src/backend/ASoundRecorder.cpp:555
 msgid "No audio input method could be initialized"
 msgstr ""
 
-#: src/backend/ASoundRecorder.cpp:560
+#: src/backend/ASoundRecorder.cpp:561
 msgid ""
 "Either no audio input method was enabled at configure-time, or no method was "
 "recognized in the registry:AudioInputMethods[] setting"
