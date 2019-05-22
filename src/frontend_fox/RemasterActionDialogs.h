@@ -100,6 +100,20 @@ public:
 
 
 
+// --- adaptive normalize ----------------
+
+class CAdaptiveNormalizeDialog : public CActionParamDialog
+{
+public:
+	CAdaptiveNormalizeDialog(FXWindow *mainWindow);
+	virtual ~CAdaptiveNormalizeDialog(){}
+
+protected:
+	const string getExplanation() const;
+};
+
+
+
 // --- mark quiet areas ------------------
 
 class CMarkQuietAreasDialog : public CActionParamDialog
@@ -111,13 +125,35 @@ public:
 
 
 
-// --- remaster --------------------------
+// --- resample --------------------------
 
 class CResampleDialog : public CActionParamDialog
 {
 public:
 	CResampleDialog(FXWindow *mainWindow);
 	virtual ~CResampleDialog(){}
+};
+
+
+
+// --- change pitch ----------------------
+
+class CChangePitchDialog : public CActionParamDialog
+{
+public:
+	CChangePitchDialog(FXWindow *mainWindow);
+	virtual ~CChangePitchDialog(){}
+};
+
+
+
+// --- change tempo ----------------------
+
+class CChangeTempoDialog : public CActionParamDialog
+{
+public:
+	CChangeTempoDialog(FXWindow *mainWindow);
+	virtual ~CChangeTempoDialog(){}
 };
 
 

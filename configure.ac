@@ -23,7 +23,7 @@
 # Place - Suite 330, Boston, MA  02111-1307, USA
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(rezound, 0.9.0beta, [http://sourceforge.net/tracker/?atid=105056&group_id=5056])
+AC_INIT(rezound, 0.10.0beta, [http://sourceforge.net/tracker/?atid=105056&group_id=5056])
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER([config/config.h])
 AM_INIT_AUTOMAKE
@@ -31,6 +31,7 @@ AC_DISABLE_SHARED	# This makes libtool only build static libs
 AC_GNU_SOURCE 		# enable posix extensions in glibc
 
 ### handle --enable-largefile flag
+AH_TEMPLATE(ENABLE_LARGEFILE)
 AC_ARG_ENABLE(
 	largefile,
 	AC_HELP_STRING([--enable-largefile],[enable 64bit file I/O support; NOTE: all dependancies file I/O libraries will also need to have largefile support enabled]),
@@ -38,6 +39,7 @@ AC_ARG_ENABLE(
 		if [[ "$enableval" = "yes" ]]
 		then 
 			AC_SYS_LARGEFILE
+			AC_DEFINE(ENABLE_LARGEFILE)
 		fi
 	]
 )
@@ -196,9 +198,9 @@ AC_ARG_ENABLE(
 		fi
 	],
 	[ # action if flag was not given
-	 	# default to signed 16 bit
-		AC_DEFINE(SAMPLE_TYPE_S16)
-		AC_MSG_RESULT([*** setting the internal sample type to signed 16 bit by default])
+	 	# default to 32 bit floating point
+		AC_DEFINE(SAMPLE_TYPE_FLOAT)
+		AC_MSG_RESULT([*** setting the internal sample type to 32 bit floating point default])
 	]
 )
 
@@ -566,6 +568,14 @@ AC_SUBST(MAYBE_LADSPA_LIB)
 
 
 
+dnl ############################################################################
+dnl # Handle the flags for a library to to tempo/pitch changing independantly  *
+dnl ############################################################################
+AM_PATH_SOUNDTOUCH([],[],AC_MSG_WARN([***** libSoundTouch not found -- tempo and pitch changing will be disabled (http://www.sunpoint.net/~oparviai/soundtouch/) *****]))
+
+
+
+
 
 ############################################################################
 # Check for the Frontend GUI Library                                       #
@@ -573,11 +583,17 @@ AC_SUBST(MAYBE_LADSPA_LIB)
 
 # This is a check for a class in a C++ library. To pinpoint the specific version we need we could change what class is linked.
 # it sets $1_CXXFLAGS and $1_LIBS to either something useful or nothing
-	# need to pass something that says not to error if it's not found so we can continue looking for just libFOX
-ajv_CXX_CHECK_LIB(FOX-1.1,FXApp,fox-1.1/fx.h,[http://fox-toolkit.org],[],false)
-if test -z "$FOX_1_1_LIBS"; then
-	# libFOX-1.1 was not found, now try libFOX
-	ajv_CXX_CHECK_LIB(FOX,FXApp,fox/fx.h,[http://fox-toolkit.org],[],true)
+ajv_CXX_CHECK_LIB(FOX-1.3,FXApp,fox-1.3/fx.h,[http://fox-toolkit.org],[],false)
+if test -z "$FOX_1_3_LIBS"; then
+	ajv_CXX_CHECK_LIB(FOX-1.2,FXApp,fox-1.2/fx.h,[http://fox-toolkit.org],[],false)
+	if test -z "$FOX_1_2_LIBS"; then
+		# libFOX-1.2 was not found, now try libFOX-1.1
+		ajv_CXX_CHECK_LIB(FOX-1.1,FXApp,fox-1.1/fx.h,[http://fox-toolkit.org],[],false)
+		if test -z "$FOX_1_1_LIBS"; then
+			# libFOX-1.1 was not found, now try libFOX
+			ajv_CXX_CHECK_LIB(FOX,FXApp,fox/fx.h,[http://fox-toolkit.org],[],true)
+		fi
+	fi
 fi
 
 AC_SUBST(FOX_1_1_CXXFLAGS)

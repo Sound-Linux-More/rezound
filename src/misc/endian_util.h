@@ -118,7 +118,7 @@ namespace endian_util
 	 */
 
 	// --- generic implementation
-	template<unsigned Size> inline static void really_swap_endian_ptr(void *_value,unsigned size)
+	template<unsigned Size> inline static void really_swap_endian_ptr(void *_value,const unsigned size)
 	{
 		uint8_t * const value=(uint8_t *)_value;
 		register int k=(size+1)/2;
@@ -131,13 +131,13 @@ namespace endian_util
 	}
 
 	// --- implementation for 1 byte quantities (nothing)
-	template<> inline static void really_swap_endian_ptr<1>(void *value,unsigned size)
+	template<> inline static void really_swap_endian_ptr<1>(void *value,const unsigned size)
 	{
 		// nothing to do
 	}
 
 	// --- implementation for 2 byte quantities
-	template<> inline static void really_swap_endian_ptr<2>(void *value,unsigned size)
+	template<> inline static void really_swap_endian_ptr<2>(void *value,const unsigned size)
 	{
 		const register uint16_t v=((uint16_t *)value)[0];
 		((uint16_t *)value)[0]=
@@ -147,7 +147,7 @@ namespace endian_util
 	}
 
 	// --- implementation for 4 byte quantities
-	template<> inline static void really_swap_endian_ptr<4>(void *value,unsigned size)
+	template<> inline static void really_swap_endian_ptr<4>(void *value,const unsigned size)
 	{
 		const register uint32_t v=((uint32_t *)value)[0];
 		((uint32_t *)value)[0]=
@@ -157,7 +157,7 @@ namespace endian_util
 	}
 
 	// --- implementation for 8 byte quantities
-	template<> inline static void really_swap_endian_ptr<8>(void *value,unsigned size)
+	template<> inline static void really_swap_endian_ptr<8>(void *value,const unsigned size)
 	{
 		const register uint64_t v=((uint64_t *)value)[0];
 		// of 8, swap upper most and lower most octets then the next two inward, and so on ..
@@ -186,14 +186,14 @@ template<typename Type> inline static const Type swap_endian(uint8_t value)
 {
 	return value;
 }
-template<typename Type> inline static const Type swap_endian(int8_t value) { return swap_endian((uint8_t)value); }
+template<typename Type> inline static const Type swap_endian(int8_t value) { return swap_endian<uint8_t>((uint8_t)value); }
 
 template<typename Type> inline static const Type swap_endian(uint16_t value)
 {
 	return 
 		((value>>8)&0x00ff) | ((value<<8)&0xff00);
 }
-template<typename Type> inline static const Type swap_endian(int16_t value) { return swap_endian((uint16_t)value); }
+template<typename Type> inline static const Type swap_endian(int16_t value) { return swap_endian<uint16_t>((uint16_t)value); }
 
 template<typename Type> inline static const Type swap_endian(uint32_t value)
 {
@@ -202,8 +202,8 @@ template<typename Type> inline static const Type swap_endian(uint32_t value)
 	   ((value>>24)&0x000000ff) | ((value<<24)&0xff000000) | 
 	   ((value>> 8)&0x0000ff00) | ((value<< 8)&0x00ff0000);
 }
-template<typename Type> inline static const Type swap_endian(int32_t value) { return swap_endian((uint32_t)value); }
-template<typename Type> inline static const Type swap_endian(float value) { return swap_endian(*reinterpret_cast<uint32_t *>(&value)); }
+template<typename Type> inline static const Type swap_endian(int32_t value) { return swap_endian<uint32_t>((uint32_t)value); }
+template<typename Type> inline static const Type swap_endian(float value) { return swap_endian<uint32_t>(*reinterpret_cast<uint32_t *>(&value)); }
 
 template<typename Type> inline static const Type swap_endian(uint64_t value)
 {
@@ -213,8 +213,8 @@ template<typename Type> inline static const Type swap_endian(uint64_t value)
 	   ((value>>24)&0x0000000000ff0000LL) | ((value<<24)&0x0000ff0000000000LL) |
 	   ((value>> 8)&0x00000000ff000000LL) | ((value<< 8)&0x000000ff00000000LL);
 }
-template<typename Type> inline static const Type swap_endian(int64_t value) { return swap_endian((uint64_t)value); }
-template<typename Type> inline static const Type swap_endian(double value) { return swap_endian(*reinterpret_cast<uint64_t *>(&value)); }
+template<typename Type> inline static const Type swap_endian(int64_t value) { return swap_endian<uint64_t>((uint64_t)value); }
+template<typename Type> inline static const Type swap_endian(double value) { return swap_endian<uint64_t>(*reinterpret_cast<uint64_t *>(&value)); }
 
 
 /* generic value implementation which just uses the ptr version (which is slower) */

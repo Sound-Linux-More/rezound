@@ -252,14 +252,16 @@ CMainWindow::CMainWindow(FXApp* a) :
 		drawVerticalCuePositionsButton=new FXCheckButton(miscControlsFrame,_("Draw Vertical Cue Positions"),this,ID_DRAW_VERTICAL_CUE_POSITIONS_TOGGLE);
 		drawVerticalCuePositionsButton->setPadLeft(0); drawVerticalCuePositionsButton->setPadRight(0); drawVerticalCuePositionsButton->setPadTop(0); drawVerticalCuePositionsButton->setPadBottom(0);
 		t=new FXHorizontalFrame(miscControlsFrame,0, 0,0,0,0, 0,0,0,0);
-			crossfadeEdgesComboBox=new FXComboBox(t,8,3, this,ID_CROSSFADE_EDGES_COMBOBOX, FRAME_SUNKEN|FRAME_THICK | COMBOBOX_NORMAL|COMBOBOX_STATIC | LAYOUT_CENTER_Y);
+			crossfadeEdgesComboBox=new FXComboBox(t,8,this,ID_CROSSFADE_EDGES_COMBOBOX, FRAME_SUNKEN|FRAME_THICK | COMBOBOX_NORMAL|COMBOBOX_STATIC | LAYOUT_CENTER_Y);
+				crossfadeEdgesComboBox->setNumVisible(3);
 				crossfadeEdgesComboBox->setTipText(_("After Most Actions a Crossfade can be Performed at the Start and Stop \nPositions to Give a Smoother Transition in to and out of the Modified Selection"));
 				crossfadeEdgesComboBox->appendItem(_("No Crossfade"));
 				crossfadeEdgesComboBox->appendItem(_("Crossfade Inner Edges"));
 				crossfadeEdgesComboBox->appendItem(_("Crossfade Outer Edges"));
 				crossfadeEdgesComboBox->setCurrentItem(0);
 			new FXButton(t,FXString("...\t")+_("Change Crossfade Times"),NULL,this,ID_CROSSFADE_EDGES_SETTINGS_BUTTON, BUTTON_NORMAL & ~FRAME_THICK);
-		clipboardComboBox=new FXComboBox(miscControlsFrame,8,8, this,ID_CLIPBOARD_COMBOBOX, FRAME_SUNKEN|FRAME_THICK | COMBOBOX_NORMAL|COMBOBOX_STATIC);
+		clipboardComboBox=new FXComboBox(miscControlsFrame,8,this,ID_CLIPBOARD_COMBOBOX, FRAME_SUNKEN|FRAME_THICK | COMBOBOX_NORMAL|COMBOBOX_STATIC);
+		clipboardComboBox->setNumVisible(8);
 
 	new FXVerticalSeparator(s);
 
@@ -879,11 +881,15 @@ void CMainWindow::buildActionMap()
 	addToActionMap(								new CActionMenuCommand(new CNoiseGateActionFactory(gChannelSelectDialog,new CNoiseGateDialog(this)),dummymenu,				""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CCompressorActionFactory(gChannelSelectDialog,new CCompressorDialog(this)),dummymenu,			""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CNormalizeActionFactory(gChannelSelectDialog,new CNormalizeDialog(this)),dummymenu,				""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CAdaptiveNormalizeActionFactory(gChannelSelectDialog,new CAdaptiveNormalizeDialog(this)),dummymenu,		""),																	menuItemRegistry);
 	addToActionMap(								new CActionMenuCommand(new CMarkQuietAreasActionFactory(new CMarkQuietAreasDialog(this)),dummymenu,					""),																	menuItemRegistry);
 	// -
 	addToActionMap(								new CActionMenuCommand(new CResampleActionFactory(gChannelSelectDialog,new CResampleDialog(this)),dummymenu,				""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CChangePitchActionFactory(gChannelSelectDialog,new CChangePitchDialog(this)),dummymenu,			""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CChangeTempoActionFactory(gChannelSelectDialog,new CChangeTempoDialog(this)),dummymenu,			""),																	menuItemRegistry);
 	// -
 	addToActionMap(								new CActionMenuCommand(new CRemoveDCActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CInvertPhaseActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
 	// -
 	addToActionMap(								new CActionMenuCommand(new CUnclipActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
 
@@ -1032,14 +1038,18 @@ void CMainWindow::createMenus()
 		const vector<CLADSPAActionFactory *> LADSPAActionFactories=getLADSPAActionFactories();
 		if(LADSPAActionFactories.size()<=0)
 		{
-			new FXMenuCaption(menu,"No LADSPA Plugins Found");
+			new FXMenuCaption(menu,_("No LADSPA Plugins Found"));
 			new FXMenuSeparator(menu);
-			new FXMenuCaption(menu,"Like PATH, set LADSPA_PATH to point");
-			new FXMenuCaption(menu,"to a directory(s) containing LADSPA");
-			new FXMenuCaption(menu,"plugin .so files");
+			new FXMenuCaption(menu,_("Like PATH, set LADSPA_PATH to point"));
+			new FXMenuCaption(menu,_("to a directory(s) containing LADSPA"));
+			new FXMenuCaption(menu,_("plugin .so file at least once.  Or"));
+			new FXMenuCaption(menu,_("edit the value in ~/.rezound/registry.dat"));
 		}
 		else
 		{
+			// determine number of FXMenuCaption will fit on the screen (msh -> menu screen height)
+			const FXuint msh=(getApp()->getRootWindow()->getHeight()/(7+getApp()->getNormalFont()->getFontHeight()))-1;
+
 			if(LADSPAActionFactories.size()>20)
 			{
 				// add a submenu grouped by manufacturer
@@ -1057,7 +1067,12 @@ void CMainWindow::createMenus()
 
 					for(map<const string,map<const string,CLADSPAActionFactory *> >::iterator i=makerGrouped.begin();i!=makerGrouped.end();i++)
 					{
+#if REZ_FOX_VERSION<10142
 						FXMenuPane *submenu=new FXMenuPane(this);
+#else
+						// if menu will be vertically taller than the screen, then make the menu scrollable
+						FXMenuPane *submenu=i->second.size()>msh ? new FXScrollPane(this,msh) : new FXMenuPane(this);
+#endif
 						new FXMenuCascade(makerMenu,i->first.c_str(),NULL,submenu);
 	
 						for(map<const string,CLADSPAActionFactory *>::iterator t=i->second.begin();t!=i->second.end();t++)
@@ -1079,7 +1094,12 @@ void CMainWindow::createMenus()
 
 				for(map<const char,map<const string,CLADSPAActionFactory *> >::iterator i=nameGrouped.begin();i!=nameGrouped.end();i++)
 				{
+#if REZ_FOX_VERSION<10142
 					FXMenuPane *submenu=new FXMenuPane(this);
+#else
+					// if menu will be vertically taller than the screen, then make the menu scrollable
+					FXMenuPane *submenu=i->second.size()>msh ? new FXScrollPane(this,msh) : new FXMenuPane(this);
+#endif
 					new FXMenuCascade(menu,string(&(i->first),1).c_str(),NULL,submenu);
 
 					for(map<const string,CLADSPAActionFactory *>::iterator t=i->second.begin();t!=i->second.end();t++)
@@ -1122,14 +1142,16 @@ long CMainWindow::onFollowPlayPositionButton(FXObject *sender,FXSelector sel,voi
 long CMainWindow::onRenderClippingWarningButton(FXObject *sender,FXSelector sel,void *ptr)
 {
 	gRenderClippingWarning=renderClippingWarningButton->getCheck();
-	gSoundFileManager->getActiveWindow()->updateFromEdit();
+	if(gSoundFileManager->getActiveWindow())
+		gSoundFileManager->getActiveWindow()->updateFromEdit();
 	return 1;
 }
 
 long CMainWindow::onDrawVerticalCuePositionsButton(FXObject *sender,FXSelector sel,void *ptr)
 {
 	gDrawVerticalCuePositions=drawVerticalCuePositionsButton->getCheck();
-	gSoundFileManager->getActiveWindow()->updateFromEdit();
+	if(gSoundFileManager->getActiveWindow())
+		gSoundFileManager->getActiveWindow()->updateFromEdit();
 	return 1;
 }
 
@@ -1234,7 +1256,8 @@ long CMainWindow::onControlAction(FXObject *sender,FXSelector sel,void *ptr)
 
 	case ID_PLAY_SELECTION_START_TO_END:
 		metersWindow->resetGrandMaxPeakLevels();
-		play(gSoundFileManager,gSoundFileManager->getActive()->channel->getStartPosition());
+		if(gSoundFileManager->getActive())
+			play(gSoundFileManager,gSoundFileManager->getActive()->channel->getStartPosition());
 		break;
 
 	case ID_PLAY_SELECTION_LOOPED:
@@ -1437,7 +1460,6 @@ long CMainWindow::onShuttleChange(FXObject *sender,FXSelector sel,void *ptr)
 			else if(text==_("semitones"))
 			{ // semitone + [0.5..2]
 				float semitones = round((double)shuttlePos/(double)maxValue*12); // +/- 12 semitones
-				labelString = (semitones>=0 ? "+" : "") + istring((int)semitones,2,false);
 				if(shuttlePos>0) 
 				{
 					semitones = round((double)shuttlePos/(double)maxValue*12);
@@ -1448,6 +1470,7 @@ long CMainWindow::onShuttleChange(FXObject *sender,FXSelector sel,void *ptr)
 					semitones = round((double)shuttlePos/(double)minValue*12);
 					seekSpeed=pow(0.5,semitones/12.0);
 				}
+				labelString = (semitones>=0 ? "+" : "") + istring((int)semitones,2,false) + " ("+istring(seekSpeed,3,2)+"x)";
 			}
 			else
 				throw runtime_error(string(__func__)+" -- internal error -- unhandled text for shuttleDialScaleButton: '"+text+"'");

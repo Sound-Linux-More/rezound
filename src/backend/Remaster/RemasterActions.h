@@ -28,10 +28,14 @@
 #include "CMonoizeAction.h"
 #include "CUnclipAction.h"
 #include "CRemoveDCAction.h"
+#include "CInvertPhaseAction.h"
 #include "CNoiseGateAction.h"
 #include "CCompressorAction.h"
 #include "CNormalizeAction.h"
+#include "CAdaptiveNormalizeAction.h"
 #include "CResampleAction.h"
+#include "CChangePitchAction.h"
+#include "CChangeTempoAction.h"
 #include "CMarkQuietAreasAction.h"
 
 #endif

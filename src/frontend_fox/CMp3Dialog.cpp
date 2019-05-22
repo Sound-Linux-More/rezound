@@ -75,7 +75,7 @@ CMp3Dialog::CMp3Dialog(FXWindow *mainWindow) :
 	CBRButton=new FXRadioButton(main,_("Constant Bit Rate"),this,ID_WHICH_BUTTON);
 		CBRFrame=new FXMatrix(main,2,MATRIX_BY_COLUMNS|FRAME_RAISED|LAYOUT_FILL_X);
 			new FXLabel(CBRFrame,_("Bit Rate: "));
-			bitRateComboBox=new FXComboBox(CBRFrame,10,8,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
+			bitRateComboBox=new FXComboBox(CBRFrame,10,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
 			fillBitRateComboBox(bitRateComboBox);
 
 
@@ -83,13 +83,13 @@ CMp3Dialog::CMp3Dialog(FXWindow *mainWindow) :
 	ABRButton=new FXRadioButton(main,_("Average Bit Rate"),this,ID_WHICH_BUTTON);
 		ABRFrame=new FXMatrix(main,2,MATRIX_BY_COLUMNS|FRAME_RAISED|LAYOUT_FILL_X);
 			new FXLabel(ABRFrame,_("Minimum Bit Rate: "));
-			minRateComboBox=new FXComboBox(ABRFrame,10,8,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
+			minRateComboBox=new FXComboBox(ABRFrame,10,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
 			fillBitRateComboBox(minRateComboBox);
 			new FXLabel(ABRFrame,_("Average Bit Rate: "));
-			normRateComboBox=new FXComboBox(ABRFrame,10,8,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
+			normRateComboBox=new FXComboBox(ABRFrame,10,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
 			fillBitRateComboBox(normRateComboBox,true);
 			new FXLabel(ABRFrame,_("Maximum Bit Rate: "));
-			maxRateComboBox=new FXComboBox(ABRFrame,10,8,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
+			maxRateComboBox=new FXComboBox(ABRFrame,10,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
 			fillBitRateComboBox(maxRateComboBox);
 
 
@@ -97,9 +97,10 @@ CMp3Dialog::CMp3Dialog(FXWindow *mainWindow) :
 	qualityButton=new FXRadioButton(main,_("Variable Bit Rate Quality Setting"),this,ID_WHICH_BUTTON);
 		qualityFrame=new FXMatrix(main,3,MATRIX_BY_COLUMNS|FRAME_RAISED|LAYOUT_FILL_X);
 			new FXLabel(qualityFrame,_("Quality: "));
-			qualityComboBox=new FXComboBox(qualityFrame,10,10,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
+			qualityComboBox=new FXComboBox(qualityFrame,10,NULL,0,COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK|COMBOBOX_STATIC);
 			for(int t=0;t<10;t++)
 				qualityComboBox->appendItem(istring(t).c_str());
+			qualityComboBox->setNumVisible(qualityComboBox->getNumItems());
 			qualityComboBox->setCurrentItem(4);
 			new FXLabel(qualityFrame,_("0(Highest Quality -> 9(Lowest Quality)"));
 
@@ -116,8 +117,7 @@ CMp3Dialog::CMp3Dialog(FXWindow *mainWindow) :
 			new FXLabel(flagsFrame,_("To lame"));
 
 	
-	CBRButton->setCheck(TRUE);
-	onRadioButton(NULL,0,(void *)1); // to disable all but CBR
+	onRadioButton(CBRButton,0,(void *)1); // to disable all but CBR
 	
 
 }
@@ -173,16 +173,31 @@ long CMp3Dialog::onRadioButton(FXObject *sender,FXSelector sel,void *ptr)
 	if((int)ptr==0) // only act when ptr==1 when it's getting checked
 		return 1;
 
+	// turn off all buttons
+	CBRButton->setCheck(FALSE);
 	setEnable((FXWindow *)CBRFrame,false);
+
+	ABRButton->setCheck(FALSE);
 	setEnable((FXWindow *)ABRFrame,false);
+
+	qualityButton->setCheck(FALSE);
 	setEnable((FXWindow *)qualityFrame,false);
 
-	if(CBRButton->getCheck()==TRUE)
+	if(sender==CBRButton)
+	{
+		CBRButton->setCheck(TRUE);
 		setEnable((FXWindow *)CBRFrame,true);
-	else if(ABRButton->getCheck()==TRUE)
+	}
+	else if(sender==ABRButton)
+	{
+		ABRButton->setCheck(TRUE);
 		setEnable((FXWindow *)ABRFrame,true);
-	else if(qualityButton->getCheck()==TRUE)
+	}
+	else if(sender==qualityButton)
+	{
+		qualityButton->setCheck(TRUE);
 		setEnable((FXWindow *)qualityFrame,true);
+	}
 
 	return 1;
 }

@@ -68,7 +68,7 @@ CCueListDialog::CCueListDialog(FXWindow *owner) :
 	contents(new FXVerticalFrame(this,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
 		upperFrame(new FXVerticalFrame(contents,FRAME_RAISED|FRAME_THICK | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 5,5,5,5)),
 			cueListFrame(new FXPacker(upperFrame,LAYOUT_FILL_X|LAYOUT_FILL_Y | FRAME_SUNKEN|FRAME_THICK, 0,0,0,0, 0,0,0,0, 0,0)),
-				cueList(new FXList(cueListFrame,0,this,ID_CUE_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y)),
+				cueList(new FXList(cueListFrame,this,ID_CUE_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y)),
 		lowerFrame(new FXHorizontalFrame(contents,FRAME_RAISED|FRAME_THICK | LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT, 0,0,0,65)),
 			buttonPacker(new FXHorizontalFrame(lowerFrame,LAYOUT_CENTER_X|LAYOUT_CENTER_Y, 0,0,0,0, 0,0,0,0, 12)),
 				closeButton(new FXButton(buttonPacker,_("&Close"),FOXIcons->GreenCheck1,this,ID_CLOSE_BUTTON,FRAME_RAISED|FRAME_THICK | JUSTIFY_NORMAL | ICON_ABOVE_TEXT | LAYOUT_FIX_WIDTH, 0,0,60,0, 2,2,2,2)),
@@ -190,20 +190,25 @@ void CCueListDialog::rebuildCueList()
 	cueList->clearItems();
 
 	// insert into a map and then extract (sorted) into the list box
-	multimap<string,size_t> cues;
+	multimap<sample_pos_t,size_t> cues;
 	CSound *sound=loadedSound->sound;
 	for(size_t t=0;t<loadedSound->sound->getCueCount();t++)
 	{
 		cues.insert(
-			multimap<string,size_t>::value_type(
-				sound->getTimePosition(sound->getCueTime(t),5)+(sound->isCueAnchored(t) ? " + " : " - ")+sound->getCueName(t),
+			multimap<sample_pos_t,size_t>::value_type(
+				sound->getCueTime(t),
 				t
 			)
 		);
 	}
 
-	for(multimap<string,size_t>::iterator i=cues.begin();i!=cues.end();i++)
-		cueList->appendItem(i->first.c_str(),NULL,(void *)i->second);
+	unsigned c=1;
+	for(multimap<sample_pos_t,size_t>::iterator i=cues.begin();i!=cues.end();i++)
+	{
+		const size_t t=i->second;
+		const string str=sound->getTimePosition(sound->getCueTime(t),5)+(sound->isCueAnchored(t) ? " + " : " - ")+sound->getCueName(t);
+		cueList->appendItem((istring(c++,3,true)+": "+str).c_str(),NULL,(void *)i->second);
+	}
 
 
 	// restore the selected item

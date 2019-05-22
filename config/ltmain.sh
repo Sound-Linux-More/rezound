@@ -59,7 +59,7 @@ modename="$progname"
 PROGRAM=ltmain.sh
 PACKAGE=libtool
 VERSION=1.4.3
-TIMESTAMP=" (1.922.2.110 2002/10/23 01:39:54)"
+TIMESTAMP=" (1.922.2.111 2002/10/23 02:54:36)"
 
 default_mode=
 help="Try \`$progname --help' for more information."
@@ -2987,6 +2987,20 @@ EOF
 	# Make a backup of the uninstalled library when relinking
 	if test "$mode" = relink; then
 	  $run eval '(cd $output_objdir && $rm ${realname}U && $mv $realname ${realname}U)' || exit $?
+	fi
+
+	# At the last stage, always prepend inst_prefix_dir in front of any
+	# other library paths
+	if test -n "$inst_prefix_dir"; then
+	  tmp_deplibs=
+	  for arg in $deplibs; do
+	    if echo "$arg" | grep -- "^-L$inst_prefix_dir" > /dev/null; then
+	      tmp_deplibs="$arg $tmp_deplibs"
+	    else
+	      tmp_deplibs="$tmp_deplibs $arg"
+	    fi
+	  done
+	  deplibs="$tmp_deplibs"
 	fi
 
 	# Do each of the archive commands.

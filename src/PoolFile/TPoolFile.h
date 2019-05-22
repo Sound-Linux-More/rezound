@@ -32,6 +32,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <set>
 
 #include <CMutex.h>
 #include <CRWLock.h>
@@ -62,14 +63,15 @@ template<class pool_element_t,class pool_file_t> class TStaticPoolAccesser;
 template<class _l_addr_t,class _p_addr_t> class TPoolFile
 {
 public:
-	typedef _l_addr_t l_addr_t;	// is written to file
+	typedef _l_addr_t l_addr_t;
 	typedef _p_addr_t p_addr_t;	// is written to file
 	typedef uint32_t alignment_t;	// is written to file
+	typedef uint32_t blocksize_t;	// is written to file
 	typedef size_t poolId_t;
 
 
 	// formatSignature MUST be an 8 byte (not counting an unncessary null terminator) signature to look for when opening a file
-	TPoolFile(const size_t maxBlockSize=32768,const char *formatSignature="DavyBlox");
+	TPoolFile(const blocksize_t maxBlockSize=32768,const char *formatSignature="DavyBlox");
 	explicit TPoolFile(const TPoolFile<l_addr_t,p_addr_t> &src); //INVALID
 	virtual ~TPoolFile();
 
@@ -77,7 +79,7 @@ public:
 	void openFile(const string _filename,const bool canCreate=true);
 
 	// removes all files that would be generated if a pool file was opened with the given name
-	// it cleans up the .SAT[12] files (and in the future should remove multiple files if mutiple files were create for a pool file larger than the 2gig limit)
+	// it cleans up the .SAT[12] files
 	static void removeFile(const string filename);
 
 	const bool isOpen() const;
@@ -90,10 +92,8 @@ public:
 	void flushData();
 
 	// for now, since insertSpace doesn't backupSAT for speed reasons, I need 
-	// to be able to call it incase of a crash after I'm finished inserting
+	// to be able to call it in case of a crash after I'm finished inserting
 	void backupSAT();
-
-	void defrag();
 
 	void closeFile(const bool defrag,const bool removeFile);
 
@@ -160,23 +160,23 @@ public:
 
 
 	// methods to make sure that the pool file is consistant
-	void verifyBlockInfo(const poolId_t poolId) const;
-	void verifyAllBlockInfo(const bool expectContiguousPhysicalSpace) const;
+	void verifyAllBlockInfo(bool expectContinuousPhysicalAllocs=false);
 	void printSAT() const;
+	
+	// returns whether it did anything
+	bool defrag();
 
 #ifndef TESTING_TPOOLFILE
 private:
 #endif
 
 	struct RLogicalBlock;
-	struct RPhysicalBlock;
 
 		// ??? is there some way to say any type T but only L and P being l_addr_t and p_addr_t
 	template <class T,class P> friend class TPoolAccesser;
 	template <class T,class P> friend class TStaticPoolAccesser;
 
 	friend struct RLogicalBlock;
-	friend struct RPhysicalBlock;
 
 	mutable CRWLock structureMutex;
 
@@ -184,7 +184,7 @@ private:
 
 	const char *formatSignature;
 
-	const size_t maxBlockSize;
+	const blocksize_t maxBlockSize;
 	const l_addr_t maxLogicalAddress;
 	const p_addr_t maxPhysicalAddress;
 
@@ -205,14 +205,12 @@ private:
 		RPoolInfo &operator=(const RPoolInfo &src);
 
 		void writeToFile(CMultiFile *f,CMultiFile::RHandle &multiFileHandle) /*const*/;
-		void readFromFile(CMultiFile *f,CMultiFile::RHandle &multiFileHandle);
+		void readFromFile(CMultiFile *f,CMultiFile::RHandle &multiFileHandle,int formatVersion);
 	};
 
-	map<const string,poolId_t> poolNames;		// the integer data indexes into pools and SAT given a name string key, which is the 'poolId'
-	vector<RPoolInfo> pools;			// this list is parallel to SAT
-	vector<vector<RLogicalBlock> > SAT;		// the outer vector is parallel to pools; note, the inner vector is kept sorted by logicalStart, so we shan't modify logicalStart such that it becomes out of order
-
-	vector<RPhysicalBlock> physicalBlockList;	// note it's sorted by physicalStart, so we shan't modify physicalStart such that it becomes out of order
+	map<const string,poolId_t> poolNames;	// the integer data indexes into pools and SAT given a name string key, which is the 'poolId'
+	vector<RPoolInfo> pools;		// this list is parallel to SAT
+	vector<vector<RLogicalBlock> > SAT;	// the outer vector is parallel to pools; note, the inner vector is kept sorted by logicalStart, so we shan't modify logicalStart such that it becomes out of order
 
 
 	// Misc
@@ -220,14 +218,15 @@ private:
 	void init(const bool createInitialCachedBlocks=true);
 	const bool prvGetPoolIdByName(const string poolName,poolId_t &poolId) const;
 	const p_addr_t getProceedingPoolSizes(const poolId_t poolId) const;
-	const l_addr_t getMaxBlockSizeFromAlignment(const alignment_t alignment) const;
-	void writeMetaData(CMultiFile *f);
+	const blocksize_t getMaxBlockSizeFromAlignment(const alignment_t alignment) const;
+	void writeMetaData(CMultiFile *f,bool writeSAT);
 	void prvCreatePool(const string poolName,const alignment_t alignment,const bool throwOnExistance=true,const bool useOldPoolIds=true);
 	void addPool(const poolId_t poolId,const alignment_t alignment,bool isValid);
 	const string getPoolDescription(const poolId_t poolId) const;
 	void writeDirtyIndicator(const bool dirty,CMultiFile *f);
-	void makeBlockFileSmallest();
 	void appendNewSAT();
+
+	void offsetLogicalAddressSpace(typename  vector<RLogicalBlock>::iterator first,typename vector<RLogicalBlock>::iterator end,const l_addr_t offset,int add_or_sub);
 
 	// Structural Integrity Methods
 	CMultiFile SATFiles[2]; // for now, I just use the same IO module for storing the SATs as well as the data... when 64bit FS is normal.. there won't be a difference
@@ -236,17 +235,13 @@ private:
 	void closeSATFiles(const bool removeFiles=true);
 	void writeWhichSATFile();
 	void writeSATToFile(CMultiFile *f,const p_addr_t writeWhere);
-	void restoreSAT();
-	void buildSATFromFile(CMultiFile *f,const p_addr_t readWhere);
+	void restoreSAT(int formatVersion);
+	void buildSATFromFile(CMultiFile *f,const p_addr_t readWhere,int formatVersion);
 
 	// SAT operations
 	const size_t findSATBlockContaining(const poolId_t poolId,const l_addr_t where,bool &atStartOfBlock) const;
 
-	const size_t findPhysicalBlockContaining(const p_addr_t physicalWhere) const;
-
-	const p_addr_t findHole(const l_addr_t size,const p_addr_t not_in_start=1,const p_addr_t not_in_stop=0);
-	const p_addr_t makeHole(const l_addr_t size);
-	const bool isInWindow(const p_addr_t start,const p_addr_t end,const p_addr_t windowStart,const p_addr_t windowEnd) const;
+	static const bool isInWindow(const p_addr_t start,const p_addr_t end,const p_addr_t windowStart,const p_addr_t windowEnd);
 	void joinAllAdjacentBlocks();
 	void joinAdjacentBlocks(const poolId_t poolId);
 	void joinAdjacentBlocks(const poolId_t poolId,const size_t firstBlockIndex,const size_t blockCount);
@@ -264,45 +259,38 @@ private:
 		void *buffer;
 		size_t referenceCount;
 		bool dirty;
-		l_addr_t logicalStart,size;
+		l_addr_t logicalStart;
+		blocksize_t size;
 
-		RCachedBlock(const size_t maxBlockSize);
+		RCachedBlock(const blocksize_t maxBlockSize);
 		virtual ~RCachedBlock();
 		bool containsAddress(l_addr_t where) const;
-		void init(const poolId_t _poolId,const l_addr_t _logicalStart,const l_addr_t _size);
+		void init(const poolId_t _poolId,const l_addr_t _logicalStart,const blocksize_t _size);
 	};
 
 	// 'char', just to have something since the list needs to hold pointers to all types of TStaticAccesser instantiation
 	typedef TStaticPoolAccesser<char,TPoolFile<l_addr_t,p_addr_t> > CGenericPoolAccesser;
 	vector<const CGenericPoolAccesser *> accessers;
 
-	queue<RCachedBlock *> unusedCachedBlocks;		// available, not caching anything
-	deque<RCachedBlock *> unreferencedCachedBlocks;		// is caching data, but is not currently referenced by any PoolAccesser object
-	deque<RCachedBlock *> activeCachedBlocks;		// is caching data, and is currently being used by one or more PoolAccesser objects
+	deque<RCachedBlock *> unusedCachedBlocks;	// available, not caching anything
+	set<RCachedBlock *> unreferencedCachedBlocks;	// is caching data, but is not currently referenced by any PoolAccesser object
+	set<RCachedBlock *> activeCachedBlocks;		// is caching data, and is currently being used by one or more PoolAccesser objects
 
 
 	template<class pool_element_t> void cacheBlock(const l_addr_t byteWhere,const TStaticPoolAccesser<pool_element_t,TPoolFile<l_addr_t,p_addr_t> > *accesser);
 	template<class pool_element_t> void invalidateAccesser(const TStaticPoolAccesser<pool_element_t,TPoolFile<l_addr_t,p_addr_t> > *accesser);
 	void invalidateCachedBlock(RCachedBlock *cachedBlock);
 	template<class pool_element_t> void unreferenceCachedBlock(const TStaticPoolAccesser<pool_element_t,TPoolFile<l_addr_t,p_addr_t> > *accesser);
-	void invalidateAllCachedBlocks();
+	void invalidateAllCachedBlocks(bool allPools=true,poolId_t poolId=0);
 	template<class pool_element_t> void addAccesser(const TStaticPoolAccesser<pool_element_t,TPoolFile<l_addr_t,p_addr_t> > *accesser);
 	template<class pool_element_t> void removeAccesser(const TStaticPoolAccesser<pool_element_t,TPoolFile<l_addr_t,p_addr_t> > *accesser);
 
-	void changeBlockFileSize(const p_addr_t newSize);
-
-	// defragging
-	map<poolId_t,map<l_addr_t,bool> > correctionsTried;
-	void createContiguousSAT();
-	void correctBlockPosition(const poolId_t poolId,const size_t blockIndex,const p_addr_t previousPoolSizes);
-	void recurCorrectBlockPosition(const poolId_t poolId,const size_t blockIndex,const p_addr_t previousPoolSizes);
-	void physicallyMoveBlock(RLogicalBlock &block,const p_addr_t physicallyWhere);
-
+	bool physicallyMoveBlock(RLogicalBlock &block,p_addr_t physicallyWhere,map<p_addr_t,p_addr_t> &physicalBlockList,int8_t *temp);
 
 	struct RLogicalBlock
 	{
 		l_addr_t logicalStart;	// key
-		l_addr_t size;		// data (??? could be something more like unsigned since it will NEVER be bigger than MAX_BLOCK_SIZE)
+		blocksize_t size;	// data 
 		p_addr_t physicalStart;	// data
 
 		RLogicalBlock();
@@ -317,34 +305,90 @@ private:
 		const bool operator<(const RLogicalBlock &src) const;
 		const bool operator<=(const RLogicalBlock &src) const { return operator<(src) || operator==(src); }
 
-		const size_t getMemSize();
+		const size_t getMemSize(int formatVersion);
 		void writeToMem(uint8_t *mem,size_t &offset) /*const*/;
-		void readFromMem(const uint8_t *mem,size_t &offset);
+		void readFromMem(const uint8_t *mem,size_t &offset,int formatVersion);
 
 		void print() const;
 	};
 
-	struct RPhysicalBlock
+
+	class CPhysicalAddressSpaceManager
 	{
-		p_addr_t physicalStart;	// key
-		l_addr_t size;		// data (??? could be something more like unsigned since it will NEVER be bigger than MAX_BLOCK_SIZE)
+	public:
+		CPhysicalAddressSpaceManager(CMultiFile &file);
 
-		RPhysicalBlock();
-		RPhysicalBlock(const p_addr_t _physicalStart,const l_addr_t _size=0);
-		RPhysicalBlock(const RPhysicalBlock &src);
-		RPhysicalBlock(const RLogicalBlock &src);
+			// returns the addr of the new physical block
+		p_addr_t alloc(blocksize_t size);
+			// returns the addr of the new (right side) physical block created by the split
+		p_addr_t split_block(p_addr_t addr,blocksize_t newBlockStartsAt);
+			// returns the new addr of the physical block
+		p_addr_t partial_free(p_addr_t addr,p_addr_t newAddr,blocksize_t newSize);
+		void free(p_addr_t addr);
+		void free_all();
 
-		RPhysicalBlock &operator=(const RPhysicalBlock &src);
+			// allocate space by appending space to the file
+		p_addr_t appendAlloc(const p_addr_t size);
 
-		const bool operator==(const RPhysicalBlock &src) const;
-		const bool operator!=(const RPhysicalBlock &src) const { return !operator==(src); }
-		const bool operator>(const RPhysicalBlock &src) const { return !operator<=(src); }
-		const bool operator>=(const RPhysicalBlock &src) const { return !operator<(src); }
-		const bool operator<(const RPhysicalBlock &src) const;
-		const bool operator<=(const RPhysicalBlock &src) const { return operator<(src) || operator==(src); }
 
+			// if addr1 is followed immediately by addr2 then this method will join the blocks
+			// together, making only addr1 an allocated block of a now larger size
+		void join_blocks(p_addr_t addr1,p_addr_t addr2);
+
+		void buildFromSAT(const vector<vector<RLogicalBlock> > &SAT);
+
+		void make_file_smallest();
+
+
+		void verify(bool expectContinuousPhysicalAllocs=false);
 		void print() const;
-	};
+
+		// only used by verifyAllBlockInfo
+		bool isAlloced(p_addr_t addr) const { return alloced.find(addr)!=alloced.end(); }
+		blocksize_t getAllocedSize(p_addr_t addr) const { return isAlloced(addr) ? (alloced.find(addr)->second) : 0; }
+
+		// just a utility function for verification
+		static bool overlap(p_addr_t addr1,p_addr_t size1,p_addr_t addr2,p_addr_t size2);
+
+
+			// ??? these should be private, they're only called by TPoolFile::physicallyMoveBlock, but I can't figure out the friend syntax
+		void set_file_size(const p_addr_t newSize);
+		const p_addr_t get_file_size() const;
+
+#ifndef TESTING_TPOOLFILE
+	private:
+#endif
+
+		CMultiFile &file;
+
+		// physical address space: [...XXXX...X....XXXXX...XX...XXXX....X...]
+		//      X's are allocated .'s are holes
+		//
+		// alloced is indexed by the start of the allocated block, the key, and its data is the size of the block
+		// holes is indexed by the start of an unalloced block, the key, and its data is the size of the unallocated block
+		// holeSizeIndex is indexed by the size a hole, the key, and its data is an iterator into holes for that unallocated block
+	
+		//          start,    size
+		typedef map<p_addr_t, blocksize_t> alloced_t;
+		alloced_t alloced;
+
+		//          start,    size
+		typedef map<p_addr_t, p_addr_t> holes_t;
+		holes_t holes;
+
+		//               size,    iterator into holes
+		typedef multimap<p_addr_t,typename holes_t::iterator> holeSizeIndex_t;
+		holeSizeIndex_t holeSizeIndex;
+
+		typename holeSizeIndex_t::iterator findHoleSizeIndexEntry(const p_addr_t size,const p_addr_t addr);
+
+		// used for optimizing repeated consecutive appends
+		// 	know these two things tells us if there will be no hole to fit a new alloc into
+		p_addr_t lastAllocSize;
+		bool lastAllocAppended;
+		
+	} pasm;
+
 
 	// inserts i, into container, c, in its sorted location
 	template<class C,class I> static void sortedInsert(C &c,const I &i);

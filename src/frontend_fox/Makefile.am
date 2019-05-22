@@ -27,7 +27,9 @@ include $(top_srcdir)/config/am_include.mk
 
 
 noinst_LTLIBRARIES=libfrontend.la
+# CFOXIcons.cpp is listed twice because adding 'make CFOXIcons.o' in the dependancy below doesn't work (it leaves of compiler flags for some reason)
 libfrontend_la_SOURCES= \
+			CFOXIcons.cpp \
 			CFOXIcons.cpp \
 			CActionMenuCommand.cpp \
 			CChannelSelectDialog.cpp \
@@ -47,6 +49,7 @@ libfrontend_la_SOURCES= \
 			CMetersWindow.cpp \
 			CStatusComm.cpp \
 			CUserNotesDialog.cpp \
+			CRezSaveParametersDialog.cpp \
 			CRawDialog.cpp \
 			CVoxDialog.cpp \
 			COggDialog.cpp \
@@ -107,14 +110,14 @@ _rezound_LDADD= libfrontend.la\
 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
 	$(top_builddir)/src/PoolFile/libPoolFile.la
 
-rezound_LDADD=$(_rezound_LDADD) @FOX_1_1_LIBS@ @FOX_LIBS@
+rezound_LDADD=$(_rezound_LDADD) @FOX_1_3_LIBS@ @FOX_1_2_LIBS@ @FOX_1_1_LIBS@ @FOX_LIBS@
 
 ## if I don't do this, automake leaves out @abc@ vars when creating the rezound_DEPENDENCES value
 ## so changes to the LADSPA lib (that may or may not be built) don't cause a re-link
 rezound_DEPENDENCIES=$(_rezound_LDADD)
 
 
-AM_CXXFLAGS=@FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
+AM_CXXFLAGS=@FOX_1_3_CXXFLAGS@ @FOX_1_2_CXXFLAGS@ @FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
 
 noinst_HEADERS=\
 	fox_compat.h \
@@ -137,6 +140,7 @@ noinst_HEADERS=\
 	CMetersWindow.h \
 	CStatusComm.h \
 	CUserNotesDialog.h \
+	CRezSaveParametersDialog.h \
 	CRawDialog.h \
 	CVoxDialog.h \
 	COggDialog.h \
@@ -179,7 +183,7 @@ EXTRA_DIST=convert_images.sh
 
 $(top_srcdir)/src/frontend_fox/CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
 $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp: $(top_srcdir)/src/images/*.gif
-	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh $(RESWRAP) $(top_srcdir)/src/images && cd $(top_builddir)/src/frontend_fox && make CFOXIcons.o
+	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh $(RESWRAP) $(top_srcdir)/src/images
 
 CFOXIcons.cpp: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
 CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.h

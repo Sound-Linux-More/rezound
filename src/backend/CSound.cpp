@@ -31,6 +31,7 @@
 #include <istring>
 
 #include "settings.h"
+#include "unit_conv.h" // for seconds_to_string()
 
 
 /* TODO:
@@ -88,7 +89,8 @@ CSound::CSound() :
 
 	_isModified(true),
 
-	cueAccesser(NULL)
+	cueAccesser(NULL),
+	adjustCuesOnSpaceChanges(true)
 {
 	for(unsigned t=0;t<MAX_CHANNELS;t++)
 		peakChunkAccessers[t]=NULL;
@@ -306,6 +308,7 @@ if(dataPos==getLength()-1)
 
 		RPeakChunk ret;
 
+#warning see about using a const CPeakChunkRezPoolAccesser here
 		CPeakChunkRezPoolAccesser &peakChunkAccesser=*(peakChunkAccessers[channel]);
 
 		// don't attempt to read from skipped chunks that don't exist
@@ -321,6 +324,7 @@ if(dataPos==getLength()-1)
 			// if dirty, then recalculate for this chunk
 			if(p.dirty)
 			{
+				//printf("recalculating peak chunk data for: %lld\n",(long long)t);
 				sample_pos_t start=t*PEAK_CHUNK_SIZE;
 				sample_pos_t end=start+PEAK_CHUNK_SIZE;
 				if(start<getLength())
@@ -354,7 +358,6 @@ if(dataPos==getLength()-1)
 				ret.min=min(ret.min,p.min);
 				ret.max=max(ret.max,p.max);
 			}
-
 		}
 		
 		return(ret);
@@ -1069,6 +1072,8 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 	const sample_pos_t destOffset=where;
 	const unsigned destSampleRate=getSampleRate();
 
+#warning implement using sftChangeTempo now that I have a TTempoChanger DSP block
+
 	switch(mixMethod)
 	{
 	case mmOverwrite:
@@ -1117,8 +1122,16 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else
 		{
-			// ??? need a progress bar
-			dest.copyData(destOffset,src,srcWhere,length);
+			if((length/100)>0)
+			{
+				CStatusBar statusBar(_("Copying Data -- Channel ")+istring(channel),0,100,false);
+				for(sample_pos_t t=0;t<100;t++)
+				{
+					dest.copyData(destOffset+(t*(length/100)),src,srcWhere+(t*(length/100)),length/100);
+					statusBar.update(t);
+				}
+			}
+			dest.copyData(destOffset+(100*(length/100)),src,srcWhere+(100*(length/100)),length%100);
 		}
 
 		break;
@@ -1401,40 +1414,7 @@ const string CSound::getTimePosition(sample_pos_t samplePos,int secondsDecimalPl
 	const sample_fpos_t sampleRate=getSampleRate();
 	const sample_fpos_t sTime=samplePos/sampleRate;
 
-	string time;
-
-	if(sTime>=3600)
-	{ // make it HH:MM:SS.sss
-		const int hours=(int)(sTime/3600);
-		const int mins=(int)((sTime-(hours*3600))/60);
-		const double secs=sTime-((hours*3600)+(mins*60));
-
-		time=istring(hours,2,true)+":"+istring(mins,2,true)+":"+istring(secs,3+secondsDecimalPlaces,secondsDecimalPlaces,true);
-	}
-	else
-	{ // make it MM:SS.sss
-		int mins=(int)(sTime/60);
-		double secs=sTime-(mins*60);
-
-		/* 
-		 * if it's going to render (because of rounding in istring) as 3:60.000 
-		 * then make that 4:00.000 which would happen if the seconds had come out 
-		 * to 59.995 or more so that's (60 - .005) which is (60 - 5/(10^deciplaces))
-		 * (this probably needs to be done slimiarly in the HH:MM:SS.sss case too)
-		 */
-		if(secs >= 60.0-(5.0/pow(10.0,secondsDecimalPlaces)))
-		{
-			mins++;
-			secs=0;
-		}
-
-		time=istring(mins,2,true)+":"+istring(secs,3+secondsDecimalPlaces,secondsDecimalPlaces,true);
-	}
-
-	if(includeUnits)
-		return(time+"s");
-	else
-		return(time);
+	return seconds_to_string(sTime,secondsDecimalPlaces,includeUnits);
 }
 
 #include <stdio.h> // for sscanf
@@ -1503,18 +1483,18 @@ const string CSound::getAudioDataSize() const
 
 const string CSound::getPoolFileSize() const
 {
-	sample_pos_t iPoolFileSize=poolFile.getFileSize();
+	uint64_t iPoolFileSize=poolFile.getFileSize();
 	if(iPoolFileSize>=1024*1024*1024)
 	{ // return as gb
-		return(istring((sample_fpos_t)iPoolFileSize/1024.0/1024.0/1024.0,5,3)+"gb");
+		return(istring((long double)iPoolFileSize/1024.0/1024.0/1024.0,5,3)+"gb");
 	}
 	else if(iPoolFileSize>=1024*1024)
 	{ // return as mb
-		return(istring((sample_fpos_t)iPoolFileSize/1024.0/1024.0,5,2)+"mb");
+		return(istring((long double)iPoolFileSize/1024.0/1024.0,5,2)+"mb");
 	}
 	else if(iPoolFileSize>=1024)
 	{ // return as kb
-		return(istring((sample_fpos_t)iPoolFileSize/1024.0,5,1)+"kb");
+		return(istring((long double)iPoolFileSize/1024.0,5,1)+"kb");
 	}
 	else
 	{ // return as b
@@ -1968,18 +1948,22 @@ const size_t CSound::getCueCount() const
 
 const string CSound::getCueName(size_t index) const
 {
+	if(index>=getCueCount())
+		throw runtime_error(string(__func__)+" -- index is out of bounds: "+istring(index));
 	return((*cueAccesser)[index].name);
 }
 
 const sample_pos_t CSound::getCueTime(size_t index) const
 {
+	if(index>=getCueCount())
+		throw runtime_error(string(__func__)+" -- index is out of bounds: "+istring(index));
 	return((*cueAccesser)[index].time);
 }
 
 void CSound::setCueTime(size_t index,sample_pos_t newTime)
 {
-	if(index>cueAccesser->getSize())
-		throw(runtime_error(string(__func__)+" -- invalid index: "+istring(index)));
+	if(index>=getCueCount())
+		throw runtime_error(string(__func__)+" -- index is out of bounds: "+istring(index));
 	(*cueAccesser)[index].time=newTime;
 
 	// update cueIndex
@@ -1988,6 +1972,8 @@ void CSound::setCueTime(size_t index,sample_pos_t newTime)
 
 const bool CSound::isCueAnchored(size_t index) const
 {
+	if(index>=getCueCount())
+		throw runtime_error(string(__func__)+" -- index is out of bounds: "+istring(index));
 	return((*cueAccesser)[index].isAnchored);
 }
 
@@ -2019,6 +2005,8 @@ void CSound::insertCue(size_t index,const string &name,const sample_pos_t time,c
 
 void CSound::removeCue(size_t index)
 {
+	if(index>=getCueCount())
+		throw runtime_error(string(__func__)+" -- index is out of bounds: "+istring(index));
 	cueAccesser->remove(index,1);
 
 	// update cueIndex
@@ -2140,6 +2128,11 @@ void CSound::clearCues()
 	cueIndex.clear();
 }
 
+void CSound::enableCueAdjustmentsOnSpaceChanges(bool enabled)
+{
+	adjustCuesOnSpaceChanges=enabled;
+}
+
 /*
  * This method handles the adjustment of cues 
  * pos1 can be less than pos2 indicating an addition of space at pos1 for pos2-pos1 samples
@@ -2147,6 +2140,9 @@ void CSound::clearCues()
  */
 void CSound::adjustCues(const sample_pos_t pos1,const sample_pos_t pos2)
 {
+	if(!adjustCuesOnSpaceChanges)
+		return;
+
 	if(pos1<pos2)
 	{ // added data
 		sample_pos_t addedLength=pos2-pos1;
@@ -2271,7 +2267,12 @@ template void TPoolFile<sample_pos_t,uint64_t>::unreferenceCachedBlock<int>(TSta
 template void TPoolFile<sample_pos_t,uint64_t>::removeAccesser<int>(TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const *);
 template void TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> >::cacheBlock(const sample_pos_t) const;
 template void TPoolFile<sample_pos_t,uint64_t>::cacheBlock<int>(sample_pos_t, TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const *);
+
 template TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<int>(const string);
 template TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > const TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<int>(const string) const;
 template TStaticPoolAccesser<int, TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::createPool<int>(const string, const bool);
+
+template TStaticPoolAccesser<uint8_t, TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<uint8_t>(const string);
+template TStaticPoolAccesser<uint8_t, TPoolFile<sample_pos_t,uint64_t> > const TPoolFile<sample_pos_t,uint64_t>::getPoolAccesser<uint8_t>(const string) const;
+template TStaticPoolAccesser<uint8_t, TPoolFile<sample_pos_t,uint64_t> > TPoolFile<sample_pos_t,uint64_t>::createPool<uint8_t>(const string, const bool);
 

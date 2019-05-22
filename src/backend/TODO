@@ -1,6 +1,10 @@
 
 --- THINGS TO DO FOR SURE ---
 
+	- Make ASoundTranslator::onSaveSound not take const CSound * so I can set the general pool data so that subsequent saves have the right values on the save-parameters prompt dialog
+
+	- Hmm, when portaudio failed to initialize I would get a segfault elsewhere in ASoundPlayer when it the failed-to-initialize object was deleted
+
 	- See if I can speed up the loading of .rez files it seems much slower than simply loading a .wav
 
 	- oops.. many actions don't use 'const CActionSound &actionSound', instead they're using a copy not a reference
@@ -70,6 +74,10 @@ or sample values to follow
 
 
 --- POSSIBLE THINGS TO DO ---
+
+	- macros would be a good feature for rezound to have.  Marc on the mailing list described an interesting way to add ambience to a mono sample that could be done through the use of several standard features that already exist.
+		- if these could be scripted (thru something like CScriptedAction(name)) like this (undo would be for the action as a whole instead of a individual undos on each part)
+		- CActionParameters is a step in that direction if it could be saved/loaded from disk
 
 	- after evolution of the code, some TAutoBuffers might now be trivially turned into stack arrays
 

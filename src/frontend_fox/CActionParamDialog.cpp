@@ -108,7 +108,7 @@ long CActionParamDialog::onExplainButton(FXObject *sender,FXSelector sel,void *p
 	return 1;
 }
 
-FXPacker *CActionParamDialog::newHorzPanel(void *parent,bool createBorder)
+FXPacker *CActionParamDialog::newHorzPanel(void *parent,bool createMargin,bool createFrame)
 {
 	if(parent==NULL)
 	{
@@ -116,13 +116,13 @@ FXPacker *CActionParamDialog::newHorzPanel(void *parent,bool createBorder)
 			throw runtime_error(string(__func__)+" -- this method has already been called with a NULL parameter");
 		parent=controlsFrame;
 	}
-	if(createBorder)
-		return new FXHorizontalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0);
+	if(createMargin)
+		return new FXHorizontalFrame((FXPacker *)parent,(createFrame ? FRAME_RAISED : FRAME_NONE) | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0);
 	else
-		return new FXHorizontalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0);
+		return new FXHorizontalFrame((FXPacker *)parent,(createFrame ? FRAME_RAISED : FRAME_NONE) | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0);
 }
 
-FXPacker *CActionParamDialog::newVertPanel(void *parent,bool createBorder)
+FXPacker *CActionParamDialog::newVertPanel(void *parent,bool createMargin,bool createFrame)
 {
 	if(parent==NULL)
 	{
@@ -130,10 +130,10 @@ FXPacker *CActionParamDialog::newVertPanel(void *parent,bool createBorder)
 			throw runtime_error(string(__func__)+" -- this method has already been called with a NULL parameter");
 		parent=controlsFrame;
 	}
-	if(createBorder)
-		return new FXVerticalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0);
+	if(createMargin)
+		return new FXVerticalFrame((FXPacker *)parent,(createFrame ? FRAME_RAISED : FRAME_NONE) | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0);
 	else
-		return new FXVerticalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0);
+		return new FXVerticalFrame((FXPacker *)parent,(createFrame ? FRAME_RAISED : FRAME_NONE) | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0);
 }
 
 FXConstantParamValue *CActionParamDialog::addSlider(void *parent,const string name,const string units,AActionParamMapper *valueMapper,f_at_x optRetValueConv,bool showInverseButton)
@@ -897,6 +897,9 @@ void CActionParamDialog::buildPresetLists()
 	{
 		bool firstTime=presetsFrame==NULL;
 
+		FXint currentNativePresetItem=nativePresetList ? nativePresetList->getCurrentItem() : 0;
+		FXint currentUserPresetItem=userPresetList ? userPresetList->getCurrentItem() : 0;
+
 		// delete previous stuff
 		delete presetsFrame;
 			nativePresetList=NULL;
@@ -910,8 +913,9 @@ void CActionParamDialog::buildPresetLists()
 			{
 				// native preset stuff
 				FXPacker *listFrame=new FXPacker(presetsFrame,FRAME_SUNKEN|FRAME_THICK|LAYOUT_FIX_WIDTH | LAYOUT_FILL_Y, 0,0,210,0, 0,0,0,0, 0,0); // had to do this because FXList won't take that frame style
-					nativePresetList=new FXList(listFrame,4,this,ID_NATIVE_PRESET_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y);
-				new FXButton(presetsFrame,"&Use\tOr Double-Click an Item in the List",NULL,this,ID_NATIVE_PRESET_BUTTON);
+					nativePresetList=new FXList(listFrame,this,ID_NATIVE_PRESET_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y);
+					nativePresetList->setNumVisible(4);
+				new FXButton(presetsFrame,_("&Use\tOr Double-Click an Item in the List"),NULL,this,ID_NATIVE_PRESET_BUTTON);
 			}
 		}
 		catch(exception &e)
@@ -922,7 +926,8 @@ void CActionParamDialog::buildPresetLists()
 
 		// user preset stuff
 		FXPacker *listFrame=new FXPacker(presetsFrame,FRAME_SUNKEN|FRAME_THICK|LAYOUT_FIX_WIDTH | LAYOUT_FILL_Y, 0,0,210,0, 0,0,0,0, 0,0); // had to do this because FXList won't take that frame style
-			userPresetList=new FXList(listFrame,4,this,ID_USER_PRESET_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y);
+			userPresetList=new FXList(listFrame,this,ID_USER_PRESET_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y);
+			userPresetList->setNumVisible(4);
 		FXPacker *buttonGroup=new FXVerticalFrame(presetsFrame);
 			new FXButton(buttonGroup,_("&Use\tOr Double-Click an Item in the List"),NULL,this,ID_USER_PRESET_USE_BUTTON,BUTTON_NORMAL|LAYOUT_FILL_X);
 			new FXButton(buttonGroup,_("&Save"),NULL,this,ID_USER_PRESET_SAVE_BUTTON,BUTTON_NORMAL|LAYOUT_FILL_X);
@@ -938,6 +943,8 @@ void CActionParamDialog::buildPresetLists()
 			try
 			{
 				buildPresetList(gSysPresetsFile,nativePresetList);
+				if(currentNativePresetItem<nativePresetList->getNumItems())
+					nativePresetList->setCurrentItem(currentNativePresetItem);
 			}
 			catch(exception &e)
 			{
@@ -949,6 +956,8 @@ void CActionParamDialog::buildPresetLists()
 		try
 		{
 			buildPresetList(gUserPresetsFile,userPresetList);
+			if(currentUserPresetItem<userPresetList->getNumItems())
+				userPresetList->setCurrentItem(currentUserPresetItem);
 		}
 		catch(exception &e)
 		{

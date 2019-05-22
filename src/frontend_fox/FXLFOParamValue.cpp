@@ -77,13 +77,15 @@ FXLFOParamValue::FXLFOParamValue(FXComposite *p,int opts,const char *_name,const
 			N_("Phase")
 		)),
 
-	LFOTypeComboBox(new FXListBox(this,16,this,ID_LFO_TYPE_COMBOBOX,FRAME_SUNKEN|FRAME_THICK|LISTBOX_NORMAL|LAYOUT_CENTER_X|LAYOUT_FIX_WIDTH,0,0,180,0)),
+	LFOTypeComboBox(new FXListBox(this,this,ID_LFO_TYPE_COMBOBOX,FRAME_SUNKEN|FRAME_THICK|LISTBOX_NORMAL|LAYOUT_CENTER_X|LAYOUT_FIX_WIDTH)),
 
 	textFont(getApp()->getNormalFont()),
 
 	minWidth(0),
 	minHeight(236)
 {
+	LFOTypeComboBox->position(0,0,180,0);
+
 	amplitudeSlider->setMinSize(0,0);
 	frequencySlider->setMinSize(0,0);
 	phaseSlider->setMinSize(0,0);
@@ -102,7 +104,9 @@ FXLFOParamValue::FXLFOParamValue(FXComposite *p,int opts,const char *_name,const
 	frequencySlider->setUnits(freqUnits.c_str());
 	phaseSlider->setUnits("deg");
 
-		// ??? could seriously add icons for these
+
+	LFOTypeComboBox->setWidth(180);
+	LFOTypeComboBox->setNumVisible(16);
 	for(size_t t=0;t<gLFORegistry.getCount();t++)
 	{
 		if(!hideBipolarLFOs || !gLFORegistry.isBipolar(t))

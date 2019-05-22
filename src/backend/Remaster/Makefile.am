@@ -32,10 +32,14 @@ noinst_HEADERS= \
 		CMonoizeAction.h \
 		CNoiseGateAction.h \
 		CRemoveDCAction.h \
+		CInvertPhaseAction.h \
 		CUnclipAction.h \
 		CCompressorAction.h \
 		CNormalizeAction.h \
+		CAdaptiveNormalizeAction.h \
 		CResampleAction.h \
+		CChangePitchAction.h \
+		CChangeTempoAction.h \
 		CMarkQuietAreasAction.h \
 		RemasterActions.h
 
@@ -45,10 +49,17 @@ libRemaster_la_SOURCES= \
 			CMonoizeAction.cpp \
 			CNoiseGateAction.cpp \
 			CRemoveDCAction.cpp \
+			CInvertPhaseAction.cpp \
 			CUnclipAction.cpp \
 			CCompressorAction.cpp \
 			CNormalizeAction.cpp \
+			CAdaptiveNormalizeAction.cpp \
 			CResampleAction.cpp \
+			CChangePitchAction.cpp \
+			CChangeTempoAction.cpp \
 			CMarkQuietAreasAction.cpp 
 
 
+AM_CXXFLAGS=@SOUNDTOUCH_CXXFLAGS@
+# had to put this in here or it wouldn't link because of lib order
+libRemaster_la_LIBADD=@SOUNDTOUCH_LIBS@ 

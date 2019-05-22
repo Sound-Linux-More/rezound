@@ -345,12 +345,19 @@ bool CBurnToCDAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 	const string endianSwap="--swap ";
 #endif
 
-	// burn the files
-	const string command="'"+pathTo_cdrdao+"' "+(testOnly ? "simulate " : "write ")+endianSwap+"--speed "+istring(burnSpeed)+" --device "+device+" '"+TOCFilename+"'";
-	printf("about to run command: %s\n",command.c_str());
-	int status=system(command.c_str());
-	if(WEXITSTATUS(status)!=0)
-		Warning(_("cdrdao returned non-zero exit status.  Consult standard output/error for problems."));
+	int CDCount=0;
+	do {
+
+		// burn the files
+		const string command="'"+pathTo_cdrdao+"' "+(testOnly ? "simulate " : "write ")+endianSwap+"--speed "+istring(burnSpeed)+(istring(device).trim()=="" ? string("") : (" --device "+device))+" "+extra_cdrdao_options+" '"+TOCFilename+"'";
+		printf("about to run command: %s\n",command.c_str());
+		int status=system(command.c_str());
+		if(WEXITSTATUS(status)!=0)
+			Warning(_("cdrdao returned non-zero exit status.  Consult standard output/error for problems."));
+		else
+			CDCount++;
+
+	} while(Question(_("Successful Burn Count: ")+istring(CDCount)+"\n"+_("Would you like to burn another?")+"\n"+_("(Insert a new blank, and then press 'Yes'.)"),yesnoQues)==yesAns);
 
 	// cleanup
 	unlink(TOCFilename.c_str());
@@ -378,36 +385,47 @@ bool CBurnToCDAction::doesWarrantSaving() const
 
 const string CBurnToCDAction::getExplanation()
 {
-	return "\n\
+	return _("\n\
 This action can be used to burn the loaded audio file onto a CD using the cdrdao (CD-R Disk-At-Once) tool.\n\
 \n\
 Tracks are defined by cues named in a '('... [')'] fashion.  See the 'Explain' button on the 'File->Save As Multiple Files' action on how this is done.  Some parts of that explaination should be obviously non-applicable.\n\
 \n\
 cdrdao must be installed on this system.  $PATH with be searched for 'cdrdao' when ReZound starts, but if it is not found you will need to supply the path to it on the action dialog.\n\
-	";
+	");
 }
 
 #include <stdio.h>
 const string CBurnToCDAction::detectDevice(const string pathTo_cdrdao)
 {
-	string ret;
 	const string cmd="'"+pathTo_cdrdao+"' scanbus 2>&1 | grep '[0-9],[0-9],[0-9]:' | head -1 | cut -f1 -d':'";
-	printf("attemping to run command: %s\n",cmd.c_str());
-	FILE *f=popen(cmd.c_str(),"r");
-	if(f!=NULL)
+	for(int t=0;t<2;t++)
 	{
-		char buffer[1024+1];
-		if(fgets(buffer,1024,f))
+		string cmd;
+		
+		if(t==0)
+			// try this first
+			cmd="'"+pathTo_cdrdao+"' scanbus 2>&1 | grep '.\\{1,10\\}:[0-9],[0-9],[0-9]' | head -1 | cut -f1 -d' '";
+		else if(t==1)
+			// try this second
+			cmd="'"+pathTo_cdrdao+"' scanbus 2>&1 | grep '[0-9],[0-9],[0-9]:' | head -1 | cut -f1 -d':'";
+
+		printf("attemping to run command: %s\n",cmd.c_str());
+		FILE *f=popen(cmd.c_str(),"r");
+		if(f!=NULL)
 		{
-			if(strlen(buffer)>0)
-				buffer[strlen(buffer)-1]=0; // remove trailing \n
-			ret=buffer;
+			char buffer[1024+1];
+			if(fgets(buffer,1024,f))
+			{
+				if(strlen(buffer)>0)
+					buffer[strlen(buffer)-1]=0; // remove trailing \n
+				pclose(f);
+				return buffer;
+			}
+	
+			pclose(f);
 		}
-
-		pclose(f);
 	}
-
-	return ret;
+	return "";
 }
 
 

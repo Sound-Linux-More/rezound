@@ -332,6 +332,7 @@ FXGraphParamValue::FXGraphParamValue(const char *_name,FXComposite *p,int opts,i
 	statusPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_FILL_X, 0,0,0,0, 4,4,0,0, 4,0)),
 		horzValueLabel(new FXLabel(statusPanel,": ",NULL,LAYOUT_LEFT)),
 		vertValueLabel(new FXLabel(statusPanel,": ",NULL,LAYOUT_LEFT)),
+		pointCountLabel(new FXLabel(statusPanel,"",NULL,LAYOUT_RIGHT)),
 
 	buttonPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_FILL_X, 0,0,0,0, 4,4,2,4)),
 		scalarLabel(NULL),
@@ -384,10 +385,10 @@ FXGraphParamValue::FXGraphParamValue(const char *_name,FXComposite *p,int opts,i
 
 
 
-	new FXButton(buttonPanel,"\tClear to Normal",FOXIcons->graph_clear,this,ID_CLEAR_BUTTON);
-	new FXButton(buttonPanel,"\tFlip Graph Horizontally",FOXIcons->graph_horz_flip,this,ID_HORZ_FLIP_BUTTON);
-	new FXButton(buttonPanel,"\tFlip Graph Vertically",FOXIcons->graph_vert_flip,this,ID_VERT_FLIP_BUTTON);
-	new FXButton(buttonPanel,"\tSmooth Graph Nodes",FOXIcons->graph_smooth,this,ID_SMOOTH_BUTTON);
+	new FXButton(buttonPanel,(string("\t")+_("Clear to Normal")).c_str(),FOXIcons->graph_clear,this,ID_CLEAR_BUTTON);
+	new FXButton(buttonPanel,(string("\t")+_("Flip Graph Horizontally")).c_str(),FOXIcons->graph_horz_flip,this,ID_HORZ_FLIP_BUTTON);
+	new FXButton(buttonPanel,(string("\t")+_("Flip Graph Vertically")).c_str(),FOXIcons->graph_vert_flip,this,ID_VERT_FLIP_BUTTON);
+	new FXButton(buttonPanel,(string("\t")+_("Smooth Graph Nodes")).c_str(),FOXIcons->graph_smooth,this,ID_SMOOTH_BUTTON);
 
 	nodes.reserve(100);
 
@@ -449,7 +450,7 @@ void FXGraphParamValue::setVertParameters(const string vertAxisLabel,const strin
 	delete scalarSpinner;
 	if(vertValueMapper->getMinScalar()!=vertValueMapper->getMaxScalar())
 	{
-		scalarLabel=new FXLabel(buttonPanel,"Scalar",NULL,LABEL_NORMAL|LAYOUT_CENTER_Y);
+		scalarLabel=new FXLabel(buttonPanel,_("Scalar"),NULL,LABEL_NORMAL|LAYOUT_CENTER_Y);
 		scalarSpinner=new FXSpinner(buttonPanel,5,this,ID_SCALAR_SPINNER,SPIN_NORMAL|FRAME_SUNKEN|FRAME_THICK|LAYOUT_CENTER_Y);
 		scalarSpinner->setRange(vertValueMapper->getMinScalar(),vertValueMapper->getMaxScalar());
 		scalarSpinner->setValue(vertValueMapper->getDefaultScalar());
@@ -511,6 +512,7 @@ long FXGraphParamValue::onPatternButton(FXObject *sender,FXSelector sel,void *pt
 	}
 
 	graphCanvas->update();
+	updateNumbers();
 	return 1;
 }
 
@@ -818,6 +820,7 @@ long FXGraphParamValue::onDestroyNode(FXObject *sender,FXSelector sel,void *ptr)
 		nodes.erase(nodes.begin()+nodeIndex);
 		draggingNode=-1;
 		graphCanvas->update();
+		updateNumbers();
 	}
 	return 1;
 }
@@ -1027,6 +1030,8 @@ const string FXGraphParamValue::getHorzValueString(double horzValue) const
 
 void FXGraphParamValue::updateStatus()
 {
+	pointCountLabel->setText((istring(nodes.size())+" "+_("points")).c_str());
+
 	if(draggingNode==-1)
 		return;
 
@@ -1041,6 +1046,7 @@ void FXGraphParamValue::clearStatus()
 {
 	horzValueLabel->setText((horzAxisLabel+": #"+horzUnits).c_str());
 	vertValueLabel->setText((vertAxisLabel+": #"+vertUnits).c_str());
+	pointCountLabel->setText((istring(nodes.size())+" "+_("points")).c_str());
 }
 	
 

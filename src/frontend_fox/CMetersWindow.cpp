@@ -647,7 +647,7 @@ public:
 	};
 
 protected:
-	CStereoPhaseMeter() { }
+	CStereoPhaseMeter() : samplingNFrames(0), samplingNChannels(0),samplingLeftChannel(0), samplingRightChannel(0) { }
 
 private:
 	FXPacker *canvasFrame;
@@ -832,6 +832,11 @@ public:
 #ifndef HAVE_LIBRFFTW
 		else
 		{
+#if REZ_FOX_VERSION<10117
+			dc.setFont(getApp()->getNormalFont());
+#else
+			dc.setTextFont(getApp()->getNormalFont());
+#endif
 			dc.drawText(3,3+12,_("Configure with FFTW"),19);
 			dc.drawText(3,20+12,_("for Freq. Analysis"),18);
 		}
@@ -1291,7 +1296,12 @@ void CMetersWindow::enableStereoPhaseMeters(bool enable)
 	for(size_t t=0;t<stereoPhaseMeters.size();t++)
 	{
 		if(enable)
+		{
+			// have to call this so that onResize() will get called in order to calculate the unrotateMapping
+			stereoPhaseMeters[t]->resize(1,1); 
+
 			stereoPhaseMeters[t]->show();
+		}
 		else
 			stereoPhaseMeters[t]->hide();
 	}

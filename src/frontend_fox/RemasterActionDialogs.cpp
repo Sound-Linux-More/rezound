@@ -31,7 +31,6 @@
 #include "ActionParamMappers.h"
 
 
-
 // --- balance ------------------------
 
 #include "../backend/Remaster/CBalanceAction.h"
@@ -97,7 +96,7 @@ bool CSimpleBalanceActionDialog::show(CActionSound *actionSound,CActionParameter
 		{
 			vector<string> items;
 			for(size_t t=0;t<actionSound->sound->getChannelCount();t++)
-				items.push_back(N_("Channel ")+istring(t));
+				items.push_back(_("Channel ")+istring(t));
 
 			// set the combo boxes according to actionSound
 			getComboText("Channel A")->setItems(items);
@@ -164,7 +163,7 @@ bool CCurvedBalanceActionDialog::show(CActionSound *actionSound,CActionParameter
 		{
 			vector<string> items;
 			for(size_t t=0;t<actionSound->sound->getChannelCount();t++)
-				items.push_back(N_("Channel ")+istring(t));
+				items.push_back(_("Channel ")+istring(t));
 
 			// set the combo boxes according to actionSound
 			getComboText("Channel A")->setItems(items);
@@ -217,7 +216,7 @@ bool CMonoizeActionDialog::show(CActionSound *actionSound,CActionParameters *act
 	else
 	{
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
-			showControl("Channel "+istring(t), t<actionSound->sound->getChannelCount() );
+			showControl(_("Channel ")+istring(t), t<actionSound->sound->getChannelCount() );
 
 		return CActionParamDialog::show(actionSound,actionParameters);
 	}
@@ -340,6 +339,12 @@ CCompressorDialog::CCompressorDialog(FXWindow *mainWindow) :
 				true,
 				_("This Toggles That Compression Should be Applied to Both Channels when Either Channel Needs Compression")
 			);
+
+			addCheckBoxEntry(p1,
+				N_("Look Ahead For Level"),
+				true,
+				_("This Toggles That the Compressor Should Look Ahead (by Half the Window Time Amount) in the Input Signal When Calculating the Level of the Input Signal")
+			);
 }
 
 // ??? remove this before 1.0 and make sure it is up-to-standard as far as a compressor goes before 1.0
@@ -383,6 +388,51 @@ CNormalizeDialog::CNormalizeDialog(FXWindow *mainWindow) :
 			);
 }
 
+
+// --- adaptive normalize ------------------
+
+CAdaptiveNormalizeDialog::CAdaptiveNormalizeDialog(FXWindow *mainWindow) :
+	CActionParamDialog(mainWindow)
+{
+	void *p1=newVertPanel(NULL);
+		void *p2=newHorzPanel(p1,false);
+			addSlider(p2,
+				N_("Normalization Level"),
+				"dBFS",
+				new CActionParamMapper_dBFS(-20.0),
+				NULL,
+				false
+			);
+
+			addSlider(p2,
+				N_("Window Time"),
+				"ms",
+				new CActionParamMapper_linear_range_scaled(2000.0,10,1000,1,1,100),
+				NULL,
+				false
+			);
+
+			addSlider(p2,
+				N_("Maximum Gain"),
+				"dB",
+				new CActionParamMapper_linear(60.0,100,1,200),
+				NULL,
+				true
+			);
+
+		p2=newVertPanel(p1,false);
+			addCheckBoxEntry(p2,
+				N_("Lock Channels"),
+				true,
+				_("Calculate Signal Level Across All Channels Simultaneously")
+			);
+}
+
+#include "../backend/Remaster/CAdaptiveNormalizeAction.h"
+const string CAdaptiveNormalizeDialog::getExplanation() const
+{
+	return CAdaptiveNormalizeAction::getExplanation();
+}
 
 // --- mark quiet areas --------------------
 
@@ -466,5 +516,168 @@ CResampleDialog::CResampleDialog(FXWindow *mainWindow) :
 			true
 		);
 			getComboText("New Sample Rate")->setValue(44100);
+}
+
+
+// --- change pitch ------------------------
+
+CChangePitchDialog::CChangePitchDialog(FXWindow *mainWindow) :
+	CActionParamDialog(mainWindow,false)
+{
+	FXPacker *p0=newVertPanel(NULL);
+	FXPacker *p1=new FXTabBook(p0,NULL,0,TABBOOK_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_NONE, 0,0,0,0, 0,0,0,0);
+
+		new FXTabItem((FXTabBook *)p1,_("Pitch"),NULL,TAB_TOP_NORMAL);
+		FXPacker *p2=newHorzPanel(p1,true,true);
+			addSlider(
+				p2,
+				N_("Semitones"),
+				_("semitones"),
+				new CActionParamMapper_linear_bipolar(1,7,60),
+				NULL,
+				true);
+
+		FXConstantParamValue *s;
+
+		new FXTabItem((FXTabBook *)p1,_("Tweaking"),NULL,TAB_TOP_NORMAL);
+		p2=newVertPanel(p1,true,true);
+			new FXLabel(p2,_("CAUTION: Some of combinations of these parameters cause the SoundTouch library to generate assertion errors \n that kill the current process.  It is not difficult to cause ReZound to exit by adjusting these parameters.  \n Play with these parameters with some testing data, and then save presets that do not cause problems.  \n Hopefully this issue will be worked out in the future.\nSee the SoundTouch header file for more information about these parameters."));
+			FXPacker *p3=newHorzPanel(p2,false,false);
+				addCheckBoxEntry(p3,
+					N_("Use Anti-alias Filter"),
+					true,
+					_("Enable/disable anti-alias filter in pitch transposer")
+				);
+
+				CActionParamMapper_linear_range *aafl_m=new CActionParamMapper_linear_range(32,8,128);
+				aafl_m->floorTheValue(true);
+				addSlider(p3,
+					N_("Anti-alias Filter Length"),
+					"taps",
+					aafl_m,
+					NULL,
+					false
+				);
+
+				addCheckBoxEntry(p3,
+					N_("Use Quick Seek"),
+					false,
+					_("Enable/disable quick seeking algorithm in tempo changer routine (enabling quick seeking lowers CPU utilization but causes a minor sound quality compromising)")
+				);
+				
+				CActionParamMapper_linear_range *sl_m=new CActionParamMapper_linear_range(82,1,500);
+				sl_m->floorTheValue(true);
+				s=addSlider(p3,
+					N_("Sequence Length"),
+					"ms",
+					sl_m,
+					NULL,
+					false
+				);
+				s->setTipText(_("This is the default length of a single processing sequence, in milliseconds. Determines to how long sequences the original sound is chopped in time-stretch algorithm. The larger this value is, the lesser sequences are used in processing. In principle a bigger value sounds better when slowing down tempo, but worse when increasing tempo and vice versa."));
+
+				CActionParamMapper_linear_range *swl_m=new CActionParamMapper_linear_range(28,1,500);
+				swl_m->floorTheValue(true);
+				s=addSlider(p3,
+					N_("Seek Window Length"),
+					"ms",
+					swl_m,
+					NULL,
+					false
+				);
+				s->setTipText(_("Seeking window default length in milliseconds for algorithm that seeks for the best possible overlapping location. This determines from how wide sample 'window' the algorithm can look for an optimal mixing location when the sound sequences are to be linked back together.  The bigger this window setting is, the higher the possibility to find a better mixing position becomes, but at the same time large values may cause a 'drifting' sound artifact because neighbouring sequences can be chosen at more uneven intervals. If there's a disturbing artifact that sounds as if a constant frequency was drifting around, try reducing this setting."));
+
+				CActionParamMapper_linear_range *ol_m=new CActionParamMapper_linear_range(28,1,500);
+				ol_m->floorTheValue(true);
+				s=addSlider(p3,
+					N_("Overlap Length"),
+					"ms",
+					ol_m,
+					NULL,
+					false
+				);
+				s->setTipText(_("Overlap length in milliseconds. When the chopped sound sequences are mixed back together to form again a continuous sound stream, this parameter defines over how long period the two consecutive sequences are allowed to overlap each other.  This shouldn't be that critical of a parameter. If you reduce the 'Sequence Length' setting by a large amount, you might wish to try a smaller value on this."));
+}
+
+
+// --- change tempo ------------------------
+
+CChangeTempoDialog::CChangeTempoDialog(FXWindow *mainWindow) :
+	CActionParamDialog(mainWindow,false)
+{
+	FXPacker *p0=newVertPanel(NULL);
+	FXPacker *p1=new FXTabBook(p0,NULL,0,TABBOOK_NORMAL|LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_NONE, 0,0,0,0, 0,0,0,0);
+
+		new FXTabItem((FXTabBook *)p1,_("Pitch"),NULL,TAB_TOP_NORMAL);
+		FXPacker *p2=newHorzPanel(p1,true,true);
+
+			addSlider(
+				p2,
+				N_("Tempo Change"),
+				"x",
+				new CActionParamMapper_recipsym(0.9,2,1,10),
+				NULL,
+				true);
+
+		FXConstantParamValue *s;
+
+		new FXTabItem((FXTabBook *)p1,_("Tweaking"),NULL,TAB_TOP_NORMAL);
+		p2=newVertPanel(p1,true,true);
+			new FXLabel(p2,_("CAUTION: Some of combinations of these parameters cause the SoundTouch library to generate assertion errors \n that kill the current process.  It is not difficult to cause ReZound to exit by adjusting these parameters.  \n Play with these parameters with some testing data, and then save presets that do not cause problems.  \n Hopefully this issue will be worked out in the future.\nSee the SoundTouch header file for more information about these parameters."));
+			FXPacker *p3=newHorzPanel(p2,false,false);
+				addCheckBoxEntry(p3,
+					N_("Use Anti-alias Filter"),
+					true,
+					_("Enable/disable anti-alias filter in pitch transposer")
+				);
+
+				CActionParamMapper_linear_range *aafl_m=new CActionParamMapper_linear_range(32,8,128);
+				aafl_m->floorTheValue(true);
+				addSlider(p3,
+					N_("Anti-alias Filter Length"),
+					"taps",
+					aafl_m,
+					NULL,
+					false
+				);
+
+				addCheckBoxEntry(p3,
+					N_("Use Quick Seek"),
+					false,
+					_("Enable/disable quick seeking algorithm in tempo changer routine (enabling quick seeking lowers CPU utilization but causes a minor sound quality compromising)")
+				);
+				
+				CActionParamMapper_linear_range *sl_m=new CActionParamMapper_linear_range(82,1,500);
+				sl_m->floorTheValue(true);
+				s=addSlider(p3,
+					N_("Sequence Length"),
+					"ms",
+					sl_m,
+					NULL,
+					false
+				);
+				s->setTipText(_("This is the default length of a single processing sequence, in milliseconds. Determines to how long sequences the original sound is chopped in time-stretch algorithm. The larger this value is, the lesser sequences are used in processing. In principle a bigger value sounds better when slowing down tempo, but worse when increasing tempo and vice versa."));
+
+				CActionParamMapper_linear_range *swl_m=new CActionParamMapper_linear_range(28,1,500);
+				swl_m->floorTheValue(true);
+				s=addSlider(p3,
+					N_("Seek Window Length"),
+					"ms",
+					swl_m,
+					NULL,
+					false
+				);
+				s->setTipText(_("Seeking window default length in milliseconds for algorithm that seeks for the best possible overlapping location. This determines from how wide sample 'window' the algorithm can look for an optimal mixing location when the sound sequences are to be linked back together.  The bigger this window setting is, the higher the possibility to find a better mixing position becomes, but at the same time large values may cause a 'drifting' sound artifact because neighbouring sequences can be chosen at more uneven intervals. If there's a disturbing artifact that sounds as if a constant frequency was drifting around, try reducing this setting."));
+
+				CActionParamMapper_linear_range *ol_m=new CActionParamMapper_linear_range(28,1,500);
+				ol_m->floorTheValue(true);
+				s=addSlider(p3,
+					N_("Overlap Length"),
+					"ms",
+					ol_m,
+					NULL,
+					false
+				);
+				s->setTipText(_("Overlap length in milliseconds. When the chopped sound sequences are mixed back together to form again a continuous sound stream, this parameter defines over how long period the two consecutive sequences are allowed to overlap each other.  This shouldn't be that critical of a parameter. If you reduce the 'Sequence Length' setting by a large amount, you might wish to try a smaller value on this."));
 }
 

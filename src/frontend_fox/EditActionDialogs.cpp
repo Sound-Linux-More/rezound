@@ -34,7 +34,7 @@ CInsertSilenceDialog::CInsertSilenceDialog(FXWindow *mainWindow) :
 	CActionParamDialog(mainWindow)
 {
 	void *p=newHorzPanel(NULL);
-		addNumericTextEntry(p,N_("Length"),N_("seconds"),1.0,0,10000);
+		addNumericTextEntry(p,N_("Length"),_("seconds"),1.0,0,10000);
 }
 
 
@@ -45,7 +45,7 @@ CRotateDialog::CRotateDialog(FXWindow *mainWindow) :
 	CActionParamDialog(mainWindow)
 {
 	void *p=newHorzPanel(NULL);
-		addNumericTextEntry(p,N_("Amount"),N_("seconds"),1.0,0,10000);
+		addNumericTextEntry(p,N_("Amount"),_("seconds"),1.0,0,10000);
 }
 
 
@@ -79,7 +79,7 @@ bool CSwapChannelsDialog::show(CActionSound *actionSound,CActionParameters *acti
 		{
 			vector<string> items;
 			for(size_t t=0;t<actionSound->sound->getChannelCount();t++)
-				items.push_back("Channel "+istring(t));
+				items.push_back(_("Channel ")+istring(t));
 
 			// set the combo boxes according to actionSound
 			getComboText("Channel A")->setItems(items);
@@ -123,13 +123,13 @@ bool CDuplicateChannelDialog::show(CActionSound *actionSound,CActionParameters *
 	{
 		vector<string> items;
 		for(size_t t=0;t<actionSound->sound->getChannelCount();t++)
-			items.push_back("Channel "+istring(t));
+			items.push_back(_("Channel ")+istring(t));
 
 		// set the combo boxes according to actionSound
 		getComboText("Which Channel")->setItems(items);
 		getComboText("Which Channel")->setCurrentItem(0);
 
-		items.push_back("Channel "+istring(actionSound->sound->getChannelCount()));
+		items.push_back(_("Channel ")+istring(actionSound->sound->getChannelCount()));
 		getComboText("Insert Where")->setItems(items);
 		getComboText("Insert Where")->setCurrentItem(1);
 	}
@@ -208,9 +208,12 @@ CBurnToCDDialog::CBurnToCDDialog(FXWindow *mainWindow) :
 			appliesTo.push_back(N_("Selection Only"));
 		addComboTextEntry(p1,N_("Applies to"),appliesTo);
 
-		FXHorizontalFrame *p2=new FXHorizontalFrame(p1,LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 4,0);
-			FXComposite *device=addStringTextEntry(p2,N_("Device"),"0,0,0");
-				new FXButton(device,_("Detect"),NULL,this,ID_DETECT_DEVICE_BUTTON,BUTTON_NORMAL|LAYOUT_RIGHT);
+		FXVerticalFrame *p2=new FXVerticalFrame(p1,LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 0,0);
+			FXHorizontalFrame *p3=new FXHorizontalFrame(p2,LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 4,0);
+				FXComposite *device=addStringTextEntry(p3,N_("Device"),"0,0,0");
+					new FXButton(device,_("Detect"),NULL,this,ID_DETECT_DEVICE_BUTTON,BUTTON_NORMAL|LAYOUT_RIGHT);
+			new FXLabel(p2,_("In linux >2.6, scanbus may not work and it may be\nnecessary to specify: for example: ATAPI:0,0,0"));
+			new FXLabel(p2,_("Also, cdrdao-1.1.9 has much better drive support."));
 
 		addStringTextEntry(p1,N_("Extra cdrdao Options"),"");
 		addCheckBoxEntry(p1,N_("Simulate Burn Only"),false,_("Don't Turn on Burn Laser"));

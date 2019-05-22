@@ -88,7 +88,8 @@ CPasteChannelsDialog::CPasteChannelsDialog(FXWindow *mainWindow) :
 
 		repeatTypeSwitcher->setCurrent(0);
 
-	repeatTypeComboBox=new FXComboBox(repeatFrame,0,2,this,ID_REPEAT_TYPE_COMBOBOX,COMBOBOX_NORMAL|COMBOBOX_STATIC | FRAME_SUNKEN|FRAME_THICK | LAYOUT_CENTER_X);
+	repeatTypeComboBox=new FXComboBox(repeatFrame,0,this,ID_REPEAT_TYPE_COMBOBOX,COMBOBOX_NORMAL|COMBOBOX_STATIC | FRAME_SUNKEN|FRAME_THICK | LAYOUT_CENTER_X);
+		repeatTypeComboBox->setNumVisible(2);
 		repeatTypeComboBox->appendItem(_("Repeat X Times"));
 		repeatTypeComboBox->appendItem(_("Repeat for X Seconds"));
 		repeatTypeComboBox->setCurrentItem(0);
@@ -104,7 +105,8 @@ CPasteChannelsDialog::CPasteChannelsDialog(FXWindow *mainWindow) :
 		new FXButton(buttonPacker,_("Clear"),NULL,this,ID_CLEAR_BUTTON,BUTTON_NORMAL|LAYOUT_CENTER_Y);
 		mixTypeFrame=new FXHorizontalFrame(buttonPacker,LAYOUT_CENTER_X|LAYOUT_CENTER_Y);
 			new FXLabel(mixTypeFrame,_("Mix Type:"),NULL,LAYOUT_CENTER_Y);
-			mixTypeComboBox=new FXComboBox(mixTypeFrame,16,4,NULL,0, COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK | COMBOBOX_STATIC | LAYOUT_CENTER_Y);
+			mixTypeComboBox=new FXComboBox(mixTypeFrame,16,NULL,0, COMBOBOX_NORMAL|FRAME_SUNKEN|FRAME_THICK | COMBOBOX_STATIC | LAYOUT_CENTER_Y);
+			mixTypeComboBox->setNumVisible(4);
 			mixTypeComboBox->appendItem(_("Add"),(void *)mmAdd);
 			mixTypeComboBox->appendItem(_("Subtract"),(void *)mmSubtract);
 			mixTypeComboBox->appendItem(_("Multiply"),(void *)mmMultiply);
@@ -221,11 +223,13 @@ bool CPasteChannelsDialog::show(CActionSound *_actionSound,CActionParameters *ac
 		for(unsigned row=0;row<MAX_CHANNELS;row++)
 		{
 			pasteChannels.push_back(vector<bool>());
+			actionSound->doChannel[row]=false; // set doChannel for backend's crossfading's sake
 			for(unsigned col=0;col<MAX_CHANNELS;col++)
 			{
 				FXCheckButton *cb=(FXCheckButton *)checkBoxMatrix->childAtRowCol(row+1,col+1);
 				pasteChannels[row].push_back(cb->shown() ? cb->getCheck() : false);
 				ret|=pasteChannels[row][col];
+				actionSound->doChannel[row]|=pasteChannels[row][col]; // set doChannel for backend's crossfading's sake
 			}
 		}
 

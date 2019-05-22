@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.18 2003/11/11 20:25:21 ddurham Exp $
+/* $Id: common.h,v 1.19 2003/12/27 18:49:27 ddurham Exp $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -70,6 +70,12 @@ static const char *REZOUND_VERSION=VERSION;
 
 /* include code that determines the platform, and may supply missing function implementations */
 #include "platform/platform.h"
+
+/* determine if pitch/tempo changing is available */
+#ifdef HAVE_LIBSOUNDTOUCH
+	#define AVAIL_PITCH_CHANGE
+	#define AVAIL_TEMPO_CHANGE
+#endif
 
 /*
  * It is not good to simply use bool==bool because anything non-zero is seen as true
