@@ -118,6 +118,7 @@ void ASoundPlayer::mixSoundPlayerChannels(const unsigned nChannels,sample_t * co
 		(*i)->mixOntoBuffer(nChannels,buffer,bufferSize);
 
 
+// ??? could just schedule this to occur (by making a copy of the buffer) the next time getLevel or getAnalysis is called rather than doing it here in the callback for mixing audio
 	// calculate the peak levels and max RMS levels for this chunk
 	if(gLevelMetersEnabled)
 	{
@@ -452,3 +453,59 @@ const size_t ASoundPlayer::getFrequencyAnalysisOctaveStride() const
 #endif
 }
 
+
+// ----------------------------
+
+#include "COSSSoundPlayer.h"
+#include "CPortAudioSoundPlayer.h"
+#include "CJACKSoundPlayer.h"
+
+#include "AStatusComm.h"
+
+#include <stdio.h> // just for fprintf
+
+ASoundPlayer *ASoundPlayer::createInitializedSoundPlayer()
+{
+	ASoundPlayer *soundPlayer=NULL;
+
+#if defined(ENABLE_PORTAUDIO)
+	soundPlayer=new CPortAudioSoundPlayer();
+#elif defined(ENABLE_JACK)
+	soundPlayer=new CJACKSoundPlayer();
+#elif defined(ENABLE_OSS)
+	soundPlayer=new COSSSoundPlayer();
+#endif
+
+	try
+	{
+		soundPlayer->initialize();
+	}
+	catch(exception &e)
+	{
+#if !defined(ENABLE_PORAUDIO) && !defined(ENABLE_JACK)
+		// OSS was the only defined method
+		Error(string(e.what())+"\nPlaying will be disabled.");
+#else
+		// OSS was not the original method chosen at configure time so now fall back to using OSS if it wasn't disabled
+	#ifdef ENABLE_OSS
+		fprintf(stderr,"%s\n",(string(e.what())+"\nAttempting to fall back to using OSS for audio output.").c_str());
+		//Warning(string(e.what())+"\nAttempting to fall back to using OSS for audio output.");
+
+		// try OSS
+		delete soundPlayer;
+		soundPlayer=new COSSSoundPlayer();
+		try
+		{
+			soundPlayer->initialize();
+		}
+		catch(exception &e)
+		{ // now really give up
+			Error(string("Error occurred after trying to fall back to OSS\n")+e.what()+"\nPlaying will be disabled.");
+		}
+	#else
+		Error(string(e.what())+"\nPlaying will be disabled.");
+	#endif
+#endif
+	}
+	return soundPlayer;
+}

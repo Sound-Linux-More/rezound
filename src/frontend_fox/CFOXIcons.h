@@ -36,6 +36,10 @@ public:
 	FXIcon *filter_highpass;
 	FXIcon *filter_lowpass;
 	FXIcon *filter_notch;
+	FXIcon *graph_clear;
+	FXIcon *graph_horz_flip;
+	FXIcon *graph_smooth;
+	FXIcon *graph_vert_flip;
 	FXIcon *GreenCheck1;
 	FXIcon *GreenLED1;
 	FXIcon *GreenPlus1;

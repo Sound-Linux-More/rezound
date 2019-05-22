@@ -23,10 +23,11 @@
 /* Define if lex declares yytext as a char * by default, not a char[].  */
 #define YYTEXT_POINTER 1
 
-/* #undef HAVE_LIBPORTAUDIO */
+#define ENABLE_OSS 1
+/* #undef ENABLE_PORTAUDIO */
+/* #undef ENABLE_JACK */
 
 #define HAVE_LIBOGG 1
-
 #define HAVE_LIBVORBIS 1
 
 /* Define if you have the <dlfcn.h> header file.  */
@@ -57,14 +58,14 @@
 #define PACKAGE "rezound"
 
 /* Version number of package */
-#define VERSION "0.6.0beta"
+#define VERSION "0.7.0beta"
 
 /*  This is the prefix passed to configure */
-#define INSTALL_PREFIX "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.6.0beta"
+#define INSTALL_PREFIX "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.7.0beta"
 
 /*  This is the top source directory for pre-installed testing */
 #define SOURCE_DIR "/home/ddurham/code/rezound"
 
 /*  This the --datadir (share) set by configure  */
-#define DATA_DIR "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.6.0beta/share"
+#define DATA_DIR "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.7.0beta/share"
 

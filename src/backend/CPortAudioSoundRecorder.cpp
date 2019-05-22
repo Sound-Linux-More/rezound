@@ -20,7 +20,7 @@
 
 #include "CPortAudioSoundRecorder.h"
 
-#ifdef HAVE_LIBPORTAUDIO
+#ifdef ENABLE_PORTAUDIO
 
 #include <stdexcept>
 #include <typeinfo>
@@ -141,15 +141,13 @@ int CPortAudioSoundRecorder::PortAudioCallback(void *inputBuffer,void *outputBuf
 	}
 	catch(exception &e)
 	{
-		fprintf(stderr,"exception caught in record thread: %s\n",e.what());
-		abort();
+		fprintf(stderr,"exception caught in record callback: %s\n",e.what());
 	}
 	catch(...)
 	{
-		fprintf(stderr,"unknown exception caught in record thread\n");
-		abort();
+		fprintf(stderr,"unknown exception caught in record callback\n");
 	}
 	return 0;
 }
 
-#endif // HAVE_LIBPORTAUDIO
+#endif // ENABLE_PORTAUDIO

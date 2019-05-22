@@ -40,7 +40,7 @@ public:
 	};
 
 	//                                        const bool pasteChannels[MAX_CHANNELS][MAX_CHANNELS]
-	CPasteEdit(const CActionSound actionSound,const vector<vector<bool> > &pasteChannels,PasteTypes pasteType,MixMethods mixMethod);
+	CPasteEdit(const CActionSound actionSound,const vector<vector<bool> > &pasteChannels,PasteTypes pasteType,MixMethods mixMethod,double repeatCount);
 	virtual ~CPasteEdit();
 
 
@@ -54,12 +54,13 @@ protected:
 private:
 	PasteTypes pasteType;
 	MixMethods mixMethod;
+	const double repeatCount;
 	vector<vector<bool> > pasteChannels;
 	bool whichChannels[MAX_CHANNELS]; // or-ed together rows from pasteChannels which says which channels are affected
 
 
 	//                                              const bool pasteChannels[MAX_CHANNELS][MAX_CHANNELS]
-	void pasteData(const ASoundClipboard *clipboard,const vector<vector<bool> > &pasteChannels,const CActionSound &actionSound,const sample_pos_t srcLength,bool invalidatePeakData,MixMethods initialMixMethod,MixMethods nonInitialMixMethod,SourceFitTypes fitSrc);
+	void pasteData(const ASoundClipboard *clipboard,const vector<vector<bool> > &pasteChannels,const CActionSound &actionSound,const sample_pos_t srcToUse,const double repeatCount,bool invalidatePeakData,MixMethods initialMixMethod,MixMethods nonInitialMixMethod,SourceFitTypes fitSrc);
 
 	// --- undo information --------
 	sample_pos_t undoRemoveLength;

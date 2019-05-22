@@ -77,6 +77,7 @@ MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
 RESWRAP = @RESWRAP@
 STRIP = @STRIP@
@@ -98,11 +99,11 @@ LDFLAGS = @LDFLAGS@
 # doc directory
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-noinst_HEADERS =  		CNoiseGateAction.h 		CRemoveDCAction.h 		CUnclipAction.h 		CCompressorAction.h 		CNormalizeAction.h 		CResampleAction.h 		RemasterActions.h
+noinst_HEADERS =  		CBalanceAction.h 		CNoiseGateAction.h 		CRemoveDCAction.h 		CUnclipAction.h 		CCompressorAction.h 		CNormalizeAction.h 		CResampleAction.h 		RemasterActions.h
 
 
 noinst_LTLIBRARIES = libRemaster.la
-libRemaster_la_SOURCES =  			CNoiseGateAction.cpp 			CRemoveDCAction.cpp 			CUnclipAction.cpp 			CCompressorAction.cpp 			CNormalizeAction.cpp 			CResampleAction.cpp 
+libRemaster_la_SOURCES =  			CBalanceAction.cpp 			CNoiseGateAction.cpp 			CRemoveDCAction.cpp 			CUnclipAction.cpp 			CCompressorAction.cpp 			CNormalizeAction.cpp 			CResampleAction.cpp 
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -115,9 +116,9 @@ CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
 libRemaster_la_LDFLAGS = 
 libRemaster_la_LIBADD = 
-libRemaster_la_OBJECTS =  CNoiseGateAction.lo CRemoveDCAction.lo \
-CUnclipAction.lo CCompressorAction.lo CNormalizeAction.lo \
-CResampleAction.lo
+libRemaster_la_OBJECTS =  CBalanceAction.lo CNoiseGateAction.lo \
+CRemoveDCAction.lo CUnclipAction.lo CCompressorAction.lo \
+CNormalizeAction.lo CResampleAction.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -251,6 +252,17 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+CBalanceAction.lo CBalanceAction.o : CBalanceAction.cpp CBalanceAction.h \
+	../../../config/common.h ../../../config/config.h ../AAction.h \
+	../settings.h ../CActionSound.h ../CSound_defs.h \
+	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
+	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
+	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
+	../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp \
+	../CGraphParamValueNode.h ../CActionParameters.h ../ALFO.h
 CCompressorAction.lo CCompressorAction.o : CCompressorAction.cpp \
 	CCompressorAction.h ../../../config/common.h \
 	../../../config/config.h ../AAction.h ../settings.h \

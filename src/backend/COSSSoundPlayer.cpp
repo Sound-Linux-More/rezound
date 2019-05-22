@@ -20,7 +20,7 @@
 
 #include "COSSSoundPlayer.h"
 
-#ifndef HAVE_LIBPORTAUDIO
+#ifdef ENABLE_OSS
 
 #include <errno.h>
 #include <string.h>
@@ -39,7 +39,6 @@
 
 #include <stdexcept>
 #include <string>
-#include <iostream>
 #include <typeinfo>
 
 #include <istring>
@@ -47,11 +46,10 @@
 
 #include "settings.h"
 
-#define BUFFER_SIZE_FRAMES 1024							// buffer size in frames (MUST be a power of 2)
-#define BUFFER_COUNT 4
-
+#define BUFFER_COUNT gDesiredOutputBufferCount
+#define BUFFER_SIZE_FRAMES gDesiredOutputBufferSize
 #define BUFFER_SIZE_BYTES (BUFFER_SIZE_FRAMES*sizeof(sample_t)*gDesiredOutputChannelCount)	// buffer size in bytes
-#define BUFFER_SIZE_BYTES_LOG2 ((size_t)(log((double)BUFFER_SIZE_BYTES)/log(2.0)))	// log2(BUFFER_SIZE_BYTES) -- that is 2^this is BUFFER_SIZE_BYTES
+#define BUFFER_SIZE_BYTES_LOG2 ((size_t)(log((double)BUFFER_SIZE_BYTES)/log(2.0)))		// log2(BUFFER_SIZE_BYTES) -- that is 2^this is BUFFER_SIZE_BYTES
 
 
 COSSSoundPlayer::COSSSoundPlayer() :
@@ -73,7 +71,7 @@ COSSSoundPlayer::~COSSSoundPlayer()
 
 bool COSSSoundPlayer::isInitialized() const
 {
-	return(initialized);
+	return initialized;
 }
 
 void COSSSoundPlayer::initialize()
@@ -94,7 +92,7 @@ void COSSSoundPlayer::initialize()
 			else if(typeid(sample_t)==typeid(float))
 			{
 				// ??? AND THIS WILL REQUIRE CONVERTING
-				throw(runtime_error(string(__func__)+" -- not implemented just yet -- this will require setting a flag in this object to tell it to convert from float to int16"));
+				throw runtime_error(string(__func__)+" -- not implemented just yet -- this will require setting a flag in this object to tell it to convert from float to int16");
 				sampleFormat=AFMT_S16_LE;
 				sSampleFormat="little endian 16bit signed";
 			}
@@ -108,20 +106,20 @@ void COSSSoundPlayer::initialize()
 			else if(typeid(sample_t)==typeid(float))
 			{
 				// ??? AND THIS WILL REQUIRE CONVERTING
-				throw(runtime_error(string(__func__)+" -- not implemented just yet -- this will require setting a flag in this object to tell it to convert from float to int16"));
+				throw runtime_error(string(__func__)+" -- not implemented just yet -- this will require setting a flag in this object to tell it to convert from float to int16");
 				sampleFormat=AFMT_S16_BE;
 				sSampleFormat="big endian 16bit signed";
 			}
 #endif
 			else
-				throw(runtime_error(string(__func__)+" -- unhandled sample_t format"));
+				throw runtime_error(string(__func__)+" -- unhandled sample_t format");
 
 			// open OSS device
 			const string device=gOSSOutputDevice;
 			if((audio_fd=open(device.c_str(),O_WRONLY|O_NONBLOCK)) == -1) 
 			{
 				const string errString=strerror(errno);
-				throw(runtime_error(string(__func__)+" -- error opening OSS device '"+device+" -- "+errString));
+				throw runtime_error(string(__func__)+" -- error opening OSS device '"+device+" -- "+errString);
 			}
 			//printf("OSS: device: %s\n",device.c_str());
 
@@ -132,7 +130,7 @@ void COSSSoundPlayer::initialize()
 			{
 				const string errString=strerror(errno);
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting OSS device '"+device+" back to blocking I/O mode -- "+errString));
+				throw runtime_error(string(__func__)+" -- error setting OSS device '"+device+" back to blocking I/O mode -- "+errString);
 			}
 
 			// set the bit rate and endianness
@@ -141,12 +139,12 @@ void COSSSoundPlayer::initialize()
 			{
 				const string errString=strerror(errno);
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the format -- "+errString));
+				throw runtime_error(string(__func__)+" -- error setting the format -- "+errString);
 			}
 			else if(format!=sampleFormat)
 			{
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the format -- the device does not support '"+sSampleFormat+"' (OSS format #"+istring(sampleFormat)+") formatted data"));
+				throw runtime_error(string(__func__)+" -- error setting the format -- the device does not support '"+sSampleFormat+"' (OSS format #"+istring(sampleFormat)+") formatted data");
 			}
 			//printf("OSS: sampleFormat: %d\n",sampleFormat);
 
@@ -157,12 +155,12 @@ void COSSSoundPlayer::initialize()
 			{
 				const string errString=strerror(errno);
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the number of channels -- "+errString));
+				throw runtime_error(string(__func__)+" -- error setting the number of channels -- "+errString);
 			}
 			else if (channelCount!=gDesiredOutputChannelCount)
 			{
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the number of channels -- the device does not support "+istring(gDesiredOutputChannelCount)+" channel playback"));
+				throw runtime_error(string(__func__)+" -- error setting the number of channels -- the device does not support "+istring(gDesiredOutputChannelCount)+" channel playback");
 			}
 			//printf("OSS: channel count: %d\n",gDesiredOutputChannelCount);
 
@@ -174,13 +172,13 @@ void COSSSoundPlayer::initialize()
 			{
 				const string errString=strerror(errno);
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the sample rate -- "+errString));
+				throw runtime_error(string(__func__)+" -- error setting the sample rate -- "+errString);
 			} 
 			if (sampleRate!=gDesiredOutputSampleRate)
 			{ 
 				fprintf(stderr,("warning: OSS used a different sample rate ("+istring(sampleRate)+") than what was asked for ("+istring(gDesiredOutputSampleRate)+"); will have to do extra calculations to compensate\n").c_str());
 				//close(audio_fd);
-				//throw(runtime_error(string(__func__)+" -- error setting the sample rate -- the sample rate is not supported"));
+				//throw runtime_error(string(__func__)+" -- error setting the sample rate -- the sample rate is not supported");
 			} 
 			//printf("OSS: sample rate: %d\n",sampleRate);
 
@@ -188,18 +186,31 @@ void COSSSoundPlayer::initialize()
 
 
 			// set the buffering parameters
-			int arg=((BUFFER_COUNT)<<16)|BUFFER_SIZE_BYTES_LOG2;  // 0xMMMMSSSS; where 0xMMMM is the number of buffers and 2^0xSSSS is the buffer size
+			const int arg=((BUFFER_COUNT)<<16)|BUFFER_SIZE_BYTES_LOG2;  // 0xMMMMSSSS; where 0xMMMM is the number of buffers and 2^0xSSSS is the buffer size
 			int parm=arg;
 			if (ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &parm)==-1) 
 			{
 				const string errString=strerror(errno);
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the buffering parameters -- "+errString));
+				throw runtime_error(string(__func__)+" -- error setting the buffering parameters -- "+errString);
 			}
 			else if(arg!=parm)
 			{
-				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error setting the buffering parameters -- "+istring(BUFFER_COUNT)+" buffers, each "+istring(BUFFER_SIZE_BYTES)+" bytes long, not supported"));
+				// check buffer count
+				const int actualBufferCount=parm>>16;
+				if(actualBufferCount<2 || actualBufferCount>(2*BUFFER_COUNT))
+				{ // don't really complain unless it comes back unreasonably different
+					close(audio_fd);
+					throw runtime_error(string(__func__)+" -- error setting the buffering parameters -- asking for "+istring(BUFFER_COUNT)+" buffers not supported");
+				}
+
+				// check fragment size
+				const unsigned actualBufferSize=parm&0xffff;
+				if(actualBufferSize!=BUFFER_SIZE_BYTES_LOG2)
+				{
+					close(audio_fd);
+					throw runtime_error(string(__func__)+" -- error setting the buffering parameters -- asking for "+istring(BUFFER_COUNT)+" buffers, each "+istring(BUFFER_SIZE_BYTES)+" bytes long, not supported");
+				}
 			}
 
 
@@ -209,7 +220,7 @@ void COSSSoundPlayer::initialize()
 			{
 				const string errString=strerror(errno);
 				close(audio_fd);
-				throw(runtime_error(string(__func__)+" -- error getting the buffering parameters -- "+errString));
+				throw runtime_error(string(__func__)+" -- error getting the buffering parameters -- "+errString);
 			}
 
 
@@ -244,7 +255,7 @@ void COSSSoundPlayer::initialize()
 		}
 	}
 	else
-		throw(runtime_error(string(__func__)+" -- already initialized"));
+		throw runtime_error(string(__func__)+" -- already initialized");
 }
 
 void COSSSoundPlayer::deinitialize()
@@ -319,14 +330,12 @@ void COSSSoundPlayer::CPlayThread::main()
 	}
 	catch(exception &e)
 	{
-		cerr << "exception caught in play thread: " << e.what() << endl;
-		abort();
+		fprintf(stderr,"exception caught in play thread: %s\n",e.what());
 	}
 	catch(...)
 	{
-		cerr << "unknown exception caught in play thread" << endl;
-		abort();
+		fprintf(stderr,"unknown exception caught in play thread\n");
 	}
 }
 
-#endif // HAVE_LIBPORTAUDIO
+#endif // ENABLE_OSS

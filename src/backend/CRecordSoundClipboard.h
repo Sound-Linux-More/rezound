@@ -28,10 +28,12 @@ class CRecordSoundClipboard;
 #include "ASoundClipboard.h"
 #include "CSound.h"
 
+class ASoundPlayer;
+
 class CRecordSoundClipboard : public ASoundClipboard
 {
 public:
-	CRecordSoundClipboard(const string description,const string workingFilename);
+	CRecordSoundClipboard(const string description,const string workingFilename,ASoundPlayer *soundPlayer);
 	virtual ~CRecordSoundClipboard();
 
 	void copyFrom(const CSound *sound,const bool whichChannels[MAX_CHANNELS],sample_pos_t start,sample_pos_t length);
@@ -42,13 +44,23 @@ public:
 	sample_pos_t getLength(unsigned sampleRate) const;
 	bool isEmpty() const;
 
+	void temporarilyShortenLength(unsigned sampleRate,sample_pos_t changeTo);
+	void undoTemporaryShortenLength();
+
 	unsigned getSampleRate() const;
+	unsigned getChannelCount() const;
 
 private:
 	const string workingFilename;
 	unsigned sampleRate;
 
 	CSound *workingFile;
+
+	ASoundPlayer *soundPlayer;
+
+	// used by temporarilyShortenLength
+	unsigned tempAudioPoolKey;
+	sample_pos_t origLength;
 };
 
 #endif

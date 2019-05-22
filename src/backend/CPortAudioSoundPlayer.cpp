@@ -20,7 +20,7 @@
 
 #include "CPortAudioSoundPlayer.h"
 
-#ifdef HAVE_LIBPORTAUDIO
+#ifdef ENABLE_PORTAUDIO
 
 #include <stdio.h>
 
@@ -30,9 +30,6 @@
 #include <istring>
 
 #include "settings.h"
-
-#define BUFFER_SIZE_FRAMES 1024
-#define BUFFER_COUNT 4
 
 
 
@@ -86,8 +83,8 @@ void CPortAudioSoundPlayer::initialize()
 			sampleFormat,
 			NULL,
 			gDesiredOutputSampleRate,
-			BUFFER_SIZE_FRAMES,
-			BUFFER_COUNT,
+			gDesiredOutputBufferSize,
+			gDesiredOutputBufferCount,
 			paClipOff|paDitherOff,
 			CPortAudioSoundPlayer::PortAudioCallback,
 			this);
@@ -169,15 +166,13 @@ int CPortAudioSoundPlayer::PortAudioCallback(void *inputBuffer,void *outputBuffe
 	}
 	catch(exception &e)
 	{
-		fprintf(stderr,"exception caught in play thread: %s\n",e.what());
-		abort();
+		fprintf(stderr,"exception caught in play callback: %s\n",e.what());
 	}
 	catch(...)
 	{
-		fprintf(stderr,"unknown exception caught in play thread\n");
-		abort();
+		fprintf(stderr,"unknown exception caught in play callback\n");
 	}
 	return 0;
 }
 
-#endif // HAVE_LIBPORTAUDIO
+#endif // ENABLE_PORTAUDIO

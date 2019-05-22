@@ -3714,6 +3714,15 @@ rm -rf ajv_cxx_flag.cc
 rm -rf ajv_cxx_flag.err
 )
 
+
+dnl AM_PROG_LEX
+dnl Look for flex, lex or missing, then run AC_PROG_LEX and AC_DECL_YYTEXT
+AC_DEFUN([AM_PROG_LEX],
+[missing_dir=ifelse([$1],,`cd $ac_aux_dir && pwd`,$1)
+AC_CHECK_PROGS(LEX, flex lex, "$missing_dir/missing flex")
+AC_PROG_LEX
+AC_DECL_YYTEXT])
+
 # vim:sw=4:ts=4
 dnl sstream.m4 
 dnl Written by Anthony Ventimiglia
@@ -3823,13 +3832,62 @@ rm -rf a.out dnl
 )
 
 
-dnl AM_PROG_LEX
-dnl Look for flex, lex or missing, then run AC_PROG_LEX and AC_DECL_YYTEXT
-AC_DEFUN([AM_PROG_LEX],
-[missing_dir=ifelse([$1],,`cd $ac_aux_dir && pwd`,$1)
-AC_CHECK_PROGS(LEX, flex lex, "$missing_dir/missing flex")
-AC_PROG_LEX
-AC_DECL_YYTEXT])
+dnl PKG_CHECK_MODULES(GSTUFF, gtk+-2.0 >= 1.3 glib = 1.3.4, action-if, action-not)
+dnl defines GSTUFF_LIBS, GSTUFF_CFLAGS, see pkg-config man page
+dnl also defines GSTUFF_PKG_ERRORS on error
+AC_DEFUN(PKG_CHECK_MODULES, [
+  succeeded=no
+
+  if test -z "$PKG_CONFIG"; then
+    AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+  fi
+
+  if test "$PKG_CONFIG" = "no" ; then
+     echo "*** The pkg-config script could not be found. Make sure it is"
+     echo "*** in your path, or set the PKG_CONFIG environment variable"
+     echo "*** to the full path to pkg-config."
+     echo "*** Or see http://www.freedesktop.org/software/pkgconfig to get pkg-config."
+  else
+     PKG_CONFIG_MIN_VERSION=0.9.0
+     if $PKG_CONFIG --atleast-pkgconfig-version $PKG_CONFIG_MIN_VERSION; then
+        AC_MSG_CHECKING(for $2)
+
+        if $PKG_CONFIG --exists "$2" ; then
+            AC_MSG_RESULT(yes)
+            succeeded=yes
+
+            AC_MSG_CHECKING($1_CFLAGS)
+            $1_CFLAGS=`$PKG_CONFIG --cflags "$2"`
+            AC_MSG_RESULT($$1_CFLAGS)
+
+            AC_MSG_CHECKING($1_LIBS)
+            $1_LIBS=`$PKG_CONFIG --libs "$2"`
+            AC_MSG_RESULT($$1_LIBS)
+        else
+            $1_CFLAGS=""
+            $1_LIBS=""
+            ## If we have a custom action on failure, don't print errors, but 
+            ## do set a variable so people can do so.
+            $1_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "$2"`
+            ifelse([$4], ,echo $$1_PKG_ERRORS,)
+        fi
+
+        AC_SUBST($1_CFLAGS)
+        AC_SUBST($1_LIBS)
+     else
+        echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
+        echo "*** See http://www.freedesktop.org/software/pkgconfig"
+     fi
+  fi
+
+  if test $succeeded = yes; then
+     ifelse([$3], , :, [$3])
+  else
+     ifelse([$4], , AC_MSG_ERROR([Library requirements ($2) not met; consider adjusting the PKG_CONFIG_PATH environment variable if your libraries are in a nonstandard prefix so pkg-config can find them.]), [$4])
+  fi
+])
+
+
 
 # vim:sw=4:ts=4
 dnl cxx-lib.m4 
@@ -3884,7 +3942,8 @@ dnl This macro will also #define HAVE_LIBXXX where XXX is the capitalized
 dnl normalized name if arg 1
 AC_DEFUN(ajv_CXX_CHECK_LIB, dnl
 [AC_ARG_ENABLE($1-check, dnl
-[  --disable-$1-check     Override the check for $1 library ], dnl
+[
+  --disable-$1-check     Override the check for $1 library ], dnl
 [enable_$1_check=$enableval], dnl
 [enable_$1_check="yes" ])]
 [AC_ARG_WITH($1-include, dnl
@@ -3984,7 +4043,8 @@ dnl
 dnl 4. URL to download library given in abort message.
 AC_DEFUN(ajv_CHECK_LIB_ABORT, dnl
 [AC_ARG_ENABLE($1-check, dnl
-[  --disable-$1-check     Override the check for $1 library ], dnl
+[
+  --disable-$1-check     Override the check for $1 library ], dnl
 [enable_$1_check=$enableval], dnl
 [enable_$1_check="yes" ])]
 [AC_ARG_WITH($1-include, dnl

@@ -77,6 +77,7 @@ MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
 RESWRAP = @RESWRAP@
 STRIP = @STRIP@
@@ -101,11 +102,11 @@ pkgdocdir = $(prefix)/doc/@PACKAGE@
 SUBDIRS =  	DSP  	Edits  	Effects 	Filters 	Looping 	Remaster
 
 
-noinst_HEADERS =  	   AActionDialog.h 	   AAction.h 	   AFrontendHooks.h 	   ALFO.h 	   ApipedSoundTranslator.h 	   ASoundClipboard.h 	   ASoundFileManager.h 	   ASoundPlayer.h 	   ASoundRecorder.h 	   ASoundTranslator.h 	   AStatusComm.h 	   CActionParameters.h 	   CActionSound.h 	   CGraphParamValueNode.h 	   ClameSoundTranslator.h 	   ClibaudiofileSoundTranslator.h 	   ClibvorbisSoundTranslator.h 	   CLoadedSound.h 	   CNativeSoundClipboard.h 	   Cold_rezSoundTranslator.h 	   COSSSoundPlayer.h 	   COSSSoundRecorder.h 	   CPortAudioSoundPlayer.h 	   CPortAudioSoundRecorder.h 	   CrawSoundTranslator.h 	   CRecordSoundClipboard.h 	   CrezSoundTranslator.h 	   CSound_defs.h 	   CSound.h 	   CSoundPlayerChannel.h 	   CTrigger.h 	   CvoxSoundTranslator.h 	   initialize.h 	   license.h 	   main_controls.h 	   mypopen.h 	   settings.h 	   unit_conv.h
+noinst_HEADERS =  	   AActionDialog.h 	   AAction.h 	   AFrontendHooks.h 	   ALFO.h 	   ApipedSoundTranslator.h 	   ASoundClipboard.h 	   ASoundFileManager.h 	   ASoundPlayer.h 	   ASoundRecorder.h 	   ASoundTranslator.h 	   AStatusComm.h 	   CActionParameters.h 	   CActionSound.h 	   CGraphParamValueNode.h 	   ClameSoundTranslator.h 	   ClibaudiofileSoundTranslator.h 	   ClibvorbisSoundTranslator.h 	   CLoadedSound.h 	   CNativeSoundClipboard.h 	   Cold_rezSoundTranslator.h 	   COSSSoundPlayer.h 	   COSSSoundRecorder.h 	   CPortAudioSoundPlayer.h 	   CPortAudioSoundRecorder.h 	   CJACKSoundPlayer.h 	   CJACKSoundRecorder.h 	   CrawSoundTranslator.h 	   CRecordSoundClipboard.h 	   CrezSoundTranslator.h 	   CSound_defs.h 	   CSound.h 	   CSoundPlayerChannel.h 	   CTrigger.h 	   CvoxSoundTranslator.h 	   initialize.h 	   license.h 	   main_controls.h 	   mypopen.h 	   settings.h 	   unit_conv.h
 
 
 noinst_LTLIBRARIES = libbackend.la
-libbackend_la_SOURCES =  			AAction.cpp  			AActionDialog.cpp  			AFrontendHooks.cpp 	   		ALFO.cpp 			ApipedSoundTranslator.cpp 			ASoundClipboard.cpp 			ASoundFileManager.cpp 			ASoundPlayer.cpp  			ASoundRecorder.cpp 			ASoundTranslator.cpp 			AStatusComm.cpp 			CActionParameters.cpp  			CActionSound.cpp  			CGraphParamValueNode.cpp 			ClameSoundTranslator.cpp 			ClibaudiofileSoundTranslator.cpp 			ClibvorbisSoundTranslator.cpp 			CLoadedSound.cpp  			CNativeSoundClipboard.cpp 			Cold_rezSoundTranslator.cpp 			COSSSoundPlayer.cpp 			COSSSoundRecorder.cpp 	   		CPortAudioSoundPlayer.cpp 	   		CPortAudioSoundRecorder.cpp 			CrawSoundTranslator.cpp 			CRecordSoundClipboard.cpp 			CrezSoundTranslator.cpp 			CSound.cpp  			CSoundPlayerChannel.cpp 			CTrigger.cpp 			CvoxSoundTranslator.cpp 		        initialize.cpp 			main_controls.cpp 		        mypopen.cpp 		        settings.cpp
+libbackend_la_SOURCES =  			AAction.cpp  			AActionDialog.cpp  			AFrontendHooks.cpp 	   		ALFO.cpp 			ApipedSoundTranslator.cpp 			ASoundClipboard.cpp 			ASoundFileManager.cpp 			ASoundPlayer.cpp  			ASoundRecorder.cpp 			ASoundTranslator.cpp 			AStatusComm.cpp 			CActionParameters.cpp  			CActionSound.cpp  			CGraphParamValueNode.cpp 			ClameSoundTranslator.cpp 			ClibaudiofileSoundTranslator.cpp 			ClibvorbisSoundTranslator.cpp 			CLoadedSound.cpp  			CNativeSoundClipboard.cpp 			Cold_rezSoundTranslator.cpp 			COSSSoundPlayer.cpp 			COSSSoundRecorder.cpp 	   		CPortAudioSoundPlayer.cpp 	   		CPortAudioSoundRecorder.cpp 	   		CJACKSoundPlayer.cpp 			CJACKSoundRecorder.cpp 			CrawSoundTranslator.cpp 			CRecordSoundClipboard.cpp 			CrezSoundTranslator.cpp 			CSound.cpp  			CSoundPlayerChannel.cpp 			CTrigger.cpp 			CvoxSoundTranslator.cpp 		        initialize.cpp 			main_controls.cpp 		        mypopen.cpp 		        settings.cpp
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../config/config.h
@@ -126,10 +127,10 @@ CGraphParamValueNode.lo ClameSoundTranslator.lo \
 ClibaudiofileSoundTranslator.lo ClibvorbisSoundTranslator.lo \
 CLoadedSound.lo CNativeSoundClipboard.lo Cold_rezSoundTranslator.lo \
 COSSSoundPlayer.lo COSSSoundRecorder.lo CPortAudioSoundPlayer.lo \
-CPortAudioSoundRecorder.lo CrawSoundTranslator.lo \
-CRecordSoundClipboard.lo CrezSoundTranslator.lo CSound.lo \
-CSoundPlayerChannel.lo CTrigger.lo CvoxSoundTranslator.lo initialize.lo \
-main_controls.lo mypopen.lo settings.lo
+CPortAudioSoundRecorder.lo CJACKSoundPlayer.lo CJACKSoundRecorder.lo \
+CrawSoundTranslator.lo CRecordSoundClipboard.lo CrezSoundTranslator.lo \
+CSound.lo CSoundPlayerChannel.lo CTrigger.lo CvoxSoundTranslator.lo \
+initialize.lo main_controls.lo mypopen.lo settings.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -374,9 +375,8 @@ ASoundFileManager.lo ASoundFileManager.o : ASoundFileManager.cpp \
 	DSP/Delay.h CSoundPlayerChannel.h \
 	../../src/misc/CConditionVariable.h ../../src/misc/AThread.h \
 	../../src/misc/TMemoryPipe.h ../../src/misc/TMemoryPipe.cpp \
-	CTrigger.h ASoundTranslator.h AFrontendHooks.h AAction.h \
-	CActionSound.h CPortAudioSoundRecorder.h COSSSoundRecorder.h \
-	ASoundRecorder.h
+	CTrigger.h ASoundTranslator.h AFrontendHooks.h ASoundRecorder.h \
+	AAction.h CActionSound.h
 ASoundPlayer.lo ASoundPlayer.o : ASoundPlayer.cpp ASoundPlayer.h \
 	../../config/common.h ../../config/config.h \
 	../../src/misc/CMutex.h ../../src/misc/TAutoBuffer.h \
@@ -389,7 +389,8 @@ ASoundPlayer.lo ASoundPlayer.o : ASoundPlayer.cpp ASoundPlayer.h \
 	../../src/PoolFile/TPoolAccesser.cpp CSoundPlayerChannel.h \
 	../../src/misc/CConditionVariable.h ../../src/misc/AThread.h \
 	../../src/misc/TMemoryPipe.h ../../src/misc/TMemoryPipe.cpp \
-	CTrigger.h settings.h unit_conv.h
+	CTrigger.h settings.h unit_conv.h COSSSoundPlayer.h \
+	CPortAudioSoundPlayer.h CJACKSoundPlayer.h AStatusComm.h
 ASoundRecorder.lo ASoundRecorder.o : ASoundRecorder.cpp ASoundRecorder.h \
 	../../config/common.h ../../config/config.h CSound.h \
 	CSound_defs.h ../../src/PoolFile/TPoolFile.h \
@@ -399,7 +400,8 @@ ASoundRecorder.lo ASoundRecorder.o : ASoundRecorder.cpp ASoundRecorder.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp CTrigger.h AStatusComm.h \
-	unit_conv.h
+	unit_conv.h COSSSoundRecorder.h ../../src/misc/AThread.h \
+	CPortAudioSoundRecorder.h CJACKSoundRecorder.h
 ASoundTranslator.lo ASoundTranslator.o : ASoundTranslator.cpp \
 	ASoundTranslator.h ../../config/common.h ../../config/config.h \
 	CSound_defs.h CSound.h ../../src/PoolFile/TPoolFile.h \
@@ -431,6 +433,11 @@ CGraphParamValueNode.lo CGraphParamValueNode.o : \
 	CGraphParamValueNode.cpp CGraphParamValueNode.h \
 	../../config/common.h ../../config/config.h CSound_defs.h \
 	../../src/misc/istring
+CJACKSoundPlayer.lo CJACKSoundPlayer.o : CJACKSoundPlayer.cpp \
+	CJACKSoundPlayer.h ../../config/common.h ../../config/config.h
+CJACKSoundRecorder.lo CJACKSoundRecorder.o : CJACKSoundRecorder.cpp \
+	CJACKSoundRecorder.h ../../config/common.h \
+	../../config/config.h
 ClameSoundTranslator.lo ClameSoundTranslator.o : \
 	ClameSoundTranslator.cpp ClameSoundTranslator.h \
 	../../config/common.h ../../config/config.h \
@@ -541,8 +548,9 @@ CRecordSoundClipboard.lo CRecordSoundClipboard.o : \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp AStatusComm.h \
-	AFrontendHooks.h CPortAudioSoundRecorder.h COSSSoundRecorder.h \
-	ASoundRecorder.h CTrigger.h ../../src/misc/AThread.h
+	AFrontendHooks.h ASoundRecorder.h CTrigger.h ASoundPlayer.h \
+	../../src/misc/TAutoBuffer.h DSP/LevelDetector.h DSP/Delay.h \
+	CJACKSoundPlayer.h
 CrezSoundTranslator.lo CrezSoundTranslator.o : CrezSoundTranslator.cpp \
 	CrezSoundTranslator.h ../../config/common.h \
 	../../config/config.h ASoundTranslator.h CSound_defs.h CSound.h \
@@ -576,7 +584,16 @@ CSoundPlayerChannel.lo CSoundPlayerChannel.o : CSoundPlayerChannel.cpp \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp ASoundPlayer.h \
 	../../src/misc/TAutoBuffer.h DSP/LevelDetector.h DSP/Delay.h \
-	DSP/TSoundStretcher.h
+	DSP/TSoundStretcher.h settings.h
+CStubAction.o: CStubAction.cpp CStubAction.h ../../config/common.h \
+	../../config/config.h AAction.h settings.h CActionSound.h \
+	CSound_defs.h AStatusComm.h CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/PoolFile/TPoolAccesser.cpp
 CTrigger.lo CTrigger.o : CTrigger.cpp CTrigger.h ../../config/common.h \
 	../../config/config.h ../../src/misc/CMutex.h
 CvoxSoundTranslator.lo CvoxSoundTranslator.o : CvoxSoundTranslator.cpp \
@@ -594,14 +611,12 @@ CvoxSoundTranslator.lo CvoxSoundTranslator.o : CvoxSoundTranslator.cpp \
 initialize.lo initialize.o : initialize.cpp AStatusComm.h \
 	../../config/common.h ../../config/config.h CSound_defs.h \
 	AFrontendHooks.h initialize.h settings.h \
-	../../src/misc/CNestedDataFile/CNestedDataFile.h \
-	CPortAudioSoundPlayer.h COSSSoundPlayer.h ASoundPlayer.h \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h ASoundPlayer.h \
 	../../src/misc/CMutex.h ../../src/misc/TAutoBuffer.h \
-	DSP/LevelDetector.h DSP/Delay.h ../../src/misc/AThread.h \
-	AAction.h CActionSound.h CSound.h \
-	../../src/PoolFile/TPoolFile.h ../../src/misc/CRWLock.h \
-	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
-	../../src/PoolFile/TPoolAccesser.h \
+	DSP/LevelDetector.h DSP/Delay.h AAction.h CActionSound.h \
+	CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp CNativeSoundClipboard.h \

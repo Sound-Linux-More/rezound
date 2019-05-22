@@ -41,7 +41,11 @@ public:
 	sample_pos_t getLength(unsigned sampleRate) const;
 	bool isEmpty() const;
 
+	void temporarilyShortenLength(unsigned sampleRate,sample_pos_t changeTo);
+	void undoTemporaryShortenLength();
+
 	unsigned getSampleRate() const;
+	unsigned getChannelCount() const;
 
 private:
 	const string workingFilename;
@@ -51,6 +55,7 @@ private:
 	unsigned sampleRate;
 	unsigned length;
 
+	sample_pos_t origLength; // used by temporarilyShortenLength
 };
 
 #endif

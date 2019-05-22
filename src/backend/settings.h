@@ -60,16 +60,28 @@ extern CNestedDataFile *gSysPresetsFile;	// opened to gSysPresetsFilename
 // the desired output device parameters to try to open with
 extern unsigned gDesiredOutputSampleRate;	// defaulted to 44100
 extern unsigned gDesiredOutputChannelCount;	// defaulted to 2
+extern int gDesiredOutputBufferCount;		// defaulted to 2
+extern unsigned gDesiredOutputBufferSize;	// defaulted to 2048 (in frames)
 
 
-#ifdef HAVE_LIBPORTAUDIO
-// the PortAudio devices to use
-extern int gPortAudioOutputDevice;		// defaulted to 0
-extern int gPortAudioInputDevice;		// defaulted to 0
-#else
+#ifdef ENABLE_OSS
 // the OSS devices to use (when not using libportaudio)
 extern string gOSSOutputDevice;			// defaulted to "/dev/dsp"
 extern string gOSSInputDevice;			// defaulted to "/dev/dsp"
+#endif
+#ifdef ENABLE_PORTAUDIO
+// the PortAudio devices to use
+extern int gPortAudioOutputDevice;		// defaulted to 0
+extern int gPortAudioInputDevice;		// defaulted to 0
+#endif
+#ifdef ENABLE_JACK
+// the JACK port names to use
+extern string gJACKOutputPortNames[64];
+extern string gJACKInputPortNames[64];
+#endif
+
+#if !defined(ENABLE_OSS) && !defined(ENABLE_PORTAUDIO) && !defined(ENABLE_JACK)
+	#error enable one of the audio I/O systems with the --enable-XXX flags to the configure script
 #endif 
 
 

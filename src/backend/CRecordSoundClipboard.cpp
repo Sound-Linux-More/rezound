@@ -29,16 +29,18 @@
 #include "AStatusComm.h"
 #include "AFrontendHooks.h"
 
-// one or the other of these two will ifdef itself in or out based on HAVE_LIBPORTAUDIO
-#include "CPortAudioSoundRecorder.h"
-#include "COSSSoundRecorder.h"
+#include "ASoundRecorder.h"
+#include "ASoundPlayer.h" // to be able to call aboutToRecord and doneRecording
 
 typedef TPoolAccesser<sample_t,CSound::PoolFile_t > CClipboardPoolAccesser;
 
-CRecordSoundClipboard::CRecordSoundClipboard(const string description,const string _workingFilename) :
+CRecordSoundClipboard::CRecordSoundClipboard(const string description,const string _workingFilename,ASoundPlayer *_soundPlayer) :
 	ASoundClipboard(description),
 	workingFilename(_workingFilename),
-	workingFile(NULL)
+	workingFile(NULL),
+	soundPlayer(_soundPlayer),
+
+	tempAudioPoolKey(0)
 {
 }
 
@@ -58,9 +60,11 @@ bool CRecordSoundClipboard::isReadOnly() const
 }
 
 
+#include "CJACKSoundPlayer.h" // just for CJACKSoundPlayer::hack_sampleRate
 
 bool CRecordSoundClipboard::prepareForCopyTo()
 {
+	// --- possibly cleanup from previous ----
 	if(!isEmpty())
 	{
 		VAnswer ans=Question("There is already data on this recording clipboard.  Do you want to record something new?",cancelQues);
@@ -73,29 +77,45 @@ bool CRecordSoundClipboard::prepareForCopyTo()
 
 	clearWhichChannels();
 	delete workingFile;workingFile=NULL;
+	// ---------------------------------------
 
-#ifdef HAVE_LIBPORTAUDIO
-	CPortAudioSoundRecorder recorder;
-#else
-	COSSSoundRecorder recorder;
-#endif
+
+	ASoundRecorder *recorder=NULL;
+	soundPlayer->aboutToRecord();
 	try
 	{
+		string dummyFilename="";
+		bool dummyRaw=false;
 		unsigned channelCount;
 		unsigned sampleRate;
-		if(!gFrontendHooks->promptForNewSoundParameters(channelCount,sampleRate))
+		sample_pos_t dummyLength;
+
+#ifdef ENABLE_JACK
+		sampleRate=CJACKSoundPlayer::hack_sampleRate;
+		if(!gFrontendHooks->promptForNewSoundParameters(dummyFilename,dummyRaw,true,channelCount,false,sampleRate,true,dummyLength,true))
+		{
+			soundPlayer->doneRecording();
 			return false;
+		}
+#else
+		if(!gFrontendHooks->promptForNewSoundParameters(dummyFilename,dummyRaw,true,channelCount,false,sampleRate,false,dummyLength,true))
+		{
+			soundPlayer->doneRecording();
+			return false;
+		}
+#endif
 
 		remove(workingFilename.c_str());
 		workingFile=new CSound(workingFilename,sampleRate,channelCount,1); // at least 1 sample is manditory
 		this->sampleRate=sampleRate;
 
-		recorder.initialize(workingFile);
+		recorder=ASoundRecorder::createInitializedSoundRecorder(workingFile);
 
-		if(!gFrontendHooks->promptForRecord(&recorder))
+		if(!gFrontendHooks->promptForRecord(recorder))
 		{
-			recorder.deinitialize();
+			delete recorder; recorder=NULL;
 			delete workingFile;workingFile=NULL;
+			soundPlayer->doneRecording();
 			return false;
 		}
 
@@ -106,12 +126,14 @@ bool CRecordSoundClipboard::prepareForCopyTo()
 		// ??? temporary until CSound can have zero lenth
 		workingFile->lockForResize(); try { workingFile->removeSpace(0,1); workingFile->unlockForResize(); } catch(...) { workingFile->unlockForResize(); throw; }
 
-		recorder.deinitialize();
+		delete recorder; recorder=NULL;
+		soundPlayer->doneRecording();
 	}
 	catch(...)
 	{
 		delete workingFile;workingFile=NULL;
-		recorder.deinitialize();
+		delete recorder; recorder=NULL;
+		soundPlayer->doneRecording();
 		throw;
 	}
 
@@ -151,11 +173,64 @@ sample_pos_t CRecordSoundClipboard::getLength(unsigned _sampleRate) const
 
 bool CRecordSoundClipboard::isEmpty() const
 {
-	return workingFile==NULL || workingFile->getLength()<=1;
+	return workingFile==NULL || (workingFile->getLength()<=1 && tempAudioPoolKey==0);
+}
+
+void CRecordSoundClipboard::temporarilyShortenLength(unsigned sampleRate,sample_pos_t changeTo)
+{
+	if(workingFile==NULL)
+		return;
+
+	workingFile->lockForResize();
+	try
+	{
+		if(changeTo>getLength(sampleRate))
+			throw runtime_error(string(__func__)+" -- changeTo is greater than the current length");
+		if(changeTo==getLength(sampleRate))
+			return;
+
+		sample_pos_t newLength=(sample_pos_t)sample_fpos_floor((sample_fpos_t)changeTo/(sample_fpos_t)workingFile->getSampleRate()*(sample_fpos_t)sampleRate);
+		origLength=workingFile->getLength();
+
+		tempAudioPoolKey=workingFile->moveDataToTemp(whichChannels,newLength,workingFile->getLength()-newLength);
+
+		workingFile->unlockForResize();
+	}
+	catch(...)
+	{
+		workingFile->unlockForResize();
+		throw;
+	}
+	
+}
+
+void CRecordSoundClipboard::undoTemporaryShortenLength()
+{
+	if(workingFile==NULL)
+		return;
+
+	workingFile->lockForResize();
+	try
+	{
+		if(tempAudioPoolKey!=0)
+			workingFile->moveDataFromTemp(whichChannels,tempAudioPoolKey,workingFile->getLength(),origLength-workingFile->getLength());
+		workingFile->unlockForResize();
+	}
+	catch(...)
+	{
+		workingFile->unlockForResize();
+		throw;
+	}
+	tempAudioPoolKey=0;
 }
 
 unsigned CRecordSoundClipboard::getSampleRate() const
 {
 	return workingFile==NULL ? 0 : workingFile->getSampleRate();
+}
+
+unsigned CRecordSoundClipboard::getChannelCount() const
+{
+	return workingFile==NULL ? 0 : workingFile->getChannelCount();
 }
 

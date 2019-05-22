@@ -21,6 +21,7 @@
 #include "settings.h"
 
 #include <stddef.h>
+#include <string>
 
 CNestedDataFile *gSettingsRegistry=NULL;
 
@@ -54,17 +55,23 @@ CNestedDataFile *gUserPresetsFile=NULL;
 string gSysPresetsFilename="";
 CNestedDataFile *gSysPresetsFile=NULL;
 
-#include <string.h>
 unsigned gDesiredOutputSampleRate=44100;
 unsigned gDesiredOutputChannelCount=2;
+int gDesiredOutputBufferCount=2;
+unsigned gDesiredOutputBufferSize=2048; // in frames (must be a power of 2)
 
 
-#ifdef HAVE_LIBPORTAUDIO
-int gPortAudioOutputDevice=0;
-int gPortAudioInputDevice=0;
-#else
+#ifdef ENABLE_OSS
 string gOSSOutputDevice="/dev/dsp";
 string gOSSInputDevice="/dev/dsp";
+#endif
+#ifdef ENABLE_PORTAUDIO
+int gPortAudioOutputDevice=0;
+int gPortAudioInputDevice=0;
+#endif
+#ifdef ENABLE_JACK
+string gJACKOutputPortNames[64];
+string gJACKInputPortNames[64];
 #endif
 
 

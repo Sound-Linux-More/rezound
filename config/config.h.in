@@ -22,10 +22,11 @@
 /* Define if lex declares yytext as a char * by default, not a char[].  */
 #undef YYTEXT_POINTER
 
-#undef HAVE_LIBPORTAUDIO
+#undef ENABLE_OSS
+#undef ENABLE_PORTAUDIO
+#undef ENABLE_JACK
 
 #undef HAVE_LIBOGG
-
 #undef HAVE_LIBVORBIS
 
 /* Define if you have the <dlfcn.h> header file.  */

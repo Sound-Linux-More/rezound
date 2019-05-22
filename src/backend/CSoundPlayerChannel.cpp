@@ -31,9 +31,11 @@
 #include "CSound.h"
 #include "ASoundPlayer.h"
 #include "DSP/TSoundStretcher.h"
+#include "settings.h"
 
 #define PREBUFFERED_CHUNK_SIZE 1024 // in frames
-#define CHUNK_COUNT_TO_PREBUFFER 6
+				// try to prebuffer 1.5 times of data as the output device will be prebuffering itself (1.51 because I'm going to truncate the decimal and I want to make sure it's on the upper side of the int)
+#define CHUNK_COUNT_TO_PREBUFFER ((unsigned)(1.51*(gDesiredOutputBufferCount*gDesiredOutputBufferSize/PREBUFFERED_CHUNK_SIZE)))
 
 /* TODO
  * - Provisions have been made in here for supporting multiple simultaneous output devices, 
@@ -441,7 +443,7 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 	// heed the sampling rate of the sound also when adjusting the play position (??? only have device 0 for now)
 	const sample_fpos_t tPlaySpeed= fabs(playSpeedForMixer)  *  (((sample_fpos_t)sound.getSampleRate())/((sample_fpos_t)player->devices[deviceIndex].sampleRate));
 
-	CMutexLocker l2(routingInfoMutex);	// protect routing info
+	CMutexLocker l2(routingInfoMutex);	// protect routing info (??? should probably do a try-lock and bail if not locked to avoid problems with JACK)
 
 	sample_t *oBuffer=_oBuffer;
 	int outputBufferLength=_oBufferLength;
@@ -469,6 +471,7 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 			if(!muted[i]) 
 			{
 				// returns a vector of bools indicating which channels in the output device to which we should write this channel's (i's) data
+					// ??? since this accesses the pool file, it could be bad for JACK. if there were an inmemory copy of this routing info, it would be better for JACK's safe
 				const vector<bool> deviceRoute=getOutputRoute(deviceIndex,i);
 				for(size_t outputDeviceChannel=0;outputDeviceChannel<deviceRoute.size();outputDeviceChannel++)
 				{

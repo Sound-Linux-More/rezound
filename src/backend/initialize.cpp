@@ -36,10 +36,8 @@
 
 #define DOT string(CNestedDataFile::delimChar)
 
-// one or the other of these two will ifdef itself in or out based on HAVE_LIBPORTAUDIO
-#include "CPortAudioSoundPlayer.h"
-#include "COSSSoundPlayer.h"
-static ASoundPlayer *soundPlayer=NULL;
+#include "ASoundPlayer.h"
+static ASoundPlayer *gSoundPlayer=NULL; // saved value for deinitialize
 
 
 #include "AAction.h"
@@ -60,7 +58,7 @@ static bool checkForHelpFlag(int argc,char *argv[]);
 static bool checkForVersionFlag(int argc,char *argv[]);
 static void printUsage(const string app);
 
-bool initializeBackend(ASoundPlayer *&_soundPlayer,int argc,char *argv[])
+bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 {
 	try
 	{
@@ -88,9 +86,9 @@ bool initializeBackend(ASoundPlayer *&_soundPlayer,int argc,char *argv[])
 			// they may beable to recover the last edits if they go load
 			// the files that were being edited (since the pool files will
 			// still exist for all previously open files)
+		const string registryFilename=gUserDataDirectory+istring(CPath::dirDelim)+"registry.dat";
 		try
 		{
-			const string registryFilename=gUserDataDirectory+istring(CPath::dirDelim)+"registry.dat";
 			CPath(registryFilename).touch();
 			gSettingsRegistry=new CNestedDataFile(registryFilename,true);
 		}
@@ -182,19 +180,49 @@ bool initializeBackend(ASoundPlayer *&_soundPlayer,int argc,char *argv[])
 		if(gSettingsRegistry->keyExists("DesiredOutputChannelCount"))
 			gDesiredOutputChannelCount= atoi(gSettingsRegistry->getValue("DesiredOutputChannelCount").c_str());
 
+		if(gSettingsRegistry->keyExists("DesiredOutputBufferCount"))
+			gDesiredOutputBufferCount= atoi(gSettingsRegistry->getValue("DesiredOutputBufferCount").c_str());
+		gDesiredOutputBufferCount=max(2,gDesiredOutputBufferCount);
 
-#ifdef HAVE_LIBPORTAUDIO
-		if(gSettingsRegistry->keyExists("PortAudioOutputDevice"))
-			gPortAudioOutputDevice= atoi(gSettingsRegistry->getValue("PortAudioOutputDevice").c_str());
+		if(gSettingsRegistry->keyExists("DesiredOutputBufferSize"))
+			gDesiredOutputBufferSize= atoi(gSettingsRegistry->getValue("DesiredOutputBufferSize").c_str());
+		if(gDesiredOutputBufferSize<256 || log((double)gDesiredOutputBufferSize)/log(2.0)!=floor(log((double)gDesiredOutputBufferSize)/log(2.0)))
+			throw runtime_error(string(__func__)+" -- DesiredOutputBufferSize in "+registryFilename+" must be a power of 2 and >= than 256");
 
-		if(gSettingsRegistry->keyExists("PortAudioInputDevice"))
-			gPortAudioInputDevice= atoi(gSettingsRegistry->getValue("PortAudioInputDevice").c_str());
-#else
+
+#ifdef ENABLE_OSS
 		if(gSettingsRegistry->keyExists("OSSOutputDevice"))
 			gOSSOutputDevice= gSettingsRegistry->getValue("OSSOutputDevice");
 
 		if(gSettingsRegistry->keyExists("OSSInputDevice"))
 			gOSSInputDevice= gSettingsRegistry->getValue("OSSInputDevice");
+#endif
+
+#ifdef ENABLE_PORTAUDIO
+		if(gSettingsRegistry->keyExists("PortAudioOutputDevice"))
+			gPortAudioOutputDevice= atoi(gSettingsRegistry->getValue("PortAudioOutputDevice").c_str());
+
+		if(gSettingsRegistry->keyExists("PortAudioInputDevice"))
+			gPortAudioInputDevice= atoi(gSettingsRegistry->getValue("PortAudioInputDevice").c_str());
+#endif
+
+#ifdef ENABLE_JACK
+		// ??? could do these with array-keys I suppose
+		for(unsigned t=0;t<MAX_CHANNELS;t++)
+		{
+			if(gSettingsRegistry->keyExists(("JACKOutputPortName"+istring(t+1)).c_str()))
+				gJACKOutputPortNames[t]=gSettingsRegistry->getValue(("JACKOutputPortName"+istring(t+1)).c_str());
+			else
+				break;
+		}
+	
+		for(unsigned t=0;t<MAX_CHANNELS;t++)
+		{
+			if(gSettingsRegistry->keyExists(("JACKInputPortName"+istring(t+1)).c_str()))
+				gJACKInputPortNames[t]=gSettingsRegistry->getValue(("JACKInputPortName"+istring(t+1)).c_str());
+			else
+				break;
+		}
 #endif
 
 
@@ -252,36 +280,41 @@ bool initializeBackend(ASoundPlayer *&_soundPlayer,int argc,char *argv[])
 
 
 		// -- 2
-		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 1",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard1"));
-		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 2",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard2"));
-		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 3",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard3"));
-		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 1",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record1"));
-		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 2",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record2"));
-		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 3",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record3"));
+		soundPlayer=gSoundPlayer=ASoundPlayer::createInitializedSoundPlayer();
+
+
+		// -- 3
+		for(unsigned t=1;t<=3;t++)
+		{
+			const string filename=gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard"+istring(t);
+			try
+			{
+				AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard "+istring(t),filename));
+			}
+			catch(exception &e)
+			{
+				Warning(e.what());
+				remove(filename.c_str());
+			}
+		}
+		for(unsigned t=1;t<=3;t++)
+		{
+			const string filename=gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record"+istring(t);
+			try
+			{
+				AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard "+istring(t),filename,soundPlayer));
+			}
+			catch(exception &e)
+			{
+				Warning(e.what());
+				remove(filename.c_str());
+			}
+		}
+
 
 			// make sure the global clipboard selector index is in range
 		if(gWhichClipboard>=AAction::clipboards.size())
 			gWhichClipboard=0; 
-
-
-		// -- 3
-#ifdef HAVE_LIBPORTAUDIO
-		_soundPlayer=soundPlayer=new CPortAudioSoundPlayer();
-#else
-		_soundPlayer=soundPlayer=new COSSSoundPlayer();
-#endif
-
-
-		// -- 4
-		try
-		{
-			soundPlayer->initialize();
-		}
-		catch(exception &e)
-		{
-			Error(string(e.what())+"\nPlaying will be disabled.");
-		}
-
 	}
 	catch(exception &e)
 	{
@@ -352,20 +385,19 @@ void deinitializeBackend()
 	// reverse order of creation
 
 
-	// -- 4
-	if(soundPlayer!=NULL)
-		soundPlayer->deinitialize();
-
-
 	// -- 3
-	delete soundPlayer;
-
-
-	// -- 2
 	while(!AAction::clipboards.empty())
 	{
 		delete AAction::clipboards[0];
 		AAction::clipboards.erase(AAction::clipboards.begin());
+	}
+
+
+	// -- 2
+	if(gSoundPlayer!=NULL)
+	{
+		gSoundPlayer->deinitialize();
+		delete gSoundPlayer;
 	}
 
 
@@ -376,14 +408,42 @@ void deinitializeBackend()
 
 	gSettingsRegistry->createKey("DesiredOutputSampleRate",gDesiredOutputSampleRate);
 	gSettingsRegistry->createKey("DesiredOutputChannelCount",gDesiredOutputChannelCount);
+	gSettingsRegistry->createKey("DesiredOutputBufferCount",gDesiredOutputBufferCount);
+	gSettingsRegistry->createKey("DesiredOutputBufferSize",gDesiredOutputBufferSize);
 
 
-#ifdef HAVE_LIBPORTAUDIO
-	gSettingsRegistry->createKey("PortAudioOutputDevice",gPortAudioOutputDevice);
-	gSettingsRegistry->createKey("PortAudioInputDevice",gPortAudioInputDevice);
-#else
+#ifdef ENABLE_OSS
 	gSettingsRegistry->createKey("OSSOutputDevice",gOSSOutputDevice);
 	gSettingsRegistry->createKey("OSSInputDevice",gOSSInputDevice);
+#endif
+
+#ifdef ENABLE_PORTAUDIO
+	gSettingsRegistry->createKey("PortAudioOutputDevice",gPortAudioOutputDevice);
+	gSettingsRegistry->createKey("PortAudioInputDevice",gPortAudioInputDevice);
+#endif
+
+#ifdef ENABLE_JACK
+	// ??? could do these with array-keys I suppose
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+	{
+		if(gJACKOutputPortNames[t]!="")
+			gSettingsRegistry->createKey(("JACKOutputPortName"+istring(t+1)).c_str(),gJACKOutputPortNames[t]);
+		else
+		{
+			gSettingsRegistry->removeKey(("JACKOutputPortName"+istring(t+2)).c_str());
+			break;
+		}
+	}
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+	{
+		if(gJACKInputPortNames[t]!="")
+			gSettingsRegistry->createKey(("JACKInputPortName"+istring(t+1)).c_str(),gJACKInputPortNames[t]);
+		else
+		{
+			gSettingsRegistry->removeKey(("JACKInputPortName"+istring(t+2)).c_str());
+			break;
+		}
+	}
 #endif
 
 	gSettingsRegistry->createKey("fallbackWorkDir",gFallbackWorkDir);
@@ -519,8 +579,11 @@ static void printUsage(const string app)
 	printf("\t- The file ~/.rezound/registry.dat does contain some settings that\n\t  can only be changed by editing the file (right now)\n");
 
 	printf("\n");
-	printf("Project homepage\n\thttp://rezound.sourceforge.net\n");
-	printf("Please report bugs to\n\thttp://sourceforge.net/tracker/?atid=105056&group_id=5056\n");
+	printf("Project homepage:\n\thttp://rezound.sourceforge.net\n");
+	printf("Please report bugs to:\n\thttp://sourceforge.net/tracker/?atid=105056&group_id=5056\n");
+
+	printf("Please consider joining the ReZound-users mailing list:\n\thttp://lists.sourceforge.net/lists/listinfo/rezound-users\n");
+
 	
 	printf("\n");
 }

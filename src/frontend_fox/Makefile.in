@@ -78,6 +78,7 @@ MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
 RESWRAP = @RESWRAP@
 STRIP = @STRIP@
@@ -100,7 +101,7 @@ LDFLAGS = @LDFLAGS@
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
 noinst_LTLIBRARIES = libfrontend.la
-libfrontend_la_SOURCES =  			CFOXIcons.cpp 			CActionMenuCommand.cpp 			CChannelSelectDialog.cpp 			CCrossfadeEdgesDialog.cpp 			CActionParamDialog.cpp 			CCueDialog.cpp 			CCueListDialog.cpp 			CMainWindow.cpp 			CNewSoundDialog.cpp 			CRecordDialog.cpp 			CPasteChannelsDialog.cpp 			CProgressDialog.cpp 			CSoundFileManager.cpp 			CFrontendHooks.cpp 			CSoundWindow.cpp 			CMetersWindow.cpp 			CStatusComm.cpp 			CUserNotesDialog.cpp 			CRawDialog.cpp 			CVoxDialog.cpp 			COggDialog.cpp 			CMp3Dialog.cpp 			drawPortion.cpp 			EditActionDialogs.cpp 			EffectActionDialogs.cpp 			FilterActionDialogs.cpp 			RemasterActionDialogs.cpp 			LoopingActionDialogs.cpp 			CAboutDialog.cpp 			FXConstantParamValue.cpp 			FXTextParamValue.cpp 			FXDiskEntityParamValue.cpp 			FXComboTextParamValue.cpp 			FXCheckBoxParamValue.cpp 			FXGraphParamValue.cpp 			FXLFOParamValue.cpp 			FXModalDialogBox.cpp 			FXRezWaveView.cpp 			FXWaveScrollArea.cpp 			FXWaveCanvas.cpp 			rememberShow.cpp 			settings.cpp
+libfrontend_la_SOURCES =  			CFOXIcons.cpp 			CActionMenuCommand.cpp 			CChannelSelectDialog.cpp 			CCrossfadeEdgesDialog.cpp 			CActionParamDialog.cpp 			CCueDialog.cpp 			CCueListDialog.cpp 			CMainWindow.cpp 			CNewSoundDialog.cpp 			CRecordDialog.cpp 			CPasteChannelsDialog.cpp 			CProgressDialog.cpp 			CSoundFileManager.cpp 			CFrontendHooks.cpp 			CSoundWindow.cpp 			CMetersWindow.cpp 			CStatusComm.cpp 			CUserNotesDialog.cpp 			CRawDialog.cpp 			CVoxDialog.cpp 			COggDialog.cpp 			CMp3Dialog.cpp 			CJACKPortChoiceDialog.cpp 			drawPortion.cpp 			EditActionDialogs.cpp 			EffectActionDialogs.cpp 			FilterActionDialogs.cpp 			RemasterActionDialogs.cpp 			LoopingActionDialogs.cpp 			CAboutDialog.cpp 			FXConstantParamValue.cpp 			FXTextParamValue.cpp 			FXDiskEntityParamValue.cpp 			FXComboTextParamValue.cpp 			FXCheckBoxParamValue.cpp 			FXGraphParamValue.cpp 			FXLFOParamValue.cpp 			FXModalDialogBox.cpp 			FXRezWaveView.cpp 			FXWaveScrollArea.cpp 			FXWaveCanvas.cpp 			rememberShow.cpp 			settings.cpp
 
 
 bin_PROGRAMS = rezound
@@ -110,7 +111,7 @@ rezound_SOURCES = main.cpp
 rezound_LDADD = libfrontend.la 	$(top_builddir)/src/backend/libbackend.la 	$(top_builddir)/src/backend/Edits/libEdits.la 	$(top_builddir)/src/backend/Effects/libEffects.la 	$(top_builddir)/src/backend/Filters/libFilters.la 	$(top_builddir)/src/backend/Looping/libLooping.la 	$(top_builddir)/src/backend/Remaster/libRemaster.la 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la 	$(top_builddir)/src/PoolFile/libPoolFile.la
 
 
-noinst_HEADERS =  	fox_compat.h 	CFOXIcons.h 	CActionMenuCommand.h 	CChannelSelectDialog.h 	CCrossfadeEdgesDialog.h 	CActionParamDialog.h 	CCueDialog.h 	CCueListDialog.h 	CMainWindow.h 	CNewSoundDialog.h 	CRecordDialog.h 	CPasteChannelsDialog.h 	CProgressDialog.h 	CSoundFileManager.h 	CFrontendHooks.h 	CSoundWindow.h 	CMetersWindow.h 	CStatusComm.h 	CUserNotesDialog.h 	CRawDialog.h 	CVoxDialog.h 	COggDialog.h 	CMp3Dialog.h 	EditActionDialogs.h 	EffectActionDialogs.h 	FilterActionDialogs.h 	RemasterActionDialogs.h 	LoopingActionDialogs.h 	CAboutDialog.h 	FXConstantParamValue.h 	FXTextParamValue.h 	FXDiskEntityParamValue.h 	FXComboTextParamValue.h 	FXCheckBoxParamValue.h 	FXGraphParamValue.h 	FXLFOParamValue.h 	FXModalDialogBox.h 	FXRezWaveView.h 	FXWaveScrollArea.h 	FXWaveCanvas.h 	drawPortion.h 	rememberShow.h 	custom_cursors.h 	utils.h 	settings.h 
+noinst_HEADERS =  	fox_compat.h 	CFOXIcons.h 	CActionMenuCommand.h 	CChannelSelectDialog.h 	CCrossfadeEdgesDialog.h 	CActionParamDialog.h 	CCueDialog.h 	CCueListDialog.h 	CMainWindow.h 	CNewSoundDialog.h 	CRecordDialog.h 	CPasteChannelsDialog.h 	CProgressDialog.h 	CSoundFileManager.h 	CFrontendHooks.h 	CSoundWindow.h 	CMetersWindow.h 	CStatusComm.h 	CUserNotesDialog.h 	CRawDialog.h 	CVoxDialog.h 	COggDialog.h 	CMp3Dialog.h 	CJACKPortChoiceDialog.h 	EditActionDialogs.h 	EffectActionDialogs.h 	FilterActionDialogs.h 	RemasterActionDialogs.h 	LoopingActionDialogs.h 	CAboutDialog.h 	FXConstantParamValue.h 	FXTextParamValue.h 	FXDiskEntityParamValue.h 	FXComboTextParamValue.h 	FXCheckBoxParamValue.h 	FXGraphParamValue.h 	FXLFOParamValue.h 	FXModalDialogBox.h 	FXRezWaveView.h 	FXWaveScrollArea.h 	FXWaveCanvas.h 	drawPortion.h 	rememberShow.h 	custom_cursors.h 	utils.h 	settings.h 
 
 
 EXTRA_DIST = convert_images.sh
@@ -131,13 +132,13 @@ CCueDialog.lo CCueListDialog.lo CMainWindow.lo CNewSoundDialog.lo \
 CRecordDialog.lo CPasteChannelsDialog.lo CProgressDialog.lo \
 CSoundFileManager.lo CFrontendHooks.lo CSoundWindow.lo CMetersWindow.lo \
 CStatusComm.lo CUserNotesDialog.lo CRawDialog.lo CVoxDialog.lo \
-COggDialog.lo CMp3Dialog.lo drawPortion.lo EditActionDialogs.lo \
-EffectActionDialogs.lo FilterActionDialogs.lo RemasterActionDialogs.lo \
-LoopingActionDialogs.lo CAboutDialog.lo FXConstantParamValue.lo \
-FXTextParamValue.lo FXDiskEntityParamValue.lo FXComboTextParamValue.lo \
-FXCheckBoxParamValue.lo FXGraphParamValue.lo FXLFOParamValue.lo \
-FXModalDialogBox.lo FXRezWaveView.lo FXWaveScrollArea.lo \
-FXWaveCanvas.lo rememberShow.lo settings.lo
+COggDialog.lo CMp3Dialog.lo CJACKPortChoiceDialog.lo drawPortion.lo \
+EditActionDialogs.lo EffectActionDialogs.lo FilterActionDialogs.lo \
+RemasterActionDialogs.lo LoopingActionDialogs.lo CAboutDialog.lo \
+FXConstantParamValue.lo FXTextParamValue.lo FXDiskEntityParamValue.lo \
+FXComboTextParamValue.lo FXCheckBoxParamValue.lo FXGraphParamValue.lo \
+FXLFOParamValue.lo FXModalDialogBox.lo FXRezWaveView.lo \
+FXWaveScrollArea.lo FXWaveCanvas.lo rememberShow.lo settings.lo
 bin_PROGRAMS =  rezound$(EXEEXT)
 PROGRAMS =  $(bin_PROGRAMS)
 
@@ -330,7 +331,7 @@ CActionMenuCommand.lo CActionMenuCommand.o : CActionMenuCommand.cpp \
 	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../src/PoolFile/TPoolAccesser.cpp CFOXIcons.h
+	../../src/PoolFile/TPoolAccesser.cpp CFOXIcons.h CMainWindow.h
 CActionParamDialog.lo CActionParamDialog.o : CActionParamDialog.cpp \
 	CActionParamDialog.h ../../config/common.h \
 	../../config/config.h fox_compat.h FXModalDialogBox.h \
@@ -404,8 +405,13 @@ CFrontendHooks.lo CFrontendHooks.o : CFrontendHooks.cpp CFrontendHooks.h \
 	../backend/AFrontendHooks.h ../backend/CSound_defs.h \
 	../../src/misc/istring ../../src/misc/CPath.h settings.h \
 	../backend/settings.h CNewSoundDialog.h FXModalDialogBox.h \
-	CRecordDialog.h CRawDialog.h COggDialog.h CMp3Dialog.h \
-	CVoxDialog.h ../backend/ASoundTranslator.h
+	CRecordDialog.h CJACKPortChoiceDialog.h CRawDialog.h \
+	COggDialog.h CMp3Dialog.h CVoxDialog.h \
+	../backend/ASoundTranslator.h
+CJACKPortChoiceDialog.lo CJACKPortChoiceDialog.o : \
+	CJACKPortChoiceDialog.cpp CJACKPortChoiceDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../../src/misc/istring
 CMainWindow.lo CMainWindow.o : CMainWindow.cpp CMainWindow.h \
 	../../config/common.h ../../config/config.h fox_compat.h \
 	../../src/misc/CPath.h CActionMenuCommand.h CSoundFileManager.h \
@@ -467,6 +473,7 @@ CMainWindow.lo CMainWindow.o : CMainWindow.cpp CMainWindow.h \
 	../backend/Looping/CMakeSymetricAction.h \
 	../backend/Looping/CAddCuesAction.h LoopingActionDialogs.h \
 	../backend/Remaster/RemasterActions.h \
+	../backend/Remaster/CBalanceAction.h \
 	../backend/Remaster/CUnclipAction.h \
 	../backend/Remaster/CRemoveDCAction.h \
 	../backend/Remaster/CNoiseGateAction.h \
@@ -508,7 +515,10 @@ CPasteChannelsDialog.lo CPasteChannelsDialog.o : \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp \
-	../backend/ASoundClipboard.h
+	../backend/CActionParameters.h ../backend/ALFO.h \
+	../backend/CGraphParamValueNode.h ../backend/ASoundClipboard.h \
+	../misc/CNestedDataFile/CNestedDataFile.h \
+	FXConstantParamValue.h
 CProgressDialog.lo CProgressDialog.o : CProgressDialog.cpp \
 	CProgressDialog.h ../../config/common.h ../../config/config.h \
 	fox_compat.h
@@ -664,7 +674,7 @@ FXGraphParamValue.lo FXGraphParamValue.o : FXGraphParamValue.cpp \
 	../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../src/PoolFile/TPoolAccesser.cpp drawPortion.h
+	../../src/PoolFile/TPoolAccesser.cpp CFOXIcons.h drawPortion.h
 FXLFOParamValue.lo FXLFOParamValue.o : FXLFOParamValue.cpp \
 	FXLFOParamValue.h ../../config/common.h ../../config/config.h \
 	fox_compat.h ../backend/ALFO.h ../backend/CSound_defs.h \
@@ -751,7 +761,17 @@ RemasterActionDialogs.lo RemasterActionDialogs.o : \
 	FXCheckBoxParamValue.h FXGraphParamValue.h \
 	../backend/CGraphParamValueNode.h FXLFOParamValue.h \
 	../backend/ALFO.h ../backend/AActionDialog.h \
-	../backend/unit_conv.h ../../src/misc/istring
+	../backend/unit_conv.h ../../src/misc/istring CFOXIcons.h \
+	../backend/CActionSound.h ../backend/settings.h \
+	../backend/CActionParameters.h ../backend/CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/PoolFile/TPoolAccesser.cpp \
+	../backend/Remaster/CBalanceAction.h ../backend/AAction.h \
+	../backend/AStatusComm.h
 rememberShow.lo rememberShow.o : rememberShow.cpp rememberShow.h \
 	../../config/common.h ../../config/config.h fox_compat.h \
 	../../src/misc/istring \

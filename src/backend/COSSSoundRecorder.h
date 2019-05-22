@@ -23,7 +23,7 @@
 
 #include "../../config/common.h"
 
-#ifndef HAVE_LIBPORTAUDIO
+#ifdef ENABLE_OSS
 
 #include "ASoundRecorder.h"
 
@@ -32,7 +32,6 @@
 class COSSSoundRecorder : public ASoundRecorder
 {
 public:
-
 	COSSSoundRecorder();
 	virtual ~COSSSoundRecorder();
 
@@ -65,6 +64,6 @@ private:
 	friend class CRecordThread;
 };
 
-#endif // HAVE_LIBPORTAUDIO
+#endif // ENABLE_OSS
 
 #endif

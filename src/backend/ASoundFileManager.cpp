@@ -38,6 +38,8 @@
 #include "ASoundTranslator.h"
 #include "AFrontendHooks.h"
 
+#include "ASoundRecorder.h"
+
 ASoundFileManager::ASoundFileManager(ASoundPlayer *_soundPlayer,CNestedDataFile *_loadedRegistryFile) :
 	soundPlayer(_soundPlayer),
 	loadedRegistryFile(_loadedRegistryFile)
@@ -46,23 +48,18 @@ ASoundFileManager::ASoundFileManager(ASoundPlayer *_soundPlayer,CNestedDataFile 
 
 void ASoundFileManager::createNew()
 {
-	prvCreateNew(true);
+	prvCreateNew(0,true,0,true);
 }
 
-CLoadedSound *ASoundFileManager::prvCreateNew(bool askForLength)
+CLoadedSound *ASoundFileManager::prvCreateNew(sample_pos_t _length,bool askForLength,unsigned _sampleRate,bool askForSampleRate)
 {
 	string filename=getUntitledFilename(gPromptDialogDirectory,"rez");
 	bool rawFormat=false;
 	unsigned channelCount;
-	unsigned sampleRate;
-	sample_pos_t length=1;  // 1 if askForLength is false
-	if(
-		(askForLength && gFrontendHooks->promptForNewSoundParameters(filename,rawFormat,channelCount,sampleRate,length)) ||
-		(!askForLength && gFrontendHooks->promptForNewSoundParameters(filename,rawFormat,channelCount,sampleRate))
-	)
-	{
+	unsigned sampleRate=_sampleRate;
+	sample_pos_t length=_length;
+	if(gFrontendHooks->promptForNewSoundParameters(filename,rawFormat,false,channelCount,false,sampleRate,!askForSampleRate,length,!askForLength))
 		return createNew(filename,channelCount,sampleRate,length,rawFormat);
-	}
 
 	return NULL;
 }
@@ -395,13 +392,16 @@ void ASoundFileManager::revert()
 	}
 }
 
-// one or the other of these two will ifdef itself in or out based on HAVE_LIBPORTAUDIO
-#include "CPortAudioSoundRecorder.h"
-#include "COSSSoundRecorder.h"
 
 void ASoundFileManager::recordToNew()
 {
-	CLoadedSound *loaded=prvCreateNew(false);
+#ifdef ENABLE_JACK /* this really needs to be a run-time check because we might not use a CJACKSoundRecorder after all it fails to initialize */
+	// since we can't set the sample rate for the JACK audio system, then I don't ask for a sample rate
+								// ??? device zero is the only one right now
+	CLoadedSound *loaded=prvCreateNew(1,false,soundPlayer->devices[0].sampleRate,false);
+#else
+	CLoadedSound *loaded=prvCreateNew(1,false,0,true);
+#endif
 	if(loaded==NULL)
 		return; // cancelled
 
@@ -409,31 +409,30 @@ void ASoundFileManager::recordToNew()
 	try
 	{
 
-#ifdef HAVE_LIBPORTAUDIO
-		CPortAudioSoundRecorder recorder;
-#else
-		COSSSoundRecorder recorder;
-#endif
+		ASoundRecorder *recorder=NULL;
 		try
 		{
-			recorder.initialize(loaded->sound);
+			recorder=ASoundRecorder::createInitializedSoundRecorder(loaded->sound);
 		}
 		catch(...)
 		{
 			close(ctSaveNone,loaded);
-			recorder.deinitialize();
 			throw;
 		}
 
 		bool ret=true;
 		try
 		{
-			ret=gFrontendHooks->promptForRecord(&recorder);
-			recorder.deinitialize();
+			ret=gFrontendHooks->promptForRecord(recorder);
+			delete recorder;
 		}
 		catch(...)
 		{
-			recorder.deinitialize();
+			delete recorder;
+
+			if(loaded->sound->getLength()<=1) // don't close if something did seem to get recorded
+				close(ctSaveNone,loaded);
+
 			throw;
 		}
 
