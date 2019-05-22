@@ -22,7 +22,6 @@
 
 #include <TAutoBuffer.h>
 
-#include <math.h>
 #include "../DSP/Convolver.h"
 
 CTestEffect::CTestEffect(const CActionSound &actionSound) :
@@ -200,7 +199,7 @@ void CTestEffect::undoActionSizeSafe(const CActionSound &actionSound)
 // --------------------------------------------------
 
 CTestEffectFactory::CTestEffectFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Test","Test",channelSelectDialog,NULL)
+	AActionFactory("Test","",channelSelectDialog,NULL)
 {
 }
 

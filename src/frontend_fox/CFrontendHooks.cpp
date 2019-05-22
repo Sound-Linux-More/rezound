@@ -34,6 +34,7 @@
 #include "COggDialog.h"
 #include "CMp3Dialog.h"
 #include "CVoxDialog.h"
+#include "CMIDIDumpSampleIdDialog.h"
 
 #include "../backend/ASoundTranslator.h"
 
@@ -53,9 +54,10 @@ CFrontendHooks::CFrontendHooks(FXWindow *_mainWindow) :
 	rawDialog(NULL),
 	oggDialog(NULL),
 	mp3Dialog(NULL),
-	voxDialog(NULL)
+	voxDialog(NULL),
+	MIDIDumpSampleIdDialog(NULL)
 {
-	dirDialog=new FXDirDialog(mainWindow,"Select Directory");
+	dirDialog=new FXDirDialog(mainWindow,_("Select Directory"));
 
 	JACKPortChoiceDialog=new CJACKPortChoiceDialog(mainWindow);
 }
@@ -71,11 +73,12 @@ CFrontendHooks::~CFrontendHooks()
 	delete oggDialog;
 	delete mp3Dialog;
 	delete voxDialog;
+	delete MIDIDumpSampleIdDialog;
 }
 
 void CFrontendHooks::doSetupAfterBackendIsSetup()
 {
-	openDialog=new FXFileDialog(mainWindow,"Open File");
+	openDialog=new FXFileDialog(mainWindow,_("Open File"));
 	openDialog->setPatternList(getFOXFileTypes().c_str());
 	openDialog->setCurrentPattern(0);
 	openDialog->showReadOnly(false); // would be true if I supported it
@@ -83,12 +86,12 @@ void CFrontendHooks::doSetupAfterBackendIsSetup()
 	{ // add the "Open as Raw" check button
 		FXVerticalFrame *f=new FXVerticalFrame(openDialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0, 0,0,0,0, 0,0);
 		openDialog->childAtIndex(0)->reparent(f);
-		openAsRawCheckButton=new FXCheckButton(new FXPacker(f,0, 0,0,0,0, DEFAULT_SPACING*2,0,0),"Open as Raw",NULL,0,CHECKBUTTON_NORMAL);
+		openAsRawCheckButton=new FXCheckButton(new FXPacker(f,0, 0,0,0,0, DEFAULT_SPACING*2,0,0),_("Open as Raw"),NULL,0,CHECKBUTTON_NORMAL);
 	}
 	if(openDialog->getDirectory()!=gPromptDialogDirectory.c_str())
 		openDialog->setDirectory(gPromptDialogDirectory.c_str());
 
-	saveDialog=new FXFileDialog(mainWindow,"Save File");
+	saveDialog=new FXFileDialog(mainWindow,_("Save File"));
 	saveDialog->setSelectMode(SELECTFILE_ANY);
 	saveDialog->setPatternList(getFOXFileTypes().c_str());
 	saveDialog->setCurrentPattern(0);
@@ -96,7 +99,7 @@ void CFrontendHooks::doSetupAfterBackendIsSetup()
 	{ // add the "Save as Raw" check button
 		FXVerticalFrame *f=new FXVerticalFrame(saveDialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0, 0,0,0,0, 0,0);
 		saveDialog->childAtIndex(0)->reparent(f);
-		saveAsRawCheckButton=new FXCheckButton(new FXPacker(f,0, 0,0,0,0, DEFAULT_SPACING*2,0,0),"Save as Raw",NULL,0,CHECKBUTTON_NORMAL);
+		saveAsRawCheckButton=new FXCheckButton(new FXPacker(f,0, 0,0,0,0, DEFAULT_SPACING*2,0,0),_("Save as Raw"),NULL,0,CHECKBUTTON_NORMAL);
 	}
 
 	newSoundDialog=new CNewSoundDialog(mainWindow);
@@ -106,10 +109,12 @@ void CFrontendHooks::doSetupAfterBackendIsSetup()
 	mp3Dialog=new CMp3Dialog(mainWindow);
 	voxDialog=new CVoxDialog(mainWindow);
 	
+	MIDIDumpSampleIdDialog=new CMIDIDumpSampleIdDialog(mainWindow);
 }
 
 const string CFrontendHooks::getFOXFileTypes() const
 {
+	const vector<const ASoundTranslator *> translators=ASoundTranslator::getTranslators();
 	string types;
 	string allTypes;
 
@@ -119,49 +124,48 @@ const string CFrontendHooks::getFOXFileTypes() const
 		   Format Name (*.ext,*.EXT)\nFormat Name (*.ext,*.EXT)\n...
 		And built a list for "All Types" with the *.ext,*.ext,...,*.EXT,*.EXT
 	*/
-	for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
+	for(size_t t=0;t<translators.size();t++)
 	{
-		const vector<string> names=ASoundTranslator::registeredTranslators[t]->getFormatNames();
-		const vector<vector<string> > extensions=ASoundTranslator::registeredTranslators[t]->getFormatExtensions();
+		const vector<string> names=translators[t]->getFormatNames();
+		const vector<vector<string> > fileMasks=translators[t]->getFormatFileMasks();
 	
 		for(size_t i=0;i<names.size();i++)
 		{
 			types+=names[i];
 			types+=" (";
-			for(size_t k=0;k<extensions[i].size();k++)
+			for(size_t k=0;k<fileMasks[i].size();k++)
 			{
 				if(k>0)
 					types+=",";
-				types+="*."+extensions[i][k]+",";
-				types+="*."+istring(extensions[i][k]).upper();
+				types+=fileMasks[i][k]+","+istring(fileMasks[i][k]).upper();
 
 				if(allTypes!="")
 					allTypes+=",";
-				allTypes+="*."+extensions[i][k];
+				allTypes+=fileMasks[i][k];
 			}
 			types+=")\n";
 		}
 	}
 
-	for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
+	for(size_t t=0;t<translators.size();t++)
 	{
-		const vector<string> names=ASoundTranslator::registeredTranslators[t]->getFormatNames();
-		const vector<vector<string> > extensions=ASoundTranslator::registeredTranslators[t]->getFormatExtensions();
+		const vector<string> names=translators[t]->getFormatNames();
+		const vector<vector<string> > fileMasks=translators[t]->getFormatFileMasks();
 	
 		for(size_t i=0;i<names.size();i++)
 		{
-			for(size_t k=0;k<extensions[i].size();k++)
+			for(size_t k=0;k<fileMasks[i].size();k++)
 			{
 				if(allTypes!="")
 					allTypes+=",";
-				allTypes+="*."+istring(extensions[i][k]).upper();
+				allTypes+=istring(fileMasks[i][k]).upper();
 			}
 		}
 	}
 	
-	types="All Supported Types ("+allTypes+")\n"+types+"All Files(*)\n";
+	types=string(_("All Supported Types"))+" ("+allTypes+")\n"+types+_("All Files")+"(*)\n";
 
-	return(types);
+	return types;
 }
 
 bool CFrontendHooks::promptForOpenSoundFilename(string &filename,bool &readOnly,bool &openAsRaw)
@@ -180,9 +184,9 @@ bool CFrontendHooks::promptForOpenSoundFilename(string &filename,bool &readOnly,
 		readOnly=openDialog->getReadOnly();
 		openAsRaw=openAsRawCheckButton->getCheck();
 
-		return(true);
+		return true;
 	}
-	return(false);
+	return false;
 }
 
 bool CFrontendHooks::promptForOpenSoundFilenames(vector<string> &filenames,bool &readOnly,bool &openAsRaw)
@@ -207,9 +211,9 @@ bool CFrontendHooks::promptForOpenSoundFilenames(vector<string> &filenames,bool 
 		readOnly=openDialog->getReadOnly();
 		openAsRaw=openAsRawCheckButton->getCheck();
 
-		return(true);
+		return true;
 	}
-	return(false);
+	return false;
 }
 
 bool CFrontendHooks::promptForSaveSoundFilename(string &filename,bool &saveAsRaw)
@@ -228,16 +232,16 @@ bool CFrontendHooks::promptForSaveSoundFilename(string &filename,bool &saveAsRaw
 		filename=saveDialog->getFilename().text();
 		saveAsRaw=saveAsRawCheckButton->getCheck();
 
-		return(true);
+		return true;
 	}
-	return(false);
+	return false;
 }
 
 bool CFrontendHooks::promptForNewSoundParameters(string &filename,bool &rawFormat,bool hideFilename,unsigned &channelCount,bool hideChannelCount,unsigned &sampleRate,bool hideSampleRate,sample_pos_t &length,bool hideLength)
 {
 	newSoundDialog->hideFilename(hideFilename);
 	if(hideChannelCount)
-		throw runtime_error(string(__func__)+" -- unimeplemented: hideChannelCount");
+		throw runtime_error(string(__func__)+" -- unimplemented: hideChannelCount");
 	newSoundDialog->hideSampleRate(hideSampleRate);
 	newSoundDialog->hideLength(hideLength);
 
@@ -272,16 +276,16 @@ bool CFrontendHooks::promptForDirectory(string &dirname,const string title)
 	if(dirDialog->execute())
 	{
 		dirname=dirDialog->getDirectory().text();
-		return(true);
+		return true;
 	}
-	return(false);
+	return false;
 }
 
 bool CFrontendHooks::promptForRecord(ASoundRecorder *recorder)
 {
 	if(recordDialog->show(recorder))
-		return(true);
-	return(false);
+		return true;
+	return false;
 }
 
 const string CFrontendHooks::promptForJACKPort(const string message,const vector<string> portNames)
@@ -294,21 +298,31 @@ const string CFrontendHooks::promptForJACKPort(const string message,const vector
 
 bool CFrontendHooks::promptForRawParameters(RawParameters &parameters,bool showOffsetAndLengthParameters)
 {
-	return(rawDialog->show(parameters,showOffsetAndLengthParameters));
+	return rawDialog->show(parameters,showOffsetAndLengthParameters);
 }
 
 bool CFrontendHooks::promptForOggCompressionParameters(OggCompressionParameters &parameters)
 {
-	return(oggDialog->show(parameters));
+	return oggDialog->show(parameters);
 }
 
 bool CFrontendHooks::promptForMp3CompressionParameters(Mp3CompressionParameters &parameters)
 {
-	return(mp3Dialog->show(parameters));
+	return mp3Dialog->show(parameters);
 }
 
 bool CFrontendHooks::promptForVoxParameters(VoxParameters &parameters)
 {
-	return(voxDialog->show(parameters));
+	return voxDialog->show(parameters);
+}
+
+bool CFrontendHooks::promptForOpenMIDISampleDump(int &sysExChannel,int &waveformId)
+{
+	return MIDIDumpSampleIdDialog->showForOpen(sysExChannel,waveformId);
+}
+
+bool CFrontendHooks::promptForSaveMIDISampleDump(int &sysExChannel,int &waveformId,int &loopType)
+{
+	return MIDIDumpSampleIdDialog->showForSave(sysExChannel,waveformId,loopType);
 }
 

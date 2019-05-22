@@ -57,7 +57,9 @@ public:
 	FXIcon *pause;
 	FXIcon *play_all_looped;
 	FXIcon *play_all_once;
+	FXIcon *play_selection_looped_gap_before_repeat;
 	FXIcon *play_selection_looped;
+	FXIcon *play_selection_looped_skip_most;
 	FXIcon *play_selection_once;
 	FXIcon *record;
 	FXIcon *RedLED1;
@@ -77,7 +79,9 @@ public:
 	FXIcon *small_pause;
 	FXIcon *small_play_all_looped;
 	FXIcon *small_play_all_once;
+	FXIcon *small_play_selection_looped_gap_before_repeat;
 	FXIcon *small_play_selection_looped;
+	FXIcon *small_play_selection_looped_skip_most;
 	FXIcon *small_play_selection_once;
 	FXIcon *small_record;
 	FXIcon *small_small_record;

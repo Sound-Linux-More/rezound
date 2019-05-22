@@ -24,6 +24,7 @@
 
 #include "CSound.h"
 
+#include <istring>
 #include <stdexcept>
 
 #include "AFrontendHooks.h"
@@ -148,7 +149,7 @@ bool CrawSoundTranslator::onSaveSound(const string filename,const CSound *sound,
 }
 
 
-bool CrawSoundTranslator::handlesExtension(const string extension) const
+bool CrawSoundTranslator::handlesExtension(const string extension,const string filename) const
 {
 	return extension=="raw";
 }
@@ -167,13 +168,13 @@ const vector<string> CrawSoundTranslator::getFormatNames() const
 	return names;
 }
 
-const vector<vector<string> > CrawSoundTranslator::getFormatExtensions() const
+const vector<vector<string> > CrawSoundTranslator::getFormatFileMasks() const
 {
 	vector<vector<string> > list;
 
-	vector<string> extensions;
-	extensions.push_back("raw");
-	list.push_back(extensions);
+	vector<string> fileMasks;
+	fileMasks.push_back("*.raw");
+	list.push_back(fileMasks);
 
 	return list;
 }

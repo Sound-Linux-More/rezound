@@ -27,6 +27,7 @@
 class CSoundPlayerChannel;
 
 #include <CMutex.h>
+#include <CRWLock.h>
 #include <CConditionVariable.h>
 #include <AThread.h>
 #include <TMemoryPipe.h>
@@ -47,8 +48,16 @@ public:
 	CSound *getSound() const;
 	CSound * const sound;
 
+	enum LoopTypes
+	{
+		ltLoopNone,		// don't loop
+		ltLoopNormal,		// loop either the whole sound or the selection (depending on playSelectionOnly passed to play())
+		ltLoopSkipMost,		// loop normally except skip most of the middle and put a short gap there instead
+		ltLoopGapBeforeRepeat	// loop normally except put a short gap after the end point so it's clear where the loop point is
+	};
+
 	// the position arg is only used iff playLooped and playSelectionOnly are both false
-	void play(sample_pos_t position=0,bool _playLooped=false,bool _playSelectionOnly=false);
+	void play(sample_pos_t position=0,LoopTypes _playLooped=ltLoopNone,bool _playSelectionOnly=false);
 	void pause();
 	void stop();
 
@@ -114,23 +123,32 @@ private:
 
 	struct RPrebufferedChunk
 	{
-		RPrebufferedChunk(unsigned channelCount);
+		RPrebufferedChunk(const unsigned channelCount,const unsigned sampleRate);
 		virtual ~RPrebufferedChunk();
 
-		unsigned channelCount;
+		const unsigned channelCount;
+		const unsigned sampleRate;
 		sample_t *data;
-		unsigned size; // how many sample frames are in data (does not depend on offset)
 		sample_fpos_t offset; // how many sample frames have already been used from data (should always be less than size)
+		unsigned size; // how many sample frames are in data (does not depend on offset)
+
+		bool isGap; // if this is true, then disregard 'data' and use the signal in the gap buffer (defined in the .cpp)
+		sample_pos_t gapSignalBufferOffset; // the offset into the gapSignalBuffer to use if isGap is true
 
 		sample_pos_t playPosition; // this is the play position of the first sample in this chunk
+
+		vector<bool> outputRouting[MAX_CHANNELS];
 	};
 
+	CRWLock chunkObjectsMutex;
 	size_t prebufferedChunksIndex; // this is the index of the next chunk to use from prebufferedChunks;
 	vector<RPrebufferedChunk *> prebufferedChunks;
 	TMemoryPipe<RPrebufferedChunk *> prebufferedChunkPipe;
 
 	sample_t prevFrame[MAX_CHANNELS];
 
+	sample_pos_t gapSignalBufferLength; // in frames
+	sample_t *gapSignalBuffer;
 	void createPrebufferedChunks();
 	void destroyPrebufferedChunks();
 
@@ -138,7 +156,9 @@ private:
 	CSoundPlayerChannel(ASoundPlayer *_player,CSound *_sound);
 
 	// Playing Status and Play Positions
-	volatile bool prebuffering,playing,paused,playLooped,playSelectionOnly;
+	volatile bool prebuffering,playing,paused,playSelectionOnly;
+	volatile LoopTypes loopType;
+	bool lastBufferWasGapSignal; // true if the last buffer that was processed in mixOntoBuffer had its isGap flag turned on (if this is the case, then I have to handle setting the play position in the setSeekSpeed() method a l;ttle different)
 	sample_pos_t playPosition;
 	float seekSpeed;
 		float playSpeedForMixer; int playSpeedForChunker;
@@ -155,9 +175,10 @@ private:
 	void deinit();
 	void init();
 
-	mutable CMutex routingInfoMutex;
 	void createInitialOutputRoute();
 	const vector<bool> getOutputRoute(unsigned deviceIndex,unsigned audioChannel) const;
+
+	RPrebufferedChunk *getPrebufferChunk();
 };
 
 #endif

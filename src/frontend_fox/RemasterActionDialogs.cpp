@@ -21,6 +21,8 @@
 #include "RemasterActionDialogs.h"
 #include "../backend/unit_conv.h"
 
+#include <istring>
+
 #include "CFOXIcons.h"
 
 #include "../backend/CActionSound.h"
@@ -37,23 +39,23 @@ static const double uninterpretValue_balance(const double x,const int s) { retur
 static const double ret_balance(const double x) { return x/100.0; }
 
 CSimpleBalanceActionDialog::CSimpleBalanceActionDialog(FXWindow *mainWindow) :
-	CActionParamDialog(mainWindow,"Simple Balance Change")
+	CActionParamDialog(mainWindow)
 {
 	void *p0=newVertPanel(NULL,true);
 		void *p1=newHorzPanel(p0,false);
 			void *p2=newVertPanel(p1,false);
 				vector<string> items;
-				addComboTextEntry(p2,"Channel A",items,"");
-				addComboTextEntry(p2,"Channel B",items,"");
+				addComboTextEntry(p2,N_("Channel A"),items,"");
+				addComboTextEntry(p2,N_("Channel B"),items,"");
 
 			
-			addSlider(p1,"Balance","%",interpretValue_balance,uninterpretValue_balance,ret_balance,0.0,0,0,0,false);
+			addSlider(p1,N_("Balance"),"%",interpretValue_balance,uninterpretValue_balance,ret_balance,0.0,0,0,0,false);
 
 			vector<string> balanceTypes;
-			balanceTypes.push_back("Strict Balance");
-			balanceTypes.push_back("1x Pan");
-			balanceTypes.push_back("2x Pan");
-		addComboTextEntry(p0,"Balance Type",balanceTypes,CBalanceAction::getBalanceTypeExplaination());
+			balanceTypes.push_back(N_("Strict Balance"));
+			balanceTypes.push_back(N_("1x Pan"));
+			balanceTypes.push_back(N_("2x Pan"));
+		addComboTextEntry(p0,N_("Balance Type"),balanceTypes,CBalanceAction::getBalanceTypeExplanation());
 		/* not possible
 			vector<FXIcon *> balanceTypeIcons;
 			balanceTypeIcons.push_back(FOXIcons->Falling_Sawtooth_Wave___0_1_);
@@ -75,7 +77,7 @@ bool CSimpleBalanceActionDialog::show(CActionSound *actionSound,CActionParameter
 		{
 			vector<string> items;
 			for(size_t t=0;t<actionSound->sound->getChannelCount();t++)
-				items.push_back("Channel "+istring(t));
+				items.push_back(N_("Channel ")+istring(t));
 
 			// set the combo boxes according to actionSound
 			getComboText("Channel A")->setItems(items);
@@ -91,22 +93,22 @@ bool CSimpleBalanceActionDialog::show(CActionSound *actionSound,CActionParameter
 
 
 CCurvedBalanceActionDialog::CCurvedBalanceActionDialog(FXWindow *mainWindow) :
-	CActionParamDialog(mainWindow,"Curved Balance Change")
+	CActionParamDialog(mainWindow)
 {
 	void *p0=newVertPanel(NULL,true);
 		void *p1=newHorzPanel(p0,false);
 			void *p2=newVertPanel(p1,false);
 				vector<string> items;
-				addComboTextEntry(p2,"Channel A",items,"");
-				addComboTextEntry(p2,"Channel B",items,"");
+				addComboTextEntry(p2,N_("Channel A"),items,"");
+				addComboTextEntry(p2,N_("Channel B"),items,"");
 
-			addGraphWithWaveform(p1,"Balance Curve","Balance","%",interpretValue_balance,uninterpretValue_balance,ret_balance,0,0,0);
+			addGraphWithWaveform(p1,N_("Balance Curve"),N_("Balance"),"%",interpretValue_balance,uninterpretValue_balance,ret_balance,0,0,0);
 
 		vector<string> balanceTypes;
-		balanceTypes.push_back("Strict Balance");
-		balanceTypes.push_back("1x Pan");
-		balanceTypes.push_back("2x Pan");
-		addComboTextEntry(p0,"Balance Type",balanceTypes,CBalanceAction::getBalanceTypeExplaination());
+		balanceTypes.push_back(N_("Strict Balance"));
+		balanceTypes.push_back(N_("1x Pan"));
+		balanceTypes.push_back(N_("2x Pan"));
+		addComboTextEntry(p0,N_("Balance Type"),balanceTypes,CBalanceAction::getBalanceTypeExplanation());
 }
 
 bool CCurvedBalanceActionDialog::show(CActionSound *actionSound,CActionParameters *actionParameters)
@@ -121,7 +123,7 @@ bool CCurvedBalanceActionDialog::show(CActionSound *actionSound,CActionParameter
 		{
 			vector<string> items;
 			for(size_t t=0;t<actionSound->sound->getChannelCount();t++)
-				items.push_back("Channel "+istring(t));
+				items.push_back(N_("Channel ")+istring(t));
 
 			// set the combo boxes according to actionSound
 			getComboText("Channel A")->setItems(items);
@@ -138,19 +140,59 @@ bool CCurvedBalanceActionDialog::show(CActionSound *actionSound,CActionParameter
 
 
 
+// --- monoize -----------------------------
+
+static const double interpretValue_monoize(const double x,const int s) { return x*100.0; }
+static const double uninterpretValue_monoize(const double x,const int s) { return x/100.0; }
+static const double retconv_monoize(const double x) { return x/100.0 ; }
+
+CMonoizeActionDialog::CMonoizeActionDialog(FXWindow *mainWindow) :
+	CActionParamDialog(mainWindow,true,FXModalDialogBox::stShrinkWrap)
+{
+		void *p0=newVertPanel(NULL);
+			void *p1=newHorzPanel(p0,false);
+			for(unsigned t=0;t<MAX_CHANNELS;t++)
+				addSlider(p1,N_("Channel ")+istring(t),"%",interpretValue_monoize,uninterpretValue_monoize,retconv_monoize,100.0,0,0,0,false);
+			
+			vector<string> options;
+			options.push_back(N_("Remove All But One Channel"));
+			options.push_back(N_("Make All Channels The Same"));
+			addComboTextEntry(p0,N_("Method"),options);
+}
+
+bool CMonoizeActionDialog::show(CActionSound *actionSound,CActionParameters *actionParameters)
+{
+	if(actionSound->sound->getChannelCount()<1)
+		return false;
+	else
+	{
+		for(unsigned t=0;t<MAX_CHANNELS;t++)
+			showControl("Channel "+istring(t), t<actionSound->sound->getChannelCount() );
+
+		return CActionParamDialog::show(actionSound,actionParameters);
+	}
+}
+
+
 // --- noise gate --------------------------
 
 static const double interpretValue_noiseGate(const double x,const int s) { return(x*s); }
 static const double uninterpretValue_noiseGate(const double x,const int s) { return(x/s); }
 
 CNoiseGateDialog::CNoiseGateDialog(FXWindow *mainWindow) :
-	CActionParamDialog(mainWindow,"Noise Gate")
+	CActionParamDialog(mainWindow)
 {
 	void *p=newHorzPanel(NULL);
-		addSlider(p,"Window Time","ms",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,35.0,5,1000,30,false);
-		addSlider(p,"Threshold","%",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,3.0,5,100,20,false);
-		addSlider(p,"Gain Attack Time","ms",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,10.0,5,1000,30,false);
-		addSlider(p,"Gain Release Time","ms",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,10.0,5,1000,30,false);
+		addSlider(p,N_("Window Time"),"ms",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,35.0,5,1000,30,false);
+		addSlider(p,N_("Threshold"),"%",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,3.0,5,100,20,false);
+		addSlider(p,N_("Gain Attack Time"),"ms",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,10.0,5,1000,30,false);
+		addSlider(p,N_("Gain Release Time"),"ms",interpretValue_noiseGate,uninterpretValue_noiseGate,NULL,10.0,5,1000,30,false);
+}
+
+#include "../backend/Remaster/CNoiseGateAction.h"
+const string CNoiseGateDialog::getExplanation() const
+{
+	return CNoiseGateAction::getExplanation();
 }
 
 
@@ -176,25 +218,26 @@ static const double interpretValue_compressGain(const double x,const int s) { re
 static const double uninterpretValue_compressGain(const double x,const int s) { return(bipolarRange_to_unitRange_exp(x,10.0)); }
 
 CCompressorDialog::CCompressorDialog(FXWindow *mainWindow) :
-	CActionParamDialog(mainWindow,"Compressor")
+	CActionParamDialog(mainWindow)
 {
 	void *p0=newVertPanel(NULL,true);
 		void *p1=newHorzPanel(p0,false);
-			addSlider(p1,"Window Time","ms",interpretValue_compressorWindowTime,uninterpretValue_compressorWindowTime,NULL,35.0,1,10,1,false);
-			addSlider(p1,"Threshold","dBFS",interpretValue_dBFS,uninterpretValue_dBFS,NULL,-12.0,0,0,1,false);
-			addSlider(p1,"Ratio",":1",interpretValue_compressionRatio,uninterpretValue_compressionRatio,NULL,2.0,2,20,6,false);
-			addSlider(p1,"Attack Time","ms",interpretValue_compressAttack,uninterpretValue_compressAttack,NULL,10.0,0,0,0,false);
-			addSlider(p1,"Release Time","ms",interpretValue_compressRelease,uninterpretValue_compressRelease,NULL,50.0,0,0,0,false);
-			addSlider(p1,"Input Gain","x",interpretValue_compressGain,uninterpretValue_compressGain,NULL,1.0,0,0,0,true);
-			addSlider(p1,"Output Gain","x",interpretValue_compressGain,uninterpretValue_compressGain,NULL,1.0,0,0,0,true);
+			addSlider(p1,N_("Window Time"),"ms",interpretValue_compressorWindowTime,uninterpretValue_compressorWindowTime,NULL,35.0,1,10,1,false);
+			addSlider(p1,N_("Threshold"),"dBFS",interpretValue_dBFS,uninterpretValue_dBFS,NULL,-12.0,0,0,1,false);
+			addSlider(p1,N_("Ratio"),":1",interpretValue_compressionRatio,uninterpretValue_compressionRatio,NULL,2.0,2,20,6,false);
+			addSlider(p1,N_("Attack Time"),"ms",interpretValue_compressAttack,uninterpretValue_compressAttack,NULL,10.0,0,0,0,false);
+			addSlider(p1,N_("Release Time"),"ms",interpretValue_compressRelease,uninterpretValue_compressRelease,NULL,50.0,0,0,0,false);
+			addSlider(p1,N_("Input Gain"),"x",interpretValue_compressGain,uninterpretValue_compressGain,NULL,1.0,0,0,0,true);
+			addSlider(p1,N_("Output Gain"),"x",interpretValue_compressGain,uninterpretValue_compressGain,NULL,1.0,0,0,0,true);
 		p1=newVertPanel(p0,false);
-			addCheckBoxEntry(p1,"Lock Channels",true,"This Toggles That Compression Should be Applied to Both Channels when Either Channel Needs Compression");
+			addCheckBoxEntry(p1,N_("Lock Channels"),true,_("This Toggles That Compression Should be Applied to Both Channels when Either Channel Needs Compression"));
 }
 
 // ??? remove this before 1.0 and make sure it is up-to-standard as far as a compressor goes before 1.0
-const string CCompressorDialog::getExplaination() const
+#include "../backend/Remaster/CCompressorAction.h"
+const string CCompressorDialog::getExplanation() const
 {
-	return "This is my first attempt at creating a compressor algorithm.  I'm not sure how it fairs with other 'professional' tools.  I really have little experience with hardware compressors myself.  If you are an experienced compressor user and can make intelligent suggestions about how to make this one better, then please contact me.  Contact information is in the about dialog under the file menu";
+	return CCompressorAction::getExplanation();
 }
 
 
@@ -204,21 +247,21 @@ static const double interpretValue_regionCount(const double x,const int s) { ret
 static const double uninterpretValue_regionCount(const double x,const int s) { return((x-1.0)/99.0); }
 
 CNormalizeDialog::CNormalizeDialog(FXWindow *mainWindow) :
-	CActionParamDialog(mainWindow,"Normalize")
+	CActionParamDialog(mainWindow)
 {
 	void *p1=newVertPanel(NULL);
 		void *p2=newHorzPanel(p1,false);
-			addSlider(p2,"Normalization Level","dBFS",interpretValue_dBFS,uninterpretValue_dBFS,NULL,-0.5,0,0,1,false);
-			addSlider(p2,"Region Count","",interpretValue_regionCount,uninterpretValue_regionCount,NULL,1,0,0,0,false);
+			addSlider(p2,N_("Normalization Level"),"dBFS",interpretValue_dBFS,uninterpretValue_dBFS,NULL,-0.5,0,0,1,false);
+			addSlider(p2,N_("Region Count"),"",interpretValue_regionCount,uninterpretValue_regionCount,NULL,1,0,0,0,false);
 		p2=newVertPanel(p1,false);
-			addCheckBoxEntry(p2,"Lock Channels",true,"Calculate Maximum Sample Value in a Region Across All Channels");
+			addCheckBoxEntry(p2,N_("Lock Channels"),true,"Calculate Maximum Sample Value in a Region Across All Channels");
 }
 
 
 // --- resample ----------------------------
 
 CResampleDialog::CResampleDialog(FXWindow *mainWindow) :
-	CActionParamDialog(mainWindow,"Resample",false)
+	CActionParamDialog(mainWindow,false)
 {
 	vector<string> items;
 	items.push_back("4000");
@@ -231,7 +274,7 @@ CResampleDialog::CResampleDialog(FXWindow *mainWindow) :
 	items.push_back("96000");
 
 	void *p0=newVertPanel(NULL);
-		addComboTextEntry(p0,"New Sample Rate",items,"",true);
+		addComboTextEntry(p0,N_("New Sample Rate"),items,"",true);
 			getComboText("New Sample Rate")->setValue(44100);
 }
 

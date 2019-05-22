@@ -166,6 +166,12 @@ void FXWaveScrollArea::redraw()
 	canvas->update();
 }
 
+void FXWaveScrollArea::redraw(FXint x,FXint w)
+{
+	update(x,0,w,getHeight());
+	canvas->update(x,0,w,canvas->getHeight());
+}
+
 //??? here is one problematic area if I support >31-bit length files
 	// FXint is only 31bit (at least it's typedef-ed from int)
 	// when zoomed in, the content length is more than 2^31
@@ -173,12 +179,12 @@ void FXWaveScrollArea::redraw()
 
 FXint FXWaveScrollArea::getContentWidth()
 {
-	return(canvas->getHorzSize());
+	return canvas->getHorzSize();
 }
 
 FXint FXWaveScrollArea::getContentHeight()
 {
-	return(canvas->getVertSize());
+	return canvas->getVertSize();
 }
 
 void FXWaveScrollArea::moveContents(FXint x,FXint y)
@@ -216,14 +222,14 @@ long FXWaveScrollArea::onMouseDown(FXObject*,FXSelector,void *ptr)
 	{
 		const sample_pos_t position=getSamplePosForScreenX(X);
 		play(gSoundFileManager,position);
-		return 1;
+		return 0;
 	}
 	else if(ev->click_button==RIGHTBUTTON && ev->state&CONTROLMASK) // left button pressed while holding control
 	{
 		const sample_pos_t position=getSamplePosForScreenX(X);
 		play(gSoundFileManager,position);
 		momentaryPlaying=true;
-		return 1;
+		return 0;
 	}
 
 	if(!draggingSelectStop && !draggingSelectStart)
@@ -261,7 +267,7 @@ long FXWaveScrollArea::onMouseDown(FXObject*,FXSelector,void *ptr)
 	}
 	updateFromSelectionChange();
 
-	return 1;
+	return 0;
 }
 
 long FXWaveScrollArea::onMouseUp(FXObject*,FXSelector,void *ptr)
@@ -272,7 +278,7 @@ long FXWaveScrollArea::onMouseUp(FXObject*,FXSelector,void *ptr)
 	{
 		momentaryPlaying=false;
 		stop(gSoundFileManager);
-		return 1;
+		return 0;
 	}
 
 	if((ev->click_button==LEFTBUTTON || ev->click_button==RIGHTBUTTON) && (draggingSelectStart || draggingSelectStop))
@@ -280,7 +286,7 @@ long FXWaveScrollArea::onMouseUp(FXObject*,FXSelector,void *ptr)
 		stopAutoScroll();
 		draggingSelectStart=draggingSelectStop=false;
 	}
-	return 1;
+	return 0;
 }
 
 void FXWaveScrollArea::handleMouseMoveSelectChange(FXint X)
@@ -329,21 +335,29 @@ long FXWaveScrollArea::onMouseMove(FXObject*,FXSelector,void *ptr)
 	{
 		if(!(ev->state&SHIFTMASK))
 		{
+#if REZ_FOX_VERSION>=10125
+			if(startAutoScroll(ev))
+#else
 			if(startAutoScroll(ev->win_x,ev->win_y))
-				return 1;
+#endif
+				return 0;
 		}
 	}
 
 	handleMouseMoveSelectChange(ev->win_x);
 
-	return 1;
+	return 0;
 }
 
 long FXWaveScrollArea::onAutoScroll(FXObject *object,FXSelector sel,void *ptr)
 {
+	const int orig_pos_x=pos_x;
 	long ret=FXScrollArea::onAutoScroll(object,sel,ptr);
 	handleMouseMoveSelectChange(((FXEvent *)ptr)->win_x);
-	return(ret);
+
+	parent->updateRulerFromScroll(pos_x-orig_pos_x,(FXEvent *)ptr);
+
+	return ret;
 }
 
 
@@ -355,6 +369,11 @@ void FXWaveScrollArea::centerStartPos()
 void FXWaveScrollArea::centerStopPos()
 {
 	setPosition(-canvas->getHorzOffsetToCenterStopPos(),pos_y);
+}
+
+void FXWaveScrollArea::centerTime(const sample_pos_t time)
+{
+	setPosition(-canvas->getHorzOffsetToCenterTime(time),pos_y);
 }
 
 void FXWaveScrollArea::showAmount(double seconds,sample_pos_t pos,int marginPixels)

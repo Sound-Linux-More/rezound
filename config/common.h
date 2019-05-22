@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.12 2002/10/18 16:24:23 ddurham Exp $
+/* $Id: common.h,v 1.16 2003/06/13 07:01:56 ddurham Exp $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -84,5 +84,21 @@ static const char *REZOUND_VERSION=VERSION;
  * which wouldn't equate.  This returns true iff both are non-zero or both are zero
  */
 static bool compareBool(int a,int b) { return (a && b) || (!a && !b); }
+
+#ifdef ENABLE_NLS
+	#include <libintl.h>
+	/* this avoids having gettext("") return junk instead of a simple "" */
+	#define gettext(String) ((String)==NULL ? NULL : ( (String)[0]==0 ? "" : gettext(String) ))
+	#define _(String) gettext (String)
+#else
+	#define _(String) String
+	#define gettext(String) String
+#endif
+
+// NOOP for gettext
+#define N_(String) String
+
+
+
 
 #endif /* COMMON_H */

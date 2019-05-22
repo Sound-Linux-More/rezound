@@ -1,5 +1,7 @@
 --- THINGS TO DO FOR SURE ---
 
+	- Create a crossfade feature when pasting and a gain parameter.
+
 	- When they're all implemented, I need to update the description to something like: 
 		... Including features such as: Recording, Effects Previews, Realistic Reverbs, Convolution, Custom FIR Filters, Several IIR Filters, Many Supported Audio Formats, LADSPA Support, Undo/Redo, Level Meters & Frequency Analyzer, Seek Shuttle Wheel, Loads of Editing Tools, Dynamic Range Compressor, and Many Other Tools
 			- and decide on the best ordering of this listing
@@ -7,17 +9,9 @@
 
 	- Implement createKey and getValue methods in CNestedData file and use them properly so I'm not doing string conversions everywhere in there
 
-	- I discovered that the M_PI (and others) #defines are not in the C/C++ specification... So I might want to test for them in configure.in and define them if they're not found in common.h ( M_PI=atan(1)*4; )
-
-	- Change all the status bars to say "Channel X/Y" so that they know how many iterations to expect (and i will have to be a count instead of literally i)
-
 	- Make a links section on the homepage about who is/has-used ReZound
 
 	- I might want to make sure that gcc is some minimum version in configure.in.. I really don't think gcc2.8 will cut it
-
-	- create a "monoize" action under remaster that says: mix X% of left onto the right and X% of the right onto the left or any channel configuration for that matter
-		- the backend factory could probably make sure it's a 2 channel sound before continuing ( override AActionFactory::doPreActionSetup() and return true or false or throw an EUserMessage )
-		- this would fall under the pan function probably
 
 	- if any problem shows up with reswrap not being found causing problems... then it would be quite simple to write a very simple .c file that for every argument outputs stdout the array definition
 
@@ -48,9 +42,6 @@
 		- it should use an amplitude finder to trim all the silence from the end-points and then add the user-specified amount of space at the beginning and end.. 
 			- or perhaps it should just use trim for any data that exceeds these amounts and add more space if necessary
 		- the silence margins on the ends should also fade in and out to/from 0
-
-	- Put in the documentation or application help somewhere a brief description about how recording works in linux (you have a recording source selected, then igain which is the recording gain of that source)
-		- mention somewhere that people will surely read that the playback on a not-so-fast computer or cheap sound card may exhibit occational clicks or pops and that this is because of the low latency requirements that ReZound has right now... This requirement may go away and it may not be a problem at all with ALSA
 
 	- When it's up on sourceforge (and ready to debut) announce to:
 		- demudi
@@ -88,29 +79,6 @@
 				- configure should test for `sox` being valid and make it a depenancy... If it's not found, then the import and export file operations will be disabled
 					- the configure script should make a big note of this on screen that import/export will be disabled
 			- But I should still use libaudiofile to load and save wav, aiff, (ogg and mp3 if/when it's available)
-
-	- create selection edits which:
-		- grow or shrink the selection by a given duration
-			- either symetically
-			- by moving the start position
-			- by moving the stop position
-
-		- grow or shrink the selection by detecting with the audio level rises above or falls below a threshold
-			- either symetrically 
-			- by moving the start position
-			- by moving the stop position
-
-			- and be able to set the window width of the moving average which detects the audio level
-
-		- slide selection to the left or right by a given amount
-
-		- frontend: 
-			- grow/shrink(radio buttons)     
-			- symtetrically/start/stop(radio buttons)
-			- time duration with seconds as the unit (editable slider)
-			- threshold with percent as the unit (editable slider)
-			- window size in ms as the unit (editable slider)
-			
 
 	- always make sure that the actions accessers are const so that it's not causing the data to be written back to disk
 		- infact, grep for Accesser and make sure than any are const whenever possible to avoid writing that data back to disk
@@ -219,9 +187,6 @@
 			- places to use it epecially are:
 				- AAction::backup/restoreUndoSelection
 				- CCopyCutDeleteEdit::doActionSizeSafe
-
-	- when making loops, it may be cool to have a play button that loops the selection, but skips the bulk of the middle for time's sake
-	- when editing large files it would be nice to have play selection buttons (once and looped), but it plays a few seconds before the start to a few seconds after the stop so that you don't have to play from the beginning and seek forward to or play the selection and seek backwards a little bit
 
 	- probably want to add a bool AAction::showAllDataCheckbox() so that the channel select dialog may or may not have that checkbox if it's an action like crop, or trim
 
@@ -523,4 +488,42 @@
 		- for gain and rate change I should just make two factories, but still use the same action code.. and I can make the procedure for adding new actions a bit more easy to understand without getting confused by the 'advanced mode' code
 
 	- create a 'paste as new', 'copy to new' and 'cut to new' edit actions
+
+	- create a "monoize" action under remaster that says: mix X% of left onto the right and X% of the right onto the left or any channel configuration for that matter
+		- the backend factory could probably make sure it's at least 2 channel sound before continuing ( override AActionFactory::doPreActionSetup() and return true or false or throw an EUserMessage )
+		- this would fall under the pan function probably
+
+	- create selection edits which:
+		- grow or shrink the selection by a given duration
+			- either symetically
+			- by moving the start position
+			- by moving the stop position
+
+		- grow or shrink the selection by detecting with the audio level rises above or falls below a threshold
+			- either symetrically 
+			- by moving the start position
+			- by moving the stop position
+
+			- and be able to set the window width of the moving average which detects the audio level
+
+		- slide selection to the left or right by a given amount
+
+		- frontend: 
+			- grow/shrink(radio buttons)     
+			- symtetrically/start/stop(radio buttons)
+			- time duration with seconds as the unit (editable slider)
+			- threshold with percent as the unit (editable slider)
+			- window size in ms as the unit (editable slider)
+			
+
+	- when making loops, it may be cool to have a play button that loops the selection, but skips the bulk of the middle for time's sake
+	- when editing large files it would be nice to have play selection buttons (once and looped), but it plays a few seconds before the start to a few seconds after the stop so that you don't have to play from the beginning and seek forward to or play the selection and seek backwards a little bit
+
+	- Put in the documentation or application help somewhere a brief description about how recording works in linux (you have a recording source selected, then igain which is the recording gain of that source)
+		- mention somewhere that people will surely read that the playback on a not-so-fast computer or cheap sound card may exhibit occational clicks or pops and that this is because of the low latency requirements that ReZound has right now... This requirement may go away and it may not be a problem at all with ALSA
+
+	- I discovered that the M_PI (and others) #defines are not in the C/C++ specification... So I might want to test for them in configure.in and define them if they're not found in common.h ( M_PI=atan(1)*4; )
+		NAH - I'll just fix this when/if it becomes a problem since just about every system I can think that I might want to compile on has it
+
+	- Change all the status bars to say "Channel X/Y" so that they know how many iterations to expect (and 'i' will have to be a count instead of literally 'i')
 

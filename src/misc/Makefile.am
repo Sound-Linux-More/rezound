@@ -33,9 +33,13 @@ noinst_HEADERS=\
 		CPath.h\
 		CRWLock.h\
 		TAutoBuffer.h\
+		TRingBuffer.h\
 		TMemoryPipe.h\
 		TMemoryPipe.cpp		
 
 EXTRA_DIST= \
 	istring \
-	missing
+	missing/FXBackBufferedCanvas.h-missing \
+	missing/sstream-missing \
+	missing/stdint.h-missing
+

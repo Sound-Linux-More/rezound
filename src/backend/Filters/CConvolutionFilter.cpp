@@ -20,8 +20,6 @@
 
 #include "CConvolutionFilter.h"
 
-#include <math.h>
-
 #include <CPath.h>
 
 #include "../DSP/Convolver.h"
@@ -31,7 +29,6 @@
 
 #include "../unit_conv.h"
 
-#include "../ASoundFileManager.h"
 #include "../ASoundTranslator.h"
 #include "../CActionParameters.h"
 
@@ -70,7 +67,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 
 	const string filename=filterKernelFilename;
 	if(!CPath(filename).exists()) // ??? need a "canRead()" method
-		throw EUserMessage(string(__func__)+" -- cannot read kernel filter file '"+filename+"'");
+		throw EUserMessage(string(__func__)+_(" -- cannot read kernel filter file '")+filename+"'");
 
 	const string tempFilename=gFallbackWorkDir+"/filter_kernel_"+CPath(filename).baseName();
 
@@ -79,7 +76,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 	symlink(filename.c_str(),tempFilename.c_str());
 	try
 	{
-		const ASoundTranslator *translator=ASoundFileManager::getTranslator(tempFilename,openFilterKernelAsRaw);
+		const ASoundTranslator *translator=ASoundTranslator::findTranslator(tempFilename,openFilterKernelAsRaw);
 
 		CSound filterKernelFile;
 		try
@@ -93,6 +90,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 			const float dryGain=(100.0-fabs(wetdryMix))/100.0 * (wetdryMix<0.0 ? -1.0 : 1.0);
 			const float wetGain=wetdryMix/100.0;
 
+			unsigned channelsDoneCount=0;
 			for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 			{
 				if(actionSound.doChannel[i])
@@ -148,7 +146,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 					const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
 					sample_pos_t srcOffset=prepareForUndo ? 0 : start;
 
-					CStatusBar statusBar("Convolving -- Channel "+istring(i),start,stop,true); 
+					CStatusBar statusBar(_("Convolving -- Channel ")+istring(++channelsDoneCount)+"/"+istring(actionSound.countChannels()),start,stop,true); 
 
 					sample_pos_t srcPos=srcOffset;
 					sample_pos_t destPos=start;
@@ -238,7 +236,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 		throw;
 	}
 #endif
-	throw(EUserMessage(string(__func__)+" -- feature disabled because the fftw/rfftw library was not installed or detected when configure was run"));
+	throw(EUserMessage(string(__func__)+_(" -- feature disabled because the fftw/rfftw library was not installed or detected when configure was run")));
 }
 
 AAction::CanUndoResults CConvolutionFilter::canUndo(const CActionSound &actionSound) const
@@ -255,7 +253,7 @@ void CConvolutionFilter::undoActionSizeSafe(const CActionSound &actionSound)
 // --------------------------------------------------
 
 CConvolutionFilterFactory::CConvolutionFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Convolution Filter","Convolve One Audio File with this One",channelSelectDialog,dialog)
+	AActionFactory(N_("Convolution Filter"),_("Convolve One Audio File with this One"),channelSelectDialog,dialog)
 {
 }
 

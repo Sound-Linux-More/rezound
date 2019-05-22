@@ -20,10 +20,7 @@
 
 #include "FXCheckBoxParamValue.h"
 
-#include <istring>
-
 #include <CNestedDataFile/CNestedDataFile.h>
-#define DOT (CNestedDataFile::delimChar)
 
 #include "utils.h"
 
@@ -42,10 +39,12 @@ FXDEFMAP(FXCheckBoxParamValue) FXCheckBoxParamValueMap[]=
 
 FXIMPLEMENT(FXCheckBoxParamValue,FXVerticalFrame,FXCheckBoxParamValueMap,ARRAYNUMBER(FXCheckBoxParamValueMap))
 
-FXCheckBoxParamValue::FXCheckBoxParamValue(FXComposite *p,int opts,const char *title,const bool checked) :
+FXCheckBoxParamValue::FXCheckBoxParamValue(FXComposite *p,int opts,const char *_name,const bool checked) :
 	FXVerticalFrame(p,opts|FRAME_RAISED | LAYOUT_FILL_X,0,0,0,0, 2,2,2,2, 1,0),
 
-	checkBox(new FXCheckButton(this,title,NULL,0,CHECKBUTTON_NORMAL)),
+	name(_name),
+
+	checkBox(new FXCheckButton(this,gettext(_name),NULL,0,CHECKBUTTON_NORMAL)),
 
 	textFont(getApp()->getNormalFont())
 {
@@ -67,7 +66,7 @@ FXCheckBoxParamValue::~FXCheckBoxParamValue()
 
 const bool FXCheckBoxParamValue::getValue()
 {
-	return(checkBox->getCheck());
+	return checkBox->getCheck();
 }
 
 void FXCheckBoxParamValue::setValue(const bool checked)
@@ -75,9 +74,9 @@ void FXCheckBoxParamValue::setValue(const bool checked)
 	checkBox->setCheck(checked);
 }
 
-const string FXCheckBoxParamValue::getTitle() const
+const string FXCheckBoxParamValue::getName() const
 {
-	return(checkBox->getText().text());
+	return name;
 }
 
 void FXCheckBoxParamValue::setTipText(const FXString &text)
@@ -87,15 +86,15 @@ void FXCheckBoxParamValue::setTipText(const FXString &text)
 
 FXString FXCheckBoxParamValue::getTipText() const
 {
-	return(checkBox->getTipText());	
+	return checkBox->getTipText();	
 }
 
 void FXCheckBoxParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 {
-	const string key=prefix+DOT+getTitle()+DOT+"value";
-	if(f->keyExists(key.c_str()))
+	const string key=prefix DOT getName() DOT "value";
+	if(f->keyExists(key))
 	{
-		const bool v= f->getValue(key.c_str())=="true" ? true : false;
+		const bool v=f->getValue<bool>(key);
 		setValue(v);
 	}
 	else
@@ -104,8 +103,8 @@ void FXCheckBoxParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 
 void FXCheckBoxParamValue::writeToFile(const string &prefix,CNestedDataFile *f)
 {
-	const string key=prefix+DOT+getTitle()+DOT;
-	f->createKey((key+"value").c_str(),getValue() ? "true" : "false");
+	const string key=prefix DOT getName();
+	f->createValue<bool>(key DOT "value",getValue());
 }
 
 

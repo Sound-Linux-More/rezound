@@ -20,8 +20,6 @@
 
 #include "CRemoveDCAction.h"
 
-#include <math.h>
-
 CRemoveDCAction::CRemoveDCAction(const CActionSound actionSound) :
 	AAction(actionSound)
 {
@@ -40,6 +38,7 @@ bool CRemoveDCAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 	if(prepareForUndo)
 		moveSelectionToTempPools(actionSound,mmSelection,actionSound.selectionLength());
 
+	unsigned channelsDoneCount=0;
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
@@ -74,7 +73,7 @@ bool CRemoveDCAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 				return false;
 			}
 
-			CStatusBar statusBar("Remove DC Component -- Channel "+istring(i),start,stop,true);
+			CStatusBar statusBar(_("Remove DC Component -- Channel ")+istring(++channelsDoneCount)+"/"+istring(actionSound.countChannels()),start,stop,true);
 
 			sample_pos_t srcPos=srcStart;
 			for(sample_pos_t t=start;t<=stop;t++)
@@ -116,7 +115,7 @@ void CRemoveDCAction::undoActionSizeSafe(const CActionSound &actionSound)
 // ------------------------------
 
 CRemoveDCActionFactory::CRemoveDCActionFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Remove DC Component","Removes a DC offset from the audio, recentering it around zero",channelSelectDialog,NULL)
+	AActionFactory(N_("Remove DC Component"),"",channelSelectDialog,NULL)
 {
 }
 
@@ -129,3 +128,7 @@ CRemoveDCAction *CRemoveDCActionFactory::manufactureAction(const CActionSound &a
 	return(new CRemoveDCAction(actionSound));
 }
 
+const string CRemoveDCActionFactory::getExplanation() const
+{
+	return _("Removes a DC offset from the audio, recentering it around zero");
+}

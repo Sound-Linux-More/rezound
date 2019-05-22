@@ -24,11 +24,12 @@ bool CDistortionEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 	if(prepareForUndo)
 		moveSelectionToTempPools(actionSound,mmSelection,actionSound.selectionLength());
 
+	unsigned channelsDoneCount=0;
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Distortion -- Channel "+istring(i),start,stop,true);
+			CStatusBar statusBar(N_("Distortion -- Channel ")+istring(++channelsDoneCount)+"/"+istring(actionSound.countChannels()),start,stop,true);
 
 			sample_pos_t srcPos=prepareForUndo ? 0 : start;
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -82,7 +83,7 @@ void CDistortionEffect::undoActionSizeSafe(const CActionSound &actionSound)
 // --------------------------------------------------
 
 CDistortionEffectFactory::CDistortionEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Distortion","Distortion",channelSelectDialog,dialog)
+	AActionFactory(N_("Distortion"),"",channelSelectDialog,dialog)
 {
 }
 

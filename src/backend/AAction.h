@@ -31,6 +31,11 @@ class AAction;
 #include <string>
 #include <vector>
 
+// I figure most actions will need 2 or 3 of these, so I'll include them here
+#include <math.h>
+#include <istring>
+#include <stdexcept>
+
 #include "settings.h"
 #include "CActionSound.h"
 #include "AStatusComm.h"
@@ -67,12 +72,6 @@ public:
 	// 	  need to modifie the given action sound's start and stop positions)
 	//
 	// performAction returns true if the action was performed or false if they cancelled any of the dialog windows
-	//
-	bool performAction(CLoadedSound *loadedSound,CActionParameters *actionParameters,bool showChannelSelectDialog);
-
-	const string &getName() const;
-	const string &getDescription() const;
-
 	/*
 	 * The showChannelSelectDialog parameter:
 	 *	   The frontend implementation can create a channel select dialog
@@ -86,7 +85,13 @@ public:
 	 *	   The derived class's show method should modify show's actionSound 
 	 *	   parameter's doChannel values
 	 */
+	//
+	bool performAction(CLoadedSound *loadedSound,CActionParameters *actionParameters,bool showChannelSelectDialog);
 
+	const string &getName() const;
+	const string &getDescription() const;
+
+	bool hasDialog() const;
 
 
 protected:

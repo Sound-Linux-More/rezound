@@ -26,11 +26,9 @@
 #include "settings.h"
 
 #include <stdexcept>
-#include <algorithm>
 #include <CPath.h>
 
 #include <CNestedDataFile/CNestedDataFile.h>
-#define DOT (CNestedDataFile::delimChar)
 
 #include "CLoadedSound.h"
 #include "ASoundPlayer.h"
@@ -74,7 +72,7 @@ CLoadedSound *ASoundFileManager::createNew(const string filename,unsigned channe
 		throw runtime_error(string(__func__)+" -- a file named '"+filename+"' is already opened");
 
 	// should get based on extension
-	const ASoundTranslator *translator=getTranslator(filename,rawFormat);
+	const ASoundTranslator *translator=ASoundTranslator::findTranslator(filename,rawFormat);
 
 	try
 	{
@@ -131,10 +129,10 @@ void ASoundFileManager::open(const string _filename,bool openAsRaw)
  * when we are loading the registered files from a previous sessions, so they would already be
  * in the registry
  */
-void ASoundFileManager::prvOpen(const string &filename,bool readOnly,bool doRegisterFilename,bool asRaw,const ASoundTranslator *translatorToUse)
+void ASoundFileManager::prvOpen(const string filename,bool readOnly,bool doRegisterFilename,bool asRaw,const ASoundTranslator *translatorToUse)
 {
 	if(doRegisterFilename && isFilenameRegistered(filename))
-		throw(runtime_error(string(__func__)+" -- file already opened"));
+		throw(runtime_error(string(__func__)+_(_(" -- file already opened"))));
 
 	if(readOnly)
 		throw(runtime_error(string(__func__)+" -- readOnly is true -- read only loading is not implemented yet"));
@@ -146,7 +144,7 @@ void ASoundFileManager::prvOpen(const string &filename,bool readOnly,bool doRegi
 	try
 	{
 		if(translatorToUse==NULL)
-			translatorToUse=getTranslator(filename,asRaw);
+			translatorToUse=ASoundTranslator::findTranslator(filename,asRaw);
 		sound=new CSound;
 
 		if(!translatorToUse->loadSound(filename,sound))
@@ -246,13 +244,13 @@ askAgain:
 		}
 
 		if(isFilenameRegistered(filename))
-			throw(runtime_error(string(__func__)+" -- file is currently opened: '"+filename+"'"));
+			throw(runtime_error(string(__func__)+_(" -- file is currently opened")+": '"+filename+"'"));
 
 		try
 		{
-			if(CPath(filename).exists())
+			if(CPath(filename).exists() && !CPath(filename).isDevice())
 			{
-				if(Question("Overwrite Existing File:\n"+filename,yesnoQues)!=yesAns)
+				if(Question(_("Overwrite Existing File")+string(":\n")+filename,yesnoQues)!=yesAns)
 				{
 					if(reregisterFilenameOnError)
 						registerFilename(filename);
@@ -260,7 +258,7 @@ askAgain:
 				}
 			}
 
-			const ASoundTranslator *translator=getTranslator(filename,saveAsRaw);
+			const ASoundTranslator *translator=ASoundTranslator::findTranslator(filename,saveAsRaw);
 
 			if(translator->saveSound(filename,loaded->sound))
 			{
@@ -300,15 +298,15 @@ askAgain:
 	first=false;
 
 	if(isFilenameRegistered(filename))
-		throw(runtime_error(string(__func__)+" -- file is currently opened: '"+filename+"'"));
+		throw(runtime_error(string(__func__)+_(" -- file is currently opened")+": '"+filename+"'"));
 
-	if(CPath(filename).exists())
+	if(CPath(filename).exists() && !CPath(filename).isDevice())
 	{
-		if(Question("Overwrite Existing File:\n"+filename,yesnoQues)!=yesAns)
+		if(Question(_("Overwrite Existing File")+string(":\n")+filename,yesnoQues)!=yesAns)
 			goto askAgain;
 	}
 
-	const ASoundTranslator *translator=getTranslator(filename,saveAsRaw);
+	const ASoundTranslator *translator=ASoundTranslator::findTranslator(filename,saveAsRaw);
 
 	if(translator->saveSound(filename,sound,saveStart,saveLength))
 		updateReopenHistory(filename);
@@ -324,14 +322,14 @@ void ASoundFileManager::close(CloseTypes closeType,CLoadedSound *closeWhichSound
 		{
 			if(closeType==ctSaveYesNoStop)
 			{
-				VAnswer a=Question("Save Modified Sound:\n"+loaded->getFilename(),cancelQues);
+				VAnswer a=Question(_("Save Modified Sound")+string(":\n")+loaded->getFilename(),cancelQues);
 				if(a==cancelAns)
 					throw EStopClosing();
 				doSave=(a==yesAns);
 			}
 			else if(closeType==ctSaveYesNoCancel)
 			{
-				VAnswer a=Question("Save Modified Sound:\n"+loaded->getFilename(),cancelQues);
+				VAnswer a=Question(_("Save Modified Sound")+string(":\n")+loaded->getFilename(),cancelQues);
 				if(a==cancelAns)
 					return;
 				doSave=(a==yesAns);
@@ -382,7 +380,7 @@ void ASoundFileManager::revert()
 		}
 
 		// ??? could check isMofied(), but if it isn't, then there's no need to revert...
-		if(Question("Are you sure you want to revert to the last saved copy of '"+filename+"'",yesnoQues)!=yesAns)
+		if(Question(_("Are you sure you want to revert to the last saved copy of")+string(" '")+filename+"'",yesnoQues)!=yesAns)
 			return;
 
 		// could be more effecient by not destroying then creating the sound window
@@ -483,31 +481,25 @@ const string ASoundFileManager::getUntitledFilename(const string directory,const
 const vector<string> ASoundFileManager::loadFilesInRegistry()
 {
 	vector<string> errors;
-	for(size_t t=0;t<loadedRegistryFile->getArraySize(LOADED_REG_KEY);t++)
+	const vector<string> reg=loadedRegistryFile->getValue<vector<string> >(LOADED_REG_KEY);
+	for(size_t t=0;t<reg.size();t++)
 	{
-		string filename;
+		const string filename=reg[t];
 		try
 		{
-			filename=loadedRegistryFile->getArrayValue(LOADED_REG_KEY,t);
-			if(Question("Load sound from previous session?\n   "+filename,yesnoQues)==yesAns)
+			if(Question(_("Load sound from previous session?")+string("\n   ")+filename,yesnoQues)==yesAns)
 			{
 						// ??? readOnly and asRaw really need to be whatever the last value was, when it was originally loaded
 				prvOpen(filename,false,false,false);
 			}
 			else
-			{
 				unregisterFilename(filename);
-				t--;
-			}
 
 		}
 		catch(exception &e)
 		{	
 			if(filename!="")
-			{
 				unregisterFilename(filename);
-				t--;
-			}
 			errors.push_back(e.what());
 		}
 	}
@@ -519,17 +511,20 @@ void ASoundFileManager::registerFilename(const string filename)
 	if(isFilenameRegistered(filename))
 		throw(runtime_error(string(__func__)+" -- file already registered"));
 
-	loadedRegistryFile->createArrayKey(LOADED_REG_KEY,loadedRegistryFile->getArraySize(LOADED_REG_KEY),filename);
+	vector<string> reg=loadedRegistryFile->getValue<vector<string> >(LOADED_REG_KEY);
+	reg.push_back(filename);
+	loadedRegistryFile->createValue<vector<string> >(LOADED_REG_KEY,reg);
 }
 
 void ASoundFileManager::unregisterFilename(const string filename)
 {
-	size_t l=loadedRegistryFile->getArraySize(LOADED_REG_KEY);
-	for(size_t t=0;t<l;t++)
+	vector<string> reg=loadedRegistryFile->getValue<vector<string> >(LOADED_REG_KEY);
+	for(size_t t=0;t<reg.size();t++)
 	{
-		if(loadedRegistryFile->getArrayValue(LOADED_REG_KEY,t)==filename)
+		if(reg[t]==filename)
 		{
-			loadedRegistryFile->removeArrayKey(LOADED_REG_KEY,t);
+			reg.erase(reg.begin()+t);
+			loadedRegistryFile->createValue<vector<string> >(LOADED_REG_KEY,reg);
 			break;
 		}
 	}
@@ -537,23 +532,23 @@ void ASoundFileManager::unregisterFilename(const string filename)
 
 bool ASoundFileManager::isFilenameRegistered(const string filename)
 {
-	size_t l=loadedRegistryFile->getArraySize(LOADED_REG_KEY);
-	for(size_t t=0;t<l;t++)
+	vector<string> reg=loadedRegistryFile->getValue<vector<string> >(LOADED_REG_KEY);
+	for(size_t t=0;t<reg.size();t++)
 	{
-		if(loadedRegistryFile->getArrayValue(LOADED_REG_KEY,t)==filename)
-			return(true);
+		if(reg[t]==filename)
+			return true;
 	}
-	return(false);
+	return false;
 }
 
-void ASoundFileManager::updateReopenHistory(const string &filename)
+void ASoundFileManager::updateReopenHistory(const string filename)
 {
+// ??? I think it would really make sense just to write this as a vector value since it's that way in memory
 	// rewrite the reopen history to the gSettingsRegistry
 	vector<string> reopenFilenames;
-	
-	for(size_t t=0;gSettingsRegistry->keyExists(("ReopenHistory"+string(DOT)+"item"+istring(t)).c_str());t++)
+	for(size_t t=0;gSettingsRegistry->keyExists("ReopenHistory" DOT "item"+istring(t));t++)
 	{
-		const string h=gSettingsRegistry->getValue(("ReopenHistory"+string(DOT)+"item"+istring(t)).c_str());
+		const string h=gSettingsRegistry->getValue<string>("ReopenHistory" DOT "item"+istring(t));
 		if(h!=filename)
 			reopenFilenames.push_back(h);
 	}
@@ -564,79 +559,23 @@ void ASoundFileManager::updateReopenHistory(const string &filename)
 	reopenFilenames.insert(reopenFilenames.begin(),filename);
 
 	for(size_t t=0;t<reopenFilenames.size();t++)
-		gSettingsRegistry->createKey(("ReopenHistory"+string(DOT)+"item"+istring(t)).c_str(),reopenFilenames[t]);
+		gSettingsRegistry->createValue<string>("ReopenHistory" DOT "item"+istring(t),reopenFilenames[t]);
 }
 
 const size_t ASoundFileManager::getReopenHistorySize() const
 {
 	size_t t;
-	for(t=0;t<gMaxReopenHistory && gSettingsRegistry->keyExists(("ReopenHistory"+string(DOT)+"item"+istring(t)).c_str());t++);
+	for(t=0;t<gMaxReopenHistory && gSettingsRegistry->keyExists("ReopenHistory" DOT "item"+istring(t));t++);
 
 	return t;
 }
 
 const string ASoundFileManager::getReopenHistoryItem(const size_t index) const
 {
-	const string key="ReopenHistory"+string(DOT)+"item"+istring(index);
-	if(gSettingsRegistry->keyExists(key.c_str()))
-		return(gSettingsRegistry->getValue(key.c_str()));
+	const string key="ReopenHistory" DOT "item"+istring(index);
+	if(gSettingsRegistry->keyExists(key))
+		return gSettingsRegistry->getValue<string>(key);
 	else
-		return("");
+		return "";
 }
-
-
-/*
-	This method could be given some abstract stream class pointer instead 
-	of a filename which could access a file or a network URL.   Then the 
-	translators would also have to be changed to read from that stream 
-	instead of the file, and libaudiofile would at this point in time have 
-	trouble doing that.
-*/
-const ASoundTranslator *ASoundFileManager::getTranslator(const string filename,bool isRaw)
-{
-	if(isRaw)
-	{
-		for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
-		{
-			if(ASoundTranslator::registeredTranslators[t]->handlesRaw())
-				return(ASoundTranslator::registeredTranslators[t]);
-		}
-	}
-
-	if(CPath(filename).exists())
-	{ // try to determine from the contents of the file
-		for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
-		{
-			if(ASoundTranslator::registeredTranslators[t]->supportsFormat(filename))
-				return(ASoundTranslator::registeredTranslators[t]);
-		}
-	}
-
-	// file doesn't exist or no supported signature, so attempt to determine the translater based on the file extension
-	const string extension=istring(CPath(filename).extension()).lower();
-	if(extension=="")
-		throw(runtime_error(string(__func__)+" -- cannot determine the extension on the filename: "+filename));
-	else
-	{
-		for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
-		{
-			if(ASoundTranslator::registeredTranslators[t]->handlesExtension(extension))
-				return(ASoundTranslator::registeredTranslators[t]);
-		}
-	}
-
-	// find the raw translator and ask the user if they want to use it
-	for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
-	{
-		if(ASoundTranslator::registeredTranslators[t]->handlesRaw())
-		{
-			if(Question("No handler found to support the format for "+filename+"\nWould you like to use a raw format?",yesnoQues)==yesAns)
-				return(ASoundTranslator::registeredTranslators[t]);
-			else
-				break;
-		}
-	}
-	throw(runtime_error(string(__func__)+" -- unhandled format/extension for the filename '"+filename+"'"));
-}
-
 

@@ -83,7 +83,17 @@ public:
 	virtual ~CSaveAsMultipleFilesDialog(){}
 
 protected:
-	const string getExplaination() const;
+	const string getExplanation() const;
+};
+
+
+// --- grow or slide selection dialog -----
+
+class CGrowOrSlideSelectionDialog : public CActionParamDialog
+{
+public:
+	CGrowOrSlideSelectionDialog(FXWindow *mainWindow);
+	virtual ~CGrowOrSlideSelectionDialog(){}
 };
 
 

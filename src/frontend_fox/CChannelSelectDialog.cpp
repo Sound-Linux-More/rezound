@@ -43,20 +43,32 @@ FXIMPLEMENT(CChannelSelectDialog,FXModalDialogBox,CChannelSelectDialogMap,ARRAYN
 // ----------------------------------------
 
 CChannelSelectDialog::CChannelSelectDialog(FXWindow *mainWindow) :
-	FXModalDialogBox(mainWindow,"Channel Select",100,100,FXModalDialogBox::ftVertical),
+/*
+ * having the title be translated is fine, except the fact that I use them in preset names
+ * what I need to do is avoid ever calling getTitle() on a fox widget 
+ * I need to implement something like a  getOrigTitle() which stores the original value of
+ * the title.  I should use N_(...) when passing a string to be the title except _(...) when
+ * actually giving that string to FOX so it can render the translated title, and I should save
+ * the original in origTitle for getOrigTitle to return and use in presets
+ *
+ * this goes for derivations of FXModalWindow and all action param value widgetso
+ *
+ * ??? I *think* I can make this _() instead of N_() on the title.. I don't call getTitle() anywhere
+ */
+	FXModalDialogBox(mainWindow,_("Channel Select"),100,100,FXModalDialogBox::ftVertical,FXModalDialogBox::stShrinkWrap),
 
-	label(new FXLabel(getFrame(),"Channels to Which This Action Should Apply:",NULL,LAYOUT_CENTER_X))
+	label(new FXLabel(getFrame(),_("Channels to Which This Action Should Apply:"),NULL,LAYOUT_CENTER_X))
 {
 	ASSURE_WIDTH(getFrame(),300);
 	getFrame()->setVSpacing(1);
 	getFrame()->setHSpacing(1);
 
 	for(unsigned t=0;t<MAX_CHANNELS;t++)			    // ??? could map it to some name like "Left, Right, Center, Bass... etc"
-		checkBoxes[t]=new FXCheckButton(getFrame(),("Channel "+istring(t)).c_str(),NULL,0,CHECKBUTTON_NORMAL | LAYOUT_CENTER_X);
+		checkBoxes[t]=new FXCheckButton(getFrame(),(_("Channel ")+istring(t)).c_str(),NULL,0,CHECKBUTTON_NORMAL | LAYOUT_CENTER_X);
 
 	FXPacker *buttonPacker=new FXHorizontalFrame((/*this cast might cause a problem in the future*/FXComposite *)(getFrame()->getParent()),LAYOUT_FILL_X | FRAME_RAISED|FRAME_THICK);
-		new FXButton(buttonPacker,"Default",NULL,this,ID_DEFAULT_BUTTON,BUTTON_NORMAL);
-		new FXButton(buttonPacker,"Clear",NULL,this,ID_CLEAR_BUTTON,BUTTON_NORMAL);
+		new FXButton(buttonPacker,_("Default"),NULL,this,ID_DEFAULT_BUTTON,BUTTON_NORMAL);
+		new FXButton(buttonPacker,_("Clear"),NULL,this,ID_CLEAR_BUTTON,BUTTON_NORMAL);
 }
 
 CChannelSelectDialog::~CChannelSelectDialog()
@@ -80,13 +92,16 @@ bool CChannelSelectDialog::show(CActionSound *actionSound,CActionParameters *act
 	{
 		checkBoxes[t]->setCheck(FALSE);
 		if(t<actionSound->sound->getChannelCount())
-			checkBoxes[t]->enable();
+			checkBoxes[t]->show();
 		else
-			checkBoxes[t]->disable();
+			checkBoxes[t]->hide();
 	}
 
 	for(unsigned t=0;t<actionSound->sound->getChannelCount();t++)
 		checkBoxes[t]->setCheck(actionSound->doChannel[t] ? TRUE : FALSE);
+
+	// when the number of shown or hidden widgets changes the frame needs to be told to recalc
+	getFrame()->recalc();
 
 	if(execute(PLACEMENT_CURSOR))
 	{

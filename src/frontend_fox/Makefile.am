@@ -51,10 +51,12 @@ libfrontend_la_SOURCES= \
 			COggDialog.cpp \
 			CMp3Dialog.cpp \
 			CJACKPortChoiceDialog.cpp \
+			CMIDIDumpSampleIdDialog.cpp \
 			drawPortion.cpp \
 			EditActionDialogs.cpp \
 			EffectActionDialogs.cpp \
 			FilterActionDialogs.cpp \
+			GenerateActionDialogs.cpp \
 			RemasterActionDialogs.cpp \
 			LoopingActionDialogs.cpp \
 			CAboutDialog.cpp \
@@ -96,8 +98,11 @@ rezound_LDADD= libfrontend.la\
 	$(top_builddir)/src/backend/Filters/libFilters.la \
 	$(top_builddir)/src/backend/Looping/libLooping.la \
 	$(top_builddir)/src/backend/Remaster/libRemaster.la \
+	$(top_builddir)/src/backend/Generate/libGenerate.la \
 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
-	$(top_builddir)/src/PoolFile/libPoolFile.la
+	$(top_builddir)/src/PoolFile/libPoolFile.la @FOX_LIBS@
+
+rezound_CXXFLAGS=@FOX_CXXFLAGS@
 
 noinst_HEADERS=\
 	fox_compat.h \
@@ -124,9 +129,11 @@ noinst_HEADERS=\
 	COggDialog.h \
 	CMp3Dialog.h \
 	CJACKPortChoiceDialog.h \
+	CMIDIDumpSampleIdDialog.h \
 	EditActionDialogs.h \
 	EffectActionDialogs.h \
 	FilterActionDialogs.h \
+	GenerateActionDialogs.h \
 	RemasterActionDialogs.h \
 	LoopingActionDialogs.h \
 	CAboutDialog.h \
@@ -141,6 +148,7 @@ noinst_HEADERS=\
 	FXRezWaveView.h \
 	FXWaveScrollArea.h \
 	FXWaveCanvas.h \
+	FXPopupHint.h \
 	drawPortion.h \
 	rememberShow.h \
 	custom_cursors.h \
@@ -153,12 +161,12 @@ EXTRA_DIST=convert_images.sh
 
 $(top_srcdir)/src/frontend_fox/CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
 $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp: $(top_srcdir)/src/images/*.gif
-	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh $(RESWRAP) $(top_srcdir)/src/images && cd $(top_srcdir)/src/frontend_fox && make CFOXIcons.o
+	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh $(RESWRAP) $(top_srcdir)/src/images && cd $(top_builddir)/src/frontend_fox && make CFOXIcons.o
 
 CFOXIcons.cpp: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
 CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.h
 # without this, touching a file in images will cause CFOXIcons.o to be regenerated, but won't cause rezound to be re-linked
-$(bin_PROGRAMS): $(top_srcdir)/src/frontend_fox/CFOXIcons.o
+$(bin_PROGRAMS): $(top_builddir)/src/frontend_fox/CFOXIcons.o
 
 
 clean-local: 

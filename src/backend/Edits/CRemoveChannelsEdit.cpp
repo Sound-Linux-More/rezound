@@ -39,14 +39,27 @@ CRemoveChannelsEdit::~CRemoveChannelsEdit()
 
 bool CRemoveChannelsEdit::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
-	tempAudioPoolKey=actionSound.sound->moveChannelsToTemp(actionSound.doChannel);
-	sound=actionSound.sound;
-	return(true);
+	if(prepareForUndo)
+	{
+		tempAudioPoolKey=actionSound.sound->moveChannelsToTemp(actionSound.doChannel);
+		sound=actionSound.sound;
+	}
+	else
+	{
+		for(int t=actionSound.sound->getChannelCount()-1;t>=0;t--)
+		{
+			if(actionSound.doChannel[t])
+				actionSound.sound->removeChannels((unsigned)t,1);
+		}
+	}
+	
+
+	return true;
 }
 
 AAction::CanUndoResults CRemoveChannelsEdit::canUndo(const CActionSound &actionSound) const
 {
-	return(curYes);
+	return curYes;
 }
 
 void CRemoveChannelsEdit::undoActionSizeSafe(const CActionSound &actionSound)
@@ -60,7 +73,7 @@ void CRemoveChannelsEdit::undoActionSizeSafe(const CActionSound &actionSound)
 // ------------------------------
 
 CRemoveChannelsEditFactory::CRemoveChannelsEditFactory(AActionDialog *dialog) :
-	AActionFactory("Remove Channels","Remove Channels of Audio",NULL,dialog,true,false)
+	AActionFactory(N_("Remove Channels"),_("Remove Channels of Audio"),NULL,dialog,true,false)
 {
 }
 
@@ -70,15 +83,6 @@ CRemoveChannelsEditFactory::~CRemoveChannelsEditFactory()
 
 CRemoveChannelsEdit *CRemoveChannelsEditFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
 {
-	return(new CRemoveChannelsEdit(actionSound));
-}
-
-#include "../CLoadedSound.h"
-#include "../CSoundPlayerChannel.h"
-bool CRemoveChannelsEditFactory::doPreActionSetup(CLoadedSound *loadedSound)
-{
-	// ??? if there were many more actions that required this, I should have a flag set to the factory that told it to stop the channel if it was playing before doing the action
-	loadedSound->channel->stop();
-	return(true);
+	return new CRemoveChannelsEdit(actionSound);
 }
 

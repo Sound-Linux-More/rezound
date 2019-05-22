@@ -60,6 +60,8 @@ public:
 	void centerStartPos();
 	void centerStopPos();
 
+	int getZoomDecimalPlaces() const; // return number of decimal places that should be appropriated on a time value depending on the zoom factor
+
 	enum
 	{
 		ID_HORZ_ZOOM_DIAL=FXTopWindow::ID_LAST,
@@ -199,9 +201,9 @@ private:
 		FXLabel *selectStartLabel;
 		FXLabel *selectStopLabel;
 
-		FXLabel *playPositionLabel;
-
-		//FXButton *button;
+		//FXLabel *playPositionLabel;    used to be a simple label, but calling setText was too CPU intensive
+		FXFrame *playPositionLabel;
+		FXint prevPlayPositionLabelWidth;
 
 	FXPacker *waveViewPanel;
 		FXPacker *horzZoomPanel;

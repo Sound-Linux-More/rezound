@@ -49,6 +49,19 @@ public:
 
 
 
+// --- monoize ------------------------
+
+class CMonoizeActionDialog : public CActionParamDialog
+{
+public:
+	CMonoizeActionDialog(FXWindow *mainWindow);
+	virtual ~CMonoizeActionDialog(){}
+
+	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
+};
+
+
+
 // --- noise gate ------------------------
 
 class CNoiseGateDialog : public CActionParamDialog
@@ -56,6 +69,8 @@ class CNoiseGateDialog : public CActionParamDialog
 public:
 	CNoiseGateDialog(FXWindow *mainWindow);
 	virtual ~CNoiseGateDialog(){}
+
+	const string getExplanation() const;
 };
 
 
@@ -69,7 +84,7 @@ public:
 	virtual ~CCompressorDialog(){}
 
 protected:
-	const string getExplaination() const;
+	const string getExplanation() const;
 };
 
 

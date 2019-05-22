@@ -32,10 +32,14 @@ SUBDIRS=\
 	Effects \
 	Filters \
 	Looping \
+	Generate \
 	Remaster
 
-## EXTRA_DIST these files don't make it into make dist by default but
-## they are required for the build
+# this makes makedist happy
+EXTRA_DIST= \
+	CStubAction.h \
+	CStubAction.cpp
+
 noinst_HEADERS= \
 	   AActionDialog.h \
 	   AAction.h \
@@ -54,6 +58,8 @@ noinst_HEADERS= \
 	   ClameSoundTranslator.h \
 	   ClibaudiofileSoundTranslator.h \
 	   ClibvorbisSoundTranslator.h \
+	   CFLACSoundTranslator.h \
+	   CMIDISDSSoundTranslator.h \
 	   CLoadedSound.h \
 	   CNativeSoundClipboard.h \
 	   Cold_rezSoundTranslator.h \
@@ -79,8 +85,6 @@ noinst_HEADERS= \
 	   unit_conv.h
 	   
 
-## see PoolFile Makefile.am for explanation here out
-## 
 noinst_LTLIBRARIES=libbackend.la
 libbackend_la_SOURCES= \
 			AAction.cpp  \
@@ -100,6 +104,8 @@ libbackend_la_SOURCES= \
 			ClameSoundTranslator.cpp \
 			ClibaudiofileSoundTranslator.cpp \
 			ClibvorbisSoundTranslator.cpp \
+			CFLACSoundTranslator.cpp \
+			CMIDISDSSoundTranslator.cpp \
 			CLoadedSound.cpp  \
 			CNativeSoundClipboard.cpp \
 			Cold_rezSoundTranslator.cpp \
@@ -120,4 +126,8 @@ libbackend_la_SOURCES= \
 			main_controls.cpp \
 		        mypopen.cpp \
 		        settings.cpp
+
+AM_CXXFLAGS=@AUDIOFILE_CFLAGS@ @JACK_CFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@ @LIBFLACPP_CFLAGS@ @LIBFLAC_CFLAGS@
+
+libbackend_la_LIBADD=@LTLIBINTL@ @AUDIOFILE_LIBS@ @JACK_LIBS@ @OGG_LIBS@ @VORBIS_LIBS@ @VORBISFILE_LIBS@ @VORBISENC_LIBS@ @LIBFLACPP_LIBS@ @LIBFLAC_LIBS@
 

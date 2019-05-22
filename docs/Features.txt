@@ -1,13 +1,15 @@
 - File Formats:
 	- (soon support for libsndfile in place of libaudiofile)
 	- Native ReZound
-	- WAVE			(libaudiofile)
-	- AIFF/AIFF-C		(libaudiofile)
-	- NeXT/Sun 		(libaudiofile)
-	- Berkeley/IRCAM/CARL	(libaudiofile)
-	- raw			(libaudiofile)
-	- Ogg Vorbis		(libogg and libvorbis)
-	- MPEG Layer-3,2,1	(lame)
+	- WAVE				(libaudiofile)
+	- AIFF/AIFF-C			(libaudiofile)
+	- NeXT/Sun 			(libaudiofile)
+	- Berkeley/IRCAM/CARL		(libaudiofile)
+	- raw				(libaudiofile)
+	- Ogg Vorbis			(libogg and libvorbis)
+	- MPEG Layer-3,2,1		(lame)
+	- FLAC (preliminary)		(libFLAC LIBFLAC++)
+	- MIDI Sample Dump Standard	(/dev/midi)
 
 - Audio I/O Interfaces
 	- OSS (default)
@@ -18,13 +20,14 @@
 	- Standard: New, Open, Save, Save As, Close, Revert
 	- Reopen History
 	- Save Selection As
-	- Save As Multiple Files
+	- Save As Multiple Files (according to cue positions)
 
 - Fast Editing of Large Files
 
 - Undo
 
 - Labeled Cue Positions
+	- Cues can be dragged
 
 - Automatic Crossfading of Selection Edges on All Applicable Actions to Create Smooth Transitions
 
@@ -37,12 +40,15 @@
 	- Start and Pause Recording
 	- Can Reset the Record Position to the Beginning While Recording
 	- Add Cue Positions While Recording
+	- Compensation for DC Offset in Recording Hardware
 
 - Play Controls
 	- Play All Once
 	- Play All Looped
 	- Play Selection Once
 	- Play Selection Looped
+	- Play Selection Looped and Skip Most of the Middle
+	- Play Selection Looped but Add a Gap Before Repeating
 	- Stop
 	- Pause
 	- Jump to Beginning
@@ -52,7 +58,12 @@
 	- Shuttle Play Position Control
 	- Play from Mouse Cursor (hold ctrl and use left and right mouse buttons)
 
-- Playback Audio Level Meters and Frequency Analyzer
+- Playback Meters
+	- Toggle-able
+	- Audio Level Meters
+	- Balance Meter
+	- Stereo Phase Meters 
+	- Frequency Analyzer
 
 - Full Featured Editing Tools
 	- Copy
@@ -113,11 +124,17 @@
 
 - Mastering/Remastering Tools (more to come)
 	- Balance/Pan (by constant or curve)
+	- Monoize (mix down channels or make all the channels the same)
 	- Remove DC Component
 	- Noise Gate
 	- Dynamic Range Compression
 	- Normalization
 	- Resample
 
+- Generate Various Colors of Noise
+
 - Selectable LFO Shapes for Actions that Use an LFO (more to come)
 
+- Dynamic Menu Layout (no frontend interface easy user-defining yet)
+
+- gettext support (i18n, internationalization)

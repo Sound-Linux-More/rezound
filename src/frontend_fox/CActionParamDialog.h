@@ -52,7 +52,7 @@ class CActionParamDialog : public FXModalDialogBox, public AActionDialog
 public:
 	typedef const double (*f_at_x)(const double x);
 
-	CActionParamDialog(FXWindow *mainWindow,const FXString title,bool showPresetPanel=true);
+	CActionParamDialog(FXWindow *mainWindow,bool showPresetPanel=true,FXModalDialogBox::ShowTypes showType=FXModalDialogBox::stRememberSizeAndPosition);
 	virtual ~CActionParamDialog();
 
 	// these are used to create new parents for the controls
@@ -75,6 +75,9 @@ public:
 	void addGraphWithWaveform(void *parent,const string name,const string vertAxisLabel,const string vertUnits,FXGraphParamValue::f_at_xs vertInterpretValue,FXGraphParamValue::f_at_xs vertUninterpretValue,f_at_x optRetValueConv,const int minScalar,const int maxScalar,const int initialScalar);
 	void addLFO(void *parent,const string name,const string ampUnits,const string ampTitle,const double maxAmp,const string freqUnits,const double maxFreq,const bool hideBipolarLFOs);
 
+	// show or hide a control
+	void showControl(const string name,bool show);
+
 	/* 
 	 * index corrisponds to the order that the add...() methods were called 
 	 * and this can only be called for sliders, text entries, check boxes, and
@@ -91,6 +94,8 @@ public:
 	void setMargin(FXint margin); // will add a margin the left and right of all the controls
 
 	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
+
+	void setTitle(const string title);
 
 	enum 
 	{
@@ -116,16 +121,21 @@ public:
 
 	void create();
 
+	const string getOrigTitle() const;
+
 protected:
 	CActionParamDialog() {}
 
-	// can be overridden to return an explaination of the action which will cause the appearance of an 'explain' button on the dialog
-	virtual const string getExplaination() const { return ""; }
+	// can be overridden to return an explanation of the action which will cause the appearance of an 'explain' button on the dialog
+	virtual const string getExplanation() const { return ""; }
 
 private:
+	string origTitle;
 	const CActionSound *actionSound;
 
-	bool explainationButtonCreated;
+	bool showPresetPanel;
+
+	bool explanationButtonCreated;
 
 	enum ParamTypes
 	{
@@ -141,7 +151,7 @@ private:
 	};
 
 	// the void * points to either an FXConstantParamValue, FXTextParamValue, FXComboTextParamValue, FXCheckBoxParamValue or an FXGraphParamValue
-	vector<pair<ParamTypes,void *> > parameters;
+	vector<pair<ParamTypes,FXWindow *> > parameters;
 	vector<f_at_x> retValueConvs;
 
 	FXSplitter *splitter;

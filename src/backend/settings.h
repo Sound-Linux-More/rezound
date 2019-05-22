@@ -23,18 +23,22 @@
 
 #include "../../config/common.h"
 
+#include <string>
 
 /*
  * This is a repository to which settings can be saved
  */
 class CNestedDataFile;
 extern CNestedDataFile *gSettingsRegistry;
+#define GET_SETTING(key,variable,type)					\
+	if(gSettingsRegistry->keyExists((key)))				\
+		variable= gSettingsRegistry->getValue<type>((key));
+
 
 
 /*
  * This is the directory that a open/save dialog should open to
  */
-#include <string>
 extern string gPromptDialogDirectory;
 
 
@@ -107,41 +111,34 @@ extern size_t gMaxReopenHistory; 		// defaulted to 16
 
 
 /*
- * These are the parameters of whether or not to snap the selection positions
- * to the cue position, and if so, how far from a cue to does the position have
- * to be before it snaps to it.
+ * dealing when loopType is ltLoopSkipMost
+ * Specifies how much time should be played before skipping past the middle to (this much also before) the loop point
  */
-extern bool gSnapToCues;
-extern unsigned gSnapToCueDistance;
+extern float gSkipMiddleMarginSeconds;
+/*
+ * dealing when loopType is ltLoopSkipMost or ltLoopGapBeforeRepeat
+ * Specifies how long the skip is when skipping the middle when looping or how long the gap is when inserting a gap before repeating
+ */
+extern float gLoopGapLengthSeconds;
 
 
 /*
- * True if the sound windows should follow the play position
- */
-extern bool gFollowPlayPosition;
-
-
-/*
- * Flagged whether the level methods or frequency analyzer are enabled
- */
-extern bool gLevelMetersEnabled;
-extern bool gFrequencyAnalyzerEnabled;
-
-
-/*
- * The initial about of audio to show on screen in a newly created sound window
- */
-extern double gInitialLengthToShow;
-
-/*
- * settings pertaining to audio meters
+ * settings pertaining to audio level meters and frequency analyzer
  */
 extern unsigned gMeterUpdateTime;	// the number of milliseconds before update the audio level meters again
+
+extern bool gLevelMetersEnabled;	// flag whether the level meters are enabled
 extern unsigned gMeterRMSWindowTime;	// the number of milliseconds of audio that the RMS should do a moving average on (normally 10-1000 milliseconds)
 extern unsigned gMaxPeakFallDelayTime;	// the number of milliseconds before the max peak indicators should hold before falling
 extern double gMaxPeakFallRate;		// the fraction of the maximum sample value that should be subtracted from the max peak level durring falling (normally 2% or 0.02)
+
+extern bool gStereoPhaseMetersEnabled;	// flag whether the stereo phase meters are enabled
+extern unsigned gStereoPhaseMeterPointCount;	// the number of stereo phase point to plot from the audio output each update
+
+extern bool gFrequencyAnalyzerEnabled;	// flag whether the frequency analyzer is enabled
 extern unsigned gAnalyzerPeakFallDelayTime;	// the number of milliseconds before the analyzer peaks should hold before falling
 extern double gAnalyzerPeakFallRate;	// the the fraction of 1 that should be subtracted from tne analyzer peaks durring falling 
+
 
 
 /*
@@ -172,5 +169,11 @@ extern float gCrossfadeStartTime;
 extern float gCrossfadeStopTime;
 enum CrossfadeFadeMethods { cfmLinear=0, cfmParabolic=1 };
 extern CrossfadeFadeMethods gCrossfadeFadeMethod;
+
+/*
+ * Functions to call to read/write these vars to stable storage
+ */
+void readBackendSettings();
+void writeBackendSettings();
 
 #endif

@@ -30,6 +30,12 @@
 
 #include <istring>
 
+/* some changes needed to be made to the implementation when flex changed how some things worked */
+#ifndef YY_FLEX_SUBMINOR_VERSION
+	#define YY_FLEX_SUBMINOR_VERSION 0
+#endif
+#define FLEX_VERSION (YY_FLEX_MAJOR_VERSION*100000+YY_FLEX_MINOR_VERSION*1000+YY_FLEX_SUBMINOR_VERSION)
+
 bool started;
 int yylineno; 
 
@@ -56,7 +62,6 @@ string currentFilename;
 
 %option never-interactive
 %option stack
-%option noyylineno
 
 %x COMMENT
 
@@ -73,27 +78,24 @@ string currentFilename;
 
 
 
-(([0-9]*\.[0-9]+(e[\-+]?[0-9]+)?)|([0-9]+))		{ yylval.floatValue=atof(yytext); return(LIT_NUMBER); }
+(([0-9]*\.[0-9]+(e[\-+]?[0-9]+)?)|([0-9]+))		{ yylval.stringValue=strdup(yytext); return LIT_NUMBER; }
 
 ([_0-9A-Za-z]|(\\[\x20-\x7e]))+	{ 
 		if(strcmp(yytext,"include")==0)
-			return(INCLUDE);
+			return INCLUDE;
 		else if(strcmp(yytext,"true")==0)
-			return(TRUE);
+			return TRUE;
 		else if(strcmp(yytext,"false")==0)
-			return(FALSE);
+			return FALSE;
 		else
 		{
 			yylval.stringValue=strdup(yytext); 
 
-			// parse error if it contains CNestedDataFile::delimChar
-			for(size_t t=0;t<strlen(yylval.stringValue);t++)
+			// parse error if it contains CNestedDataFile::delim
+			if(strstr(yylval.stringValue,CNestedDataFile::delim.c_str())!=NULL)
 			{
-				if(yylval.stringValue[t]==(*CNestedDataFile::delimChar))
-				{
-					cfg_error(yylloc,("key name contains '"+string(CNestedDataFile::delimChar)+"'").c_str());
-					return(0);
-				}
+				cfg_error(yylloc,("key name contains '"+CNestedDataFile::delim+"'").c_str());
+				return 0;
 			}
 			
 
@@ -104,7 +106,7 @@ string currentFilename;
 					memmove(yylval.stringValue+t,yylval.stringValue+t+1,strlen(yylval.stringValue+t+1)+1);
 			}
 
-			return(IDENT); 
+			return IDENT;
 		}
 	}
 			
@@ -114,20 +116,20 @@ string currentFilename;
 	int length;
 	char *data=quote(yytext,length);
 	yylval.stringValue=data;
-	return(LIT_STRING);
+	return LIT_STRING;
 }
 
 
 [\ \n\t\v\b\r\f\a]+			{ /* Eat White Space */ }
 
-"!="					{ return(NE); }
-"=="					{ return(EQ); }
-">="					{ return(GE); }
-"<="					{ return(LE); }
-"||"					{ return(OR); }
-"&&"					{ return(AND); }
+"!="					{ return NE; }
+"=="					{ return EQ; }
+">="					{ return GE; }
+"<="					{ return LE; }
+"||"					{ return OR; }
+"&&"					{ return AND; }
 
-. 					{ return(*yytext); }
+. 					{ return *yytext; }
 
 
 
@@ -365,11 +367,12 @@ static char *quote(const char *input,int &length)
 	length-=2;
 	yytext[length+1]=0;
 	memmove(yytext,yytext+1,length+1);
-	return(yytext);
+	return yytext;
 }
 
 void cfg_init()
 {
+	yylineno=0;
 	myyynerrs=0;
 
 	while(!scopeStack.empty())
@@ -389,9 +392,16 @@ void cfg_init()
 	if(YY_CURRENT_BUFFER)
 	{
 		yy_delete_buffer(YY_CURRENT_BUFFER);
+		int asdfqwer=FLEX_VERSION;
+#if FLEX_VERSION<205031 /*2.5.31*/
 		YY_CURRENT_BUFFER=NULL;
+#endif
 	}
-	cfg_includeFile(CNestedDataFile::initialFilename);
+
+	if(CNestedDataFile::s2at_string.size()>0) // use s2at_string if it's not blank (meaning that string_to_anytype<vector>() is invoking the parser)
+		yy_scan_string(CNestedDataFile::s2at_string.c_str());
+	else
+		cfg_includeFile(CNestedDataFile::initialFilename.c_str());
 
 	started=true;
 
@@ -406,7 +416,7 @@ void cfg_includeFile(const char *filename)
 {
 	FILE *f=fopen(filename,"r");
 	if(f==NULL)
-		throw(runtime_error(istring(yylineno)+": -- could not open file: "+string(filename)));
+		throw runtime_error(string(__func__)+" -- "+istring(yylineno)+": -- could not open file: "+string(filename));
 	
 	// read text from file into scanString
 	#define READ_CHUNK_SIZE 256
@@ -443,17 +453,19 @@ int yywrap(void)
 	if(YY_CURRENT_BUFFER)
 	{
 		yy_delete_buffer(YY_CURRENT_BUFFER);
+#if FLEX_VERSION<205031 /*2.5.31*/
 		YY_CURRENT_BUFFER=NULL;
+#endif
 	}
 
 	if(inputBufferStack.empty())
-		return(true);
+		return true;
 	else
 	{
 		currentFilename=filenameStack.top(); filenameStack.pop();
 		yylineno=linenoStack.top(); linenoStack.pop();
 		yy_switch_to_buffer(inputBufferStack.top()); inputBufferStack.pop();
-		return(false);
+		return false;
 	}
 }
 

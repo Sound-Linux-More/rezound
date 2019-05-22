@@ -30,7 +30,6 @@
 #include "settings.h"
 
 #include <CNestedDataFile/CNestedDataFile.h>
-#define DOT (CNestedDataFile::delimChar)
 
 #include "utils.h"
 
@@ -49,13 +48,15 @@ FXDEFMAP(FXDiskEntityParamValue) FXDiskEntityParamValueMap[]=
 
 FXIMPLEMENT(FXDiskEntityParamValue,FXVerticalFrame,FXDiskEntityParamValueMap,ARRAYNUMBER(FXDiskEntityParamValueMap))
 
-FXDiskEntityParamValue::FXDiskEntityParamValue(FXComposite *p,int opts,const char *title,const string initialEntityName,DiskEntityTypes _entityType) :
+FXDiskEntityParamValue::FXDiskEntityParamValue(FXComposite *p,int opts,const char *_name,const string initialEntityName,DiskEntityTypes _entityType) :
 	FXVerticalFrame(p,opts|FRAME_RAISED |LAYOUT_FILL_X, 0,0,0,0, 2,2,2,2, 0,0),
+
+	name(_name),
 	
 	entityType(_entityType),
 
 	hFrame(new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0, 0,0,0,0, 2,0)),
-		titleLabel(new FXLabel(hFrame,title,NULL,LABEL_NORMAL|LAYOUT_CENTER_Y)),
+		titleLabel(new FXLabel(hFrame,gettext(_name),NULL,LABEL_NORMAL|LAYOUT_CENTER_Y)),
 		entityNameTextBox(new FXTextField(hFrame,8,this,ID_ENTITYNAME_TEXTBOX, TEXTFIELD_NORMAL | LAYOUT_CENTER_Y|LAYOUT_FILL_X)),
 		browseButton(new FXButton(hFrame,"&Browse",NULL,this,ID_BROWSE_BUTTON)),
 			// ??? if this widget is ever going to be used for anything other than sound files, then I need to conditionally show this checkButton
@@ -140,9 +141,9 @@ void FXDiskEntityParamValue::setEntityName(const string entityName,bool openAsRa
 		openAsRawCheckButton->setCheck(openAsRaw);
 }
 
-const string FXDiskEntityParamValue::getTitle() const
+const string FXDiskEntityParamValue::getName() const
 {
-	return(titleLabel->getText().text());
+	return name;
 }
 
 void FXDiskEntityParamValue::setTipText(const FXString &text)
@@ -153,7 +154,7 @@ void FXDiskEntityParamValue::setTipText(const FXString &text)
 
 FXString FXDiskEntityParamValue::getTipText() const
 {
-	return(titleLabel->getTipText());	
+	return titleLabel->getTipText();
 }
 
 const FXDiskEntityParamValue::DiskEntityTypes FXDiskEntityParamValue::getEntityType() const
@@ -163,18 +164,18 @@ const FXDiskEntityParamValue::DiskEntityTypes FXDiskEntityParamValue::getEntityT
 
 void FXDiskEntityParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 {
-	const string key=prefix+DOT+getTitle();
-	const string v=f->getValue(key.c_str());
-	setEntityName(v,f->getValue((key+" AsRaw").c_str())=="true");
+	const string key=prefix DOT getName();
+	const string v=f->getValue<string>(key);
+	setEntityName(v,f->getValue<bool>(key+" AsRaw"));
 }
 
 void FXDiskEntityParamValue::writeToFile(const string &prefix,CNestedDataFile *f)
 {
-	const string key=prefix+DOT+getTitle();
-	f->createKey(key.c_str(),encodeFilenamePresetParameter(entityNameTextBox->getText().text()));
+	const string key=prefix DOT getName();
+	f->createValue<string>(key,encodeFilenamePresetParameter(entityNameTextBox->getText().text()));
 
 	if(openAsRawCheckButton!=NULL)
-		f->createKey((key+" AsRaw").c_str(),openAsRawCheckButton->getCheck() ? "true" : "false");
+		f->createValue<bool>(key+" AsRaw",openAsRawCheckButton->getCheck());
 }
 
 

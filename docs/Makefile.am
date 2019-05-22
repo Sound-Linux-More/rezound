@@ -1,5 +1,5 @@
 # vim:tw=78
-# $Id: Makefile.am,v 1.7 2002/06/25 21:52:45 ddurham Exp $
+# $Id: Makefile.am,v 1.8 2003/03/24 08:26:29 ddurham Exp $
 ## Process this file with automake to create Makefile.in
 ##
 ##
@@ -27,7 +27,7 @@ pkgdoc_DATA=\
 		AUTHORS\
 		COPYING\
 		NEWS\
-		README_DOCS\
 		README\
-		FrontendFoxFeatures.txt
+		FrontendFoxFeatures.txt\
+		Features.txt
 

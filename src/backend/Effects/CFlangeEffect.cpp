@@ -20,7 +20,6 @@
 
 #include "CFlangeEffect.h"
 
-#include <stdexcept>
 #include <memory>
 
 #include "../DSP/FlangeEffect.h"
@@ -45,9 +44,9 @@ CFlangeEffect::CFlangeEffect(const CActionSound &actionSound,float _delayTime,fl
 	feedback(_feedback)
 {
 	if(_delayTime<0.0)
-		throw(runtime_error(string(__func__)+" -- _delayTime is negative"));
+		throw(runtime_error(string(__func__)+_(" -- _delayTime is negative")));
 	if(flangeLFO.amp<0.0)
-		throw(runtime_error(string(__func__)+" -- flangeLFO.amp is negative"));
+		throw(runtime_error(string(__func__)+_(" -- flangeLFO.amp is negative")));
 }
 
 CFlangeEffect::~CFlangeEffect()
@@ -62,11 +61,12 @@ bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUn
 	if(prepareForUndo)
 		moveSelectionToTempPools(actionSound,mmSelection,actionSound.selectionLength());
 
+	unsigned channelsDoneCount=0;
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Flange -- Channel "+istring(i),start,stop,true);
+			CStatusBar statusBar(_("Flange -- Channel ")+istring(++channelsDoneCount)+"/"+istring(actionSound.countChannels()),start,stop,true);
 
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -126,7 +126,7 @@ void CFlangeEffect::undoActionSizeSafe(const CActionSound &actionSound)
 // ---------------------------------------------
 
 CFlangeEffectFactory::CFlangeEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Flange","Flange Effect",channelSelectDialog,dialog)
+	AActionFactory(N_("Flange"),"",channelSelectDialog,dialog)
 {
 }
 

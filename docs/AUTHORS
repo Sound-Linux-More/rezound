@@ -1,4 +1,4 @@
-$Id: AUTHORS,v 1.5 2003/01/27 18:28:26 ddurham Exp $
+$Id: AUTHORS,v 1.8 2003/05/09 05:12:10 ddurham Exp $
 #
 # Master author manifest for ReZound
 # 
@@ -7,9 +7,11 @@ $Id: AUTHORS,v 1.5 2003/01/27 18:28:26 ddurham Exp $
 # Package Development and Maintainence is led by David W. Durham.
 #
 # Anthony J. Ventimiglia performed the original autoconfiscation process.
+#  	David W. Durham performed the conversion from autoconf-2.1x to 2.5   
 #
-# David W. Durham <ddurham@users.sourceforge.net>
-# Anthony J. Ventimiglia <lergnom@users.sourceforge.net> 
+#            Primary Author: David W. Durham <ddurham@users.sourceforge.net>
+# Packager/Autoconfiscation: Anthony J. Ventimiglia <lergnom@users.sourceforge.net> 
+#    Additional Development: Marc R. J. Brevoort
 # 
 # Please refer to individual Files for author credit
 # 
@@ -19,3 +21,11 @@ $Id: AUTHORS,v 1.5 2003/01/27 18:28:26 ddurham Exp $
 # terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2 of the License, or (at your option) any later
 # version.
+
+
+### Other Notes #########################################3
+
+# Marc R. J. Brevoort - Initial development of dynamic menu configuration
+# Marc R. J. Brevoort - Original coding of Generate Noise and R&D of colors' algorithms
+
+# David W. Durham - Pretty much everything else

@@ -28,8 +28,14 @@
 
 #include <fox/fx.h>
 
-class CMeter;
+#include "../backend/CSound_defs.h"
+#include "../misc/TAutoBuffer.h"
+
+class CLevelMeter;
+class CBalanceMeter;
 class CAnalyzer;
+class CStereoPhaseMeter;
+
 class ASoundPlayer;
 
 class CMetersWindow : public FXHorizontalFrame
@@ -45,6 +51,9 @@ public:
 
 	bool isLevelMetersEnabled() const;
 	void enableLevelMeters(bool enable);
+
+	bool isStereoPhaseMetersEnabled() const;
+	void enableStereoPhaseMeters(bool enable);
 
 	bool isFrequencyAnalyzerEnabled() const;
 	void enableFrequencyAnalyzer(bool enable);
@@ -64,6 +73,8 @@ public:
 	long onLabelFrameConfigure(FXObject *sender,FXSelector,void*);
 
 	long onResetGrandMaxPeakLevels(FXObject *sender,FXSelector,void*);
+
+	void showHideAll();
 	
 protected:
 	CMetersWindow() {}
@@ -74,10 +85,16 @@ private:
 		FXPacker *headerFrame;
 			FXPacker *labelFrame;
 			FXLabel *grandMaxPeakLevelLabel;
+		FXPacker *balanceMetersFrame;
+			FXLabel *balanceMetersRightMargin;
 
 	CAnalyzer *analyzer;
 
-	vector<CMeter *> meters;
+	TAutoBuffer<sample_t> samplingForStereoPhaseMeters;
+	vector<CStereoPhaseMeter *> stereoPhaseMeters;
+
+	vector<CLevelMeter *> levelMeters;
+	vector<CBalanceMeter *> balanceMeters;
 
 	ASoundPlayer *soundPlayer;
 

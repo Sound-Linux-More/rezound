@@ -379,6 +379,27 @@ void FXWaveCanvas::drawPortion(int left,int width,FXDCWindow *dc)
 
 		const int vOffset=((getVertSize()-getHeight())/2)-vertOffset;
 		::drawPortion(left,width,dc,loadedSound->sound,getWidth(),getHeight(),(int)getDrawSelectStart(),(int)getDrawSelectStop(),horzZoomFactor,horzOffset,vertZoomFactor,vOffset);
+
+		if(gDrawVerticalCuePositions)
+		{	// draw cue positions as inverted colors
+
+			// calculate the min and max times based on the left and right boundries of the drawing
+			const sample_pos_t minTime=getCueTimeFromX(max(0,left-1));
+			const sample_pos_t maxTime=getCueTimeFromX(left+width+1);
+
+			/* ??? if I iterated over the cues by increasing time, then I could be more efficient by finding the neared cue to minTime and stop when a cue is greater than maxTime */
+			const size_t cueCount=loadedSound->sound->getCueCount();
+			for(size_t t=0;t<cueCount;t++)
+			{
+				const sample_pos_t cueTime=loadedSound->sound->getCueTime(t);
+				if(cueTime>=minTime && cueTime<=maxTime)
+				{
+					const FXint x=getCueScreenX(t);
+					::drawPortion(x,1,dc,loadedSound->sound,getWidth(),getHeight(),(int)getDrawSelectStart(),(int)getDrawSelectStop(),horzZoomFactor,horzOffset,vertZoomFactor,vOffset,false,true);
+				}
+			}
+		}
+
 		loadedSound->sound->unlockSize();
 	}
 	catch(...)
@@ -389,14 +410,21 @@ void FXWaveCanvas::drawPortion(int left,int width,FXDCWindow *dc)
 }
 
 
+const sample_pos_t FXWaveCanvas::getHorzOffsetToCenterTime(sample_pos_t time) const
+{
+	if(time>=loadedSound->sound->getLength())
+		time=loadedSound->sound->getLength()-1;
+	return (sample_pos_t)max((sample_fpos_t)0.0,sample_fpos_round(time/horzZoomFactor)-getWidth()/2);
+}
+
 const sample_pos_t FXWaveCanvas::getHorzOffsetToCenterStartPos() const
 {
-	return (sample_pos_t)max((sample_fpos_t)0.0,sample_fpos_round(loadedSound->channel->getStartPosition()/horzZoomFactor)-getWidth()/2);
+	return getHorzOffsetToCenterTime(loadedSound->channel->getStartPosition());
 }
 
 const sample_pos_t FXWaveCanvas::getHorzOffsetToCenterStopPos() const
 {
-	return (sample_pos_t)max((sample_fpos_t)0.0,sample_fpos_round(loadedSound->channel->getStopPosition()/horzZoomFactor)-getWidth()/2);
+	return getHorzOffsetToCenterTime(loadedSound->channel->getStopPosition());
 }
 
 void FXWaveCanvas::showAmount(double seconds,sample_pos_t pos,int marginPixels)
@@ -489,9 +517,7 @@ const FXint FXWaveCanvas::getCueScreenX(size_t cueIndex) const
 
 const sample_pos_t FXWaveCanvas::getCueTimeFromX(FXint screenX) const
 {
-	// ??? uh this is VERY similar to getSamplePosForScreenX
-	return((sample_pos_t)(((sample_fpos_t)screenX+(sample_fpos_t)horzOffset)*horzZoomFactor));
-
+	return getSamplePosForScreenX(screenX);
 }
 
 
@@ -499,8 +525,7 @@ const sample_pos_t FXWaveCanvas::getCueTimeFromX(FXint screenX) const
 
 const sample_pos_t FXWaveCanvas::getSamplePosForScreenX(FXint X) const
 {
-	// ??? uh this is VERY similar to getCueTimeFromX
-	sample_fpos_t p=sample_fpos_floor(((sample_fpos_t)(X+horzOffset))*horzZoomFactor);
+	sample_fpos_t p=sample_fpos_floor((X+(sample_fpos_t)horzOffset)*horzZoomFactor);
 	if(p<0)
 		p=0.0;
 	else if(p>=loadedSound->sound->getLength())
@@ -517,8 +542,8 @@ void FXWaveCanvas::setSelectStartFromScreen(FXint X)
 	// and--if there were a next pixel--and selecting that
 	// would select >= sound's length, we make newSelectStart
 	// be the sound's length - 1
-	// 							??? why X+1?			??? may beed to check >=len-1
-	if(X>=((FXint)getWidth()-1) && (sample_pos_t)((sample_fpos_t)(X+horzOffset+1)*horzZoomFactor)>=loadedSound->sound->getLength())
+	// 								??? why X+1?		??? may need to check >=len-1
+	if(X>=((FXint)getWidth()-1) && (sample_pos_t)((X+(sample_fpos_t)horzOffset+1)*horzZoomFactor)>=loadedSound->sound->getLength())
 		newSelectStart=loadedSound->sound->getLength()-1;
 
 
@@ -540,7 +565,7 @@ void FXWaveCanvas::setSelectStopFromScreen(FXint X)
 	// would select >= sound's length, we make newSelectStop
 	// be the sound's length - 1
 	// 											??? may beed to check >=len-1
-	if(X>=((FXint)getWidth()-1) && (sample_pos_t)((sample_fpos_t)(X+horzOffset+1)*horzZoomFactor)>=loadedSound->sound->getLength())
+	if(X>=((FXint)getWidth()-1) && (sample_pos_t)((X+(sample_fpos_t)horzOffset+1)*horzZoomFactor)>=loadedSound->sound->getLength())
 		newSelectStop=loadedSound->sound->getLength()-1;
 
 	if(newSelectStop<0)

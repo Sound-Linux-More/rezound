@@ -30,4 +30,43 @@
 #define CUE_RADIUS 3
 #define CUE_OFF_SCREEN (-(CUE_RADIUS+1000))
 
+
+/*
+ * True if vertical cue positions should be drawn across the waveform
+ */
+extern bool gDrawVerticalCuePositions;
+
+/*
+ * These are the parameters of whether or not to snap the selection positions
+ * to the cue position, and if so, how far from a cue to does the position have
+ * to be before it snaps to it.
+ */
+extern bool gSnapToCues;
+extern unsigned gSnapToCueDistance;
+
+
+/*
+ * True if the sound windows should follow the play position
+ */
+extern bool gFollowPlayPosition;
+
+
+/*
+ * True if the wave view rendering should color max-valued samples brightly
+ */
+extern bool gRenderClippingWarning;
+
+
+/*
+ * The initial about of audio to show on screen in a newly created sound window
+ */
+extern double gInitialLengthToShow;
+
+
+/*
+ * Functions to call to read/write these vars to stable storage
+ */
+void readFrontendSettings();
+void writeFrontendSettings();
+
 #endif

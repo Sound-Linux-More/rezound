@@ -64,7 +64,7 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 	bool ret=true;
 
 	if(gPathToLame=="")
-		throw(runtime_error(string(__func__)+" -- path to 'lame' not set"));
+		throw(runtime_error(string(__func__)+" -- $PATH to 'lame' not set"));
 
 	if(!checkThatFileExists(filename))
 		throw(runtime_error(string(__func__)+" -- file not found, '"+filename+"'"));
@@ -123,7 +123,7 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 			throw(runtime_error(string(__func__)+" -- invalid number of channels in audio file: "+istring(channelCount)+" -- you could simply increase MAX_CHANNELS in CSound.h"));
 
 		unsigned sampleRate=waveHeader.sampleRate;
-		if(sampleRate<4000 || sampleRate>96000)
+		if(sampleRate<100 || sampleRate>196000)
 			throw(runtime_error(string(__func__)+" -- an unlikely sample rate of "+istring(sampleRate)));
 
 		unsigned bits=waveHeader.bitsPerSample;
@@ -157,7 +157,7 @@ bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 				if(chunkSize<=0)
 					break;
 
-				if((pos+REALLOC_FILE_SIZE)>sound->getLength())
+				if((pos+chunkSize)>sound->getLength())
 					sound->addSpace(sound->getLength(),REALLOC_FILE_SIZE);
 
 				for(unsigned c=0;c<channelCount;c++)
@@ -226,7 +226,7 @@ bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound
 	
 	if(sound->getCueCount()>0 || sound->getUserNotes()!="")
 	{
-		if(Question("MPEG Layer-3 does not support saving user notes or cues\nDo you wish to continue?",yesnoQues)!=yesAns)
+		if(Question(_("MPEG Layer-3 does not support saving user notes or cues\nDo you wish to continue?"),yesnoQues)!=yesAns)
 			return false;
 	}
 
@@ -319,7 +319,7 @@ bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound
 			TAutoBuffer<sample_t> buffer(BUFFER_SIZE*channelCount);
 			sample_pos_t pos=0;
 
-			CStatusBar statusBar("Saving Sound",0,saveLength,true);
+			CStatusBar statusBar(_("Saving Sound"),0,saveLength,true);
 			while(pos<saveLength)
 			{
 				size_t chunkSize=BUFFER_SIZE;
@@ -376,7 +376,7 @@ bool ClameSoundTranslator::onSaveSound(const string filename,const CSound *sound
 }
 
 
-bool ClameSoundTranslator::handlesExtension(const string extension) const
+bool ClameSoundTranslator::handlesExtension(const string extension,const string filename) const
 {
 	return extension=="mp3" || extension=="mp2" || extension=="mp1";
 }
@@ -397,16 +397,16 @@ const vector<string> ClameSoundTranslator::getFormatNames() const
 	return names;
 }
 
-const vector<vector<string> > ClameSoundTranslator::getFormatExtensions() const
+const vector<vector<string> > ClameSoundTranslator::getFormatFileMasks() const
 {
 	vector<vector<string> > list;
-	vector<string> extensions;
+	vector<string> fileMasks;
 
-	extensions.clear();
-	extensions.push_back("mp3");
-	extensions.push_back("mp2");
-	extensions.push_back("mp1");
-	list.push_back(extensions);
+	fileMasks.clear();
+	fileMasks.push_back("*.mp3");
+	fileMasks.push_back("*.mp2");
+	fileMasks.push_back("*.mp1");
+	list.push_back(fileMasks);
 
 	return list;
 }

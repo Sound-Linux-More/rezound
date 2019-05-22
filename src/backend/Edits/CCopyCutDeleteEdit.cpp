@@ -20,8 +20,6 @@
 
 #include "CCopyCutDeleteEdit.h"
 
-#include <istring>
-
 #include "../ASoundClipboard.h"
 
 CCopyCutDeleteEdit::CCopyCutDeleteEdit(const CActionSound actionSound,CCDType _type) :
@@ -47,7 +45,7 @@ bool CCopyCutDeleteEdit::doActionSizeSafe(CActionSound &actionSound,bool prepare
 		const sample_pos_t selectionLength=actionSound.selectionLength();
 
 		if(AAction::clipboards[gWhichClipboard]->isReadOnly())
-			throw(EUserMessage(("cannot copy/cut to clipboard: "+AAction::clipboards[gWhichClipboard]->getDescription()).c_str()));
+			throw(EUserMessage((_("cannot copy/cut to clipboard: ")+AAction::clipboards[gWhichClipboard]->getDescription()).c_str()));
 
 		AAction::clipboards[gWhichClipboard]->copyFrom(actionSound.sound,actionSound.doChannel,start,selectionLength);
 	}
@@ -90,7 +88,7 @@ bool CCopyCutDeleteEdit::doesWarrantSaving() const
 // ---------------------------------------------
 
 CCopyEditFactory::CCopyEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Copy","Copy",channelSelectDialog,NULL,false,false)
+	AActionFactory(N_("Copy"),"",channelSelectDialog,NULL,false,false)
 {
 }
 
@@ -109,7 +107,7 @@ CCopyCutDeleteEdit *CCopyEditFactory::manufactureAction(const CActionSound &acti
 
 
 CCutEditFactory::CCutEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Cut","Cut",channelSelectDialog,NULL)
+	AActionFactory(N_("Cut"),"",channelSelectDialog,NULL)
 {
 }
 
@@ -128,7 +126,7 @@ CCopyCutDeleteEdit *CCutEditFactory::manufactureAction(const CActionSound &actio
 
 
 CDeleteEditFactory::CDeleteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Delete","Delete",channelSelectDialog,NULL)
+	AActionFactory(N_("Delete"),"",channelSelectDialog,NULL)
 {
 }
 

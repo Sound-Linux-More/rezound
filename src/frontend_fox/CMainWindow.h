@@ -33,6 +33,7 @@
 class CSoundWindow;
 class CMetersWindow;
 class CActionMenuCommand;
+class CNestedDataFile;
 
 class CMainWindow : public FXMainWindow
 {
@@ -52,6 +53,10 @@ public:
 	long onQuit(FXObject *sender,FXSelector sel,void *ptr);
 
 	long onFollowPlayPositionButton(FXObject *sender,FXSelector sel,void *ptr);
+
+	long onRenderClippingWarningButton(FXObject *sender,FXSelector sel,void *ptr);
+
+	long onDrawVerticalCuePositionsButton(FXObject *sender,FXSelector sel,void *ptr);
 
 	long onCrossfadeEdgesComboBox(FXObject *sender,FXSelector sel,void *ptr);
 	long onCrossfadeEdgesSettings(FXObject *sender,FXSelector sel,void *ptr);
@@ -111,6 +116,8 @@ public:
 		ID_PLAY_ALL_LOOPED,
 		ID_PLAY_SELECTION_ONCE,
 		ID_PLAY_SELECTION_LOOPED,
+		ID_PLAY_SELECTION_LOOPED_SKIP_MOST,
+		ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,
 
 		ID_STOP,
 		ID_PAUSE,
@@ -141,6 +148,7 @@ public:
 		ID_ZOOM_OUT_FULL,
 
 		ID_TOGGLE_LEVEL_METERS,
+		ID_TOGGLE_STEREO_PHASE_METERS,
 		ID_TOGGLE_FREQUENCY_ANALYZER,
 
 		ID_UNDO_EDIT,
@@ -153,6 +161,10 @@ public:
 		ID_VERIFY_SAT_MENUITEM,
 
 		ID_FOLLOW_PLAY_POSITION_TOGGLE,
+
+		ID_RENDER_CLIPPING_WARNING_TOGGLE,
+
+		ID_DRAW_VERTICAL_CUE_POSITIONS_TOGGLE,
 
 		ID_CROSSFADE_EDGES_COMBOBOX,
 		ID_CROSSFADE_EDGES_SETTINGS_BUTTON,
@@ -178,8 +190,12 @@ protected:
 
 
 private:
+	map<const string,FXMenuCaption *> menuItemRegistry;
+	void buildActionMap();
+	void buildMenu(FXMenuPane *menu,const CNestedDataFile *menuLayoutFile,const string menuKey,const string itemName);
 
 	FXMenuBar 		*menubar;
+	FXMenuPane		*dummymenu;
 	FXPacker		*contents;		// top horizontal main frame which contains play controls and action controls
 	FXPacker 		*soundWindowFrame; 	// parent of all sound windows (only one is visible though)
 	CMetersWindow		*metersWindow;
@@ -193,6 +209,8 @@ private:
 	FXButton *shuttleDialScaleButton;
 
 	FXCheckButton	*followPlayPositionButton;
+	FXCheckButton	*renderClippingWarningButton;
+	FXCheckButton	*drawVerticalCuePositionsButton;
 	FXComboBox	*crossfadeEdgesComboBox;
 	FXComboBox	*clipboardComboBox; // ??? it would however make sense to put this on the edit dialog.. it's just a little wide
 
@@ -201,6 +219,7 @@ private:
 	FXCursor *playMouseCursor;
 
 	FXMenuCommand *toggleLevelMetersMenuItem;
+	FXMenuCommand *toggleStereoPhaseMetersMenuItem;
 	FXMenuCommand *toggleFrequencyAnalyzerMenuItem;
 
 	FXMenuPane *recentActionsMenu;

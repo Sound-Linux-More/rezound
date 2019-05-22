@@ -20,10 +20,6 @@
 
 #include "CChangeRateEffect.h"
 
-#include <math.h>
-
-#include <stdexcept>
-
 #include "../CActionSound.h"
 #include "../CActionParameters.h"
 
@@ -62,7 +58,7 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 	const sample_pos_t newLength=getNewSelectionLength(actionSound);
 
 	if(newLength==NIL_SAMPLE_POS)
-		throw(EUserMessage("newLength calulated out of range -- action not taken"));
+		throw(EUserMessage(_("newLength calulated out of range -- action not taken")));
 
 	// we are gonna use the undo selection copy as the source buffer while changing the rate
 	// we have a fudgeFactor of 2 because we may read ahead up to 2 when changing the rate
@@ -70,11 +66,12 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 
 	undoRemoveLength=newLength;
 
+	unsigned channelsDoneCount=0;
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Changing Rate -- Channel "+istring(i),actionSound.start,actionSound.start+newLength,true); 
+			CStatusBar statusBar(_("Changing Rate -- Channel ")+istring(++channelsDoneCount)+"/"+istring(actionSound.countChannels()),actionSound.start,actionSound.start+newLength,true); 
 	
 			// here, we're using the undo data as a source from which to calculate the new data
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempAudioPoolKey,i);
@@ -173,7 +170,6 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 				printf("****************************** CRAP %d SAMPLES OFF FROM EXPECTED\n",(sample_pos_t)(writePos-actionSound.start)-(newLength));
 			else
 				printf("YEAH NO SAMPLES OFF!!!\n");
-
 		}
 	}
 
@@ -234,7 +230,7 @@ void CChangeRateEffect::undoActionSizeSafe(const CActionSound &actionSound)
 // ---------------------------------------------
 
 CSimpleChangeRateEffectFactory::CSimpleChangeRateEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Change Rate","Change Rate",channelSelectDialog,dialog)
+	AActionFactory(N_("Change Rate"),"",channelSelectDialog,dialog)
 {
 }
 
@@ -252,7 +248,7 @@ CChangeRateEffect *CSimpleChangeRateEffectFactory::manufactureAction(const CActi
 // ---------------------------------------------
 
 CCurvedChangeRateEffectFactory::CCurvedChangeRateEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Curved Change Rate","Curved Change Rate",channelSelectDialog,dialog)
+	AActionFactory(N_("Curved Change Rate"),_("Change Rate According to a Curve"),channelSelectDialog,dialog)
 {
 }
 

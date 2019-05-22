@@ -34,6 +34,7 @@
 #include "settings.h"
 
 #define PREBUFFERED_CHUNK_SIZE 1024 // in frames
+
 				// try to prebuffer 1.5 times of data as the output device will be prebuffering itself (1.51 because I'm going to truncate the decimal and I want to make sure it's on the upper side of the int)
 #define CHUNK_COUNT_TO_PREBUFFER ((unsigned)(1.51*(gDesiredOutputBufferCount*gDesiredOutputBufferSize/PREBUFFERED_CHUNK_SIZE)))
 
@@ -45,13 +46,13 @@
  *   the last iteration's results so it can save the new values in the data members.
  *   (synced positions among devices)
  *
- * - See AudioIO for more info about how these class fits into the whole picture
+ * - See AudioIO for more info about how this class fits into the whole picture
  *
- * - If I ever do have TSoundStretcher support more than 2 pointer sample interpolation then I 
- *   should make mixOntoBuffer support saving N samples instead of a fixed 1 samples.
+ * - If I ever do have TSoundStretcher support more than 2 point sample interpolation then I 
+ *   should make mixOntoBuffer support saving N interpolation samples instead of a fixed 1 sample.
  *
  * - the JJJ comments indicate something I don't really like about the way I'm mutexing
- *
+ *   	- it works, but could be done more elegantly
  */
 
 CSoundPlayerChannel::CSoundPlayerChannel(ASoundPlayer *_player,CSound *_sound) :
@@ -59,11 +60,13 @@ CSoundPlayerChannel::CSoundPlayerChannel(ASoundPlayer *_player,CSound *_sound) :
 	prebufferPosition(0),
 	prebufferThread(this),
 	prebufferedChunkPipe(CHUNK_COUNT_TO_PREBUFFER),
+	gapSignalBufferLength(0),
+	gapSignalBuffer(NULL),
 	player(_player),
 	playing(false),
 	seekSpeed(1.0),
-		playSpeedForMixer(1.0),
-		playSpeedForChunker(0)
+	playSpeedForMixer(1.0),
+	playSpeedForChunker(0)
 {
 	init();
 	createInitialOutputRoute();
@@ -76,7 +79,7 @@ CSoundPlayerChannel::~CSoundPlayerChannel()
 
 CSound *CSoundPlayerChannel::getSound() const
 {
-	return(sound);
+	return sound;
 }
 
 void CSoundPlayerChannel::init()
@@ -87,6 +90,7 @@ void CSoundPlayerChannel::init()
 
 	prebuffering=false;
 	playing=false;
+	lastBufferWasGapSignal=false;
 	playPosition=0;
 
 	// start out with something selected
@@ -119,10 +123,10 @@ void CSoundPlayerChannel::deinit()
 	destroyPrebufferedChunks();
 }
 
-void CSoundPlayerChannel::play(sample_pos_t position,bool _playLooped,bool _playSelectionOnly)
+void CSoundPlayerChannel::play(sample_pos_t position,LoopTypes _loopType,bool _playSelectionOnly)
 {
 	if(!player->isInitialized())
-		throw(runtime_error(string(__func__)+" -- the sound player is not initialized"));
+		throw runtime_error(string(__func__)+" -- the sound player is not initialized");
 
 	if(playing)
 		stop();
@@ -131,18 +135,20 @@ void CSoundPlayerChannel::play(sample_pos_t position,bool _playLooped,bool _play
 	for(size_t t=0;t<MAX_CHANNELS;t++)
 		prevFrame[t]=0;
 
-	if(!_playLooped && !_playSelectionOnly)
+	if(_loopType==ltLoopNone && !_playSelectionOnly)
 	{ // use position
 		if(position>=sound->getLength())
 			return;
-		playLooped=false;
+		loopType=ltLoopNone;
 		playSelectionOnly=false;
+		lastBufferWasGapSignal=false;
 		prebufferPosition=playPosition=position;
 	}
 	else
 	{ // ignore position and use the two flags
-		playLooped=_playLooped;
+		loopType=_loopType;
 		playSelectionOnly=_playSelectionOnly;
+		lastBufferWasGapSignal=false;
 		if(playSelectionOnly)
 			prebufferPosition=playPosition=startPosition;
 		else
@@ -190,13 +196,11 @@ void CSoundPlayerChannel::stop()
 		// remove any prebuffered data
 		prebufferedChunkPipe.clear();
 	
-		CMutexLocker l(prebufferPositionMutex); // lock so that prebufferChunk won't be running
+		// prebufferChunk() checks the bools set above 
+		// after it locks the mutex so it can stop early
+		CMutexLocker l(prebufferPositionMutex);
 
-		prebuffering=false;
-		playing=false;
-		paused=false;
-	
-		// remove any prebuffered data
+		// remove any more prebuffered data that might have been just waiting to be written into the pipe
 		prebufferedChunkPipe.clear();
 	}
 }
@@ -214,22 +218,22 @@ void CSoundPlayerChannel::playingHasEnded()
 
 bool CSoundPlayerChannel::isPlaying() const
 {
-	return(playing);
+	return playing;
 }
 
 bool CSoundPlayerChannel::isPaused() const
 {
-	return(paused);
+	return paused;
 }
 
 bool CSoundPlayerChannel::isPlayingSelectionOnly() const
 {
-	return(playing && playSelectionOnly);
+	return playing && playSelectionOnly;
 }
 
 bool CSoundPlayerChannel::isPlayingLooped() const
 {
-	return(playing && playLooped);
+	return playing && loopType!=ltLoopNone;
 }
 
 void CSoundPlayerChannel::setSeekSpeed(float _seekSpeed)
@@ -270,7 +274,8 @@ void CSoundPlayerChannel::setSeekSpeed(float _seekSpeed)
 		// and set the prebuffer position to the most recently played position
 		CMutexLocker l(prebufferPositionMutex);
 		prebufferedChunkPipe.clear(); // JJJ need to clean the buffer
-		prebufferPosition=playPosition;
+		if(!lastBufferWasGapSignal)
+			prebufferPosition=playPosition;
 		prebufferedChunkPipe.clear(); // JJJ (but a write() might have been pending on the buffer)
 	}
 	else if((seekSpeed*origSeekSpeed)<0.0)
@@ -278,7 +283,8 @@ void CSoundPlayerChannel::setSeekSpeed(float _seekSpeed)
 		// and set the prebuffer position to the most recently played position
 		CMutexLocker l(prebufferPositionMutex);
 		prebufferedChunkPipe.clear(); // JJJ need to clean the buffer
-		prebufferPosition=playPosition;
+		if(!lastBufferWasGapSignal)
+			prebufferPosition=playPosition;
 		prebufferedChunkPipe.clear(); // JJJ (but a write() might have been pending on the buffer)
 	}
 
@@ -293,13 +299,13 @@ void CSoundPlayerChannel::setSeekSpeed(float _seekSpeed)
 
 float CSoundPlayerChannel::getSeekSpeed() const
 {
-	return(seekSpeed);
+	return seekSpeed;
 }
 
 void CSoundPlayerChannel::setPosition(sample_pos_t newPosition)
 {
 	if(newPosition>sound->getLength())
-		throw(runtime_error(string(__func__)+" -- newPosition parameter out of bounds: "+istring(newPosition)));
+		throw runtime_error(string(__func__)+" -- newPosition parameter out of bounds: "+istring(newPosition));
 
 	prebufferedChunkPipe.clear();
 
@@ -310,6 +316,7 @@ void CSoundPlayerChannel::setPosition(sample_pos_t newPosition)
 
 		CMutexLocker l(prebufferPositionMutex);
 		prebufferPosition=newPosition;
+		lastBufferWasGapSignal=false;
 		playPosition=newPosition;
 
 		prebufferedChunkPipe.clear(); // invalidate prebuffered data
@@ -327,7 +334,7 @@ void CSoundPlayerChannel::setPosition(sample_pos_t newPosition)
 void CSoundPlayerChannel::setStartPosition(sample_pos_t newPosition)
 {
 	if(newPosition>sound->getLength())
-		throw(runtime_error(string(__func__)+" -- newPosition parameter out of bounds: "+istring(newPosition)));
+		throw runtime_error(string(__func__)+" -- newPosition parameter out of bounds: "+istring(newPosition));
 	if(stopPosition<newPosition)
 		stopPosition=newPosition;
 	startPosition=newPosition;
@@ -339,6 +346,7 @@ void CSoundPlayerChannel::setStartPosition(sample_pos_t newPosition)
 		// update prebufferPosition
 		CMutexLocker l(prebufferPositionMutex);
 		prebufferPosition=startPosition;
+		lastBufferWasGapSignal=false;
 		playPosition=startPosition;
 
 		prebufferedChunkPipe.clear(); // JJJ invalidate prebuffered data
@@ -358,7 +366,7 @@ void CSoundPlayerChannel::setStartPosition(sample_pos_t newPosition)
 void CSoundPlayerChannel::setStopPosition(sample_pos_t newPosition)
 {
 	if(newPosition>sound->getLength())
-		throw(runtime_error(string(__func__)+" -- newPosition parameter out of bounds: "+istring(newPosition)));
+		throw runtime_error(string(__func__)+" -- newPosition parameter out of bounds: "+istring(newPosition));
 	if(startPosition>newPosition)
 		startPosition=newPosition;
 	stopPosition=newPosition;
@@ -370,6 +378,7 @@ void CSoundPlayerChannel::setStopPosition(sample_pos_t newPosition)
 		// update prebufferPosition
 		CMutexLocker l(prebufferPositionMutex);
 		prebufferPosition=stopPosition;
+		lastBufferWasGapSignal=false;
 		playPosition=stopPosition;
 
 		prebufferedChunkPipe.clear(); // JJJ invalidate prebuffered data
@@ -409,15 +418,15 @@ void CSoundPlayerChannel::removeOnPauseTrigger(TriggerFunc triggerFunc,void *dat
 void CSoundPlayerChannel::setMute(unsigned channel,bool mute)
 {
 	if(channel>=MAX_CHANNELS)
-		throw(runtime_error(string(__func__)+" -- channel parameter is out of range: "+istring(channel)));
+		throw runtime_error(string(__func__)+" -- channel parameter is out of range: "+istring(channel));
 	muted[channel]=mute;
 }
 
 bool CSoundPlayerChannel::getMute(unsigned channel) const
 {
 	if(channel>=MAX_CHANNELS)
-		throw(runtime_error(string(__func__)+" -- channel parameter is out of range: "+istring(channel)));
-	return(muted[channel]);
+		throw runtime_error(string(__func__)+" -- channel parameter is out of range: "+istring(channel));
+	return muted[channel];
 }
 
 
@@ -435,15 +444,13 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 		return;
 	}
 	
-	const CSound &sound=*this->sound;
-	const unsigned channelCount=sound.getChannelCount();
+	// protect from updateAfterEdit() re-creating the chunks while this is running
+	CRWMutexLocker l1(chunkObjectsMutex,CRWMutexLocker::ltReader); // ??? should probably do a try-lock and bail if not locked to avoid problems with JACK
 
 	const size_t deviceIndex=0; // ??? would loop through all devices later (probably actually in a more inner loop than here)
 
 	// heed the sampling rate of the sound also when adjusting the play position (??? only have device 0 for now)
-	const sample_fpos_t tPlaySpeed= fabs(playSpeedForMixer)  *  (((sample_fpos_t)sound.getSampleRate())/((sample_fpos_t)player->devices[deviceIndex].sampleRate));
-
-	CMutexLocker l2(routingInfoMutex);	// protect routing info (??? should probably do a try-lock and bail if not locked to avoid problems with JACK)
+	const sample_fpos_t tPlaySpeed= fabs(playSpeedForMixer)  *  (((sample_fpos_t)sound->getSampleRate())/((sample_fpos_t)player->devices[deviceIndex].sampleRate));
 
 	sample_t *oBuffer=_oBuffer;
 	int outputBufferLength=_oBufferLength;
@@ -452,12 +459,23 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 	while(outputBufferLength>0 && !(paused && seekSpeed==1.0))
 	{
 		RPrebufferedChunk *chunk;
-		// read data from prebuffer pipe (non-blocked -- if the data isn't there, let the audio have a gap)
-		const int ret=prebufferedChunkPipe.peek(&chunk,1,false); // and blocking would be a bad idea since the clear() method (which locks the reader mutex) could cause this to wait indefinately when the sound is stopping
-		if(ret<1)
-			break;
 
+		// read data from prebuffer pipe (non-blocked -- if the data isn't there, let the audio have a gap)
+		try
+		{
+			const int ret=prebufferedChunkPipe.peek(&chunk,1,false); // and blocking would be a bad idea since the clear() method (which locks the reader mutex) could cause this to wait indefinately when the sound is stopping
+			if(ret<1)
+				break;
+		}
+		catch(TMemoryPipe<RPrebufferedChunk *>::EPipeClosed &e)
+		{
+			return; // pipe closed before or while we were peeking
+		}
+
+		lastBufferWasGapSignal=chunk->isGap;
 		playPosition=chunk->playPosition; // update the playPosition so it will be updated on screen
+
+		const unsigned channelCount=chunk->channelCount;
 
 		const sample_fpos_t amountInChunk=(sample_fpos_t)chunk->size-chunk->offset;
 		const int maxOutputLengthToUse=(int)ceil((amountInChunk-last)/tPlaySpeed); // max that could be produced
@@ -468,18 +486,17 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 		bool didOutput=false;
 		for(unsigned i=0;i<channelCount;i++)
 		{
+			sample_t * const dataBuffer= chunk->isGap ? (gapSignalBuffer+((chunk->gapSignalBufferOffset+1)*chunk->channelCount)) : chunk->data;
 			if(!muted[i]) 
 			{
-				// returns a vector of bools indicating which channels in the output device to which we should write this channel's (i's) data
-					// ??? since this accesses the pool file, it could be bad for JACK. if there were an inmemory copy of this routing info, it would be better for JACK's safe
-				const vector<bool> deviceRoute=getOutputRoute(deviceIndex,i);
-				for(size_t outputDeviceChannel=0;outputDeviceChannel<deviceRoute.size();outputDeviceChannel++)
+				for(size_t outputDeviceChannel=0;outputDeviceChannel<chunk->outputRouting[i].size();outputDeviceChannel++)
 				{
-					if(deviceRoute[outputDeviceChannel])
+					if(chunk->outputRouting[i][outputDeviceChannel])
 					{
 						register sample_t *ooBuffer=oBuffer+outputDeviceChannel;
 
-						chunk->data[-channelCount+i]=prevFrame[i];
+						if(!chunk->isGap) // avoid modifying the gapSignalBuffer
+							dataBuffer[-channelCount+i]=prevFrame[i];
 
 						const size_t _outputLengthToUse=outputLengthToUse*nChannels;
 						if(tPlaySpeed==1.0 && floor(srcStart)==srcStart)
@@ -487,14 +504,14 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 							size_t p=((size_t)srcStart)*channelCount+i;
 							for(size_t t=0;t<_outputLengthToUse;t+=nChannels)
 							{
-								ooBuffer[t]=ClipSample(ooBuffer[t]+chunk->data[p]);
+								ooBuffer[t]=ClipSample(ooBuffer[t]+dataBuffer[p]);
 								p+=channelCount;
 							}
 							last=outputLengthToUse+(size_t)srcStart;
 						}
 						else
 						{
-							TSoundStretcher<sample_t *> stretcher(chunk->data-channelCount,srcStart,(sample_fpos_t)outputLengthToUse*tPlaySpeed,(sample_fpos_t)outputLengthToUse,channelCount,i,true);
+							TSoundStretcher<sample_t *> stretcher(dataBuffer-channelCount,srcStart,(sample_fpos_t)outputLengthToUse*tPlaySpeed,(sample_fpos_t)outputLengthToUse,channelCount,i,true);
 							for(size_t t=0;t<_outputLengthToUse;t+=nChannels)
 								ooBuffer[t]=ClipSample(ooBuffer[t]+stretcher.getSample());
 							last=stretcher.getCurrentSrcPosition();
@@ -506,7 +523,7 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 
 			// save the last sample so that we can use it for interpolation the next go around
 			if(floor(last)==chunk->size)
-				prevFrame[i]=chunk->data[(chunk->size-1)*channelCount+i];
+				prevFrame[i]=dataBuffer[(chunk->size-1)*channelCount+i];
 		}
 		// if all channels were muted, or none were mapped to an output device 
 		// we need to at least set last so the playing progress will advance
@@ -522,7 +539,15 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 		chunk->offset=last;
 		if(chunk->offset>=(sample_fpos_t)chunk->size)
 		{
-			prebufferedChunkPipe.skip(1,false); // all of the chunk was used so move it out of the pipe
+			try
+			{
+				// all of the chunk was used, so remove it from the pipe
+				prebufferedChunkPipe.skip(1,false); 
+			}
+			catch(TMemoryPipe<RPrebufferedChunk *>::EPipeClosed &e)
+			{
+				return; // pipe closed before or while we were skipping
+			}
 			last-=(sample_fpos_t)chunk->size;
 		}
 		else			
@@ -535,7 +560,7 @@ void CSoundPlayerChannel::mixOntoBuffer(const unsigned nChannels,sample_t * cons
 		}
 	}
 
-	if(prebufferedChunkPipe.getSize()<=0 && !prebuffering)
+	if(!prebuffering && prebufferedChunkPipe.getSize()<=0)
 	{ // here the pipe has emptied and we're no longer prebuffering so go ahead and shut down the playing state
 		playingHasEnded();
 	}
@@ -552,32 +577,55 @@ bool CSoundPlayerChannel::prebufferChunk()
 	if(!playing || !prebuffering)
 	{
 		prebuffering=false;
-		return(true);
+		return true;
 	}
 
 	if(paused && seekSpeed==1.0/*not seeking*/)
-		return(false);
+		return false;
 
-	const unsigned channelCount=sound->getChannelCount();
+	// nothing better cause an exception to be thrown between here and 
+	// the 'GGG' try-catch below withint making provisions to unlock this 
+	sound->lockSize(); 
 
+	CRWMutexLocker l1(chunkObjectsMutex,CRWMutexLocker::ltReader);
 
-	RPrebufferedChunk *chunk=prebufferedChunks[prebufferedChunksIndex];
-	prebufferedChunksIndex=(prebufferedChunksIndex+1)%prebufferedChunks.size();
+	// used if loopType==ltLoopSkipMost
+	const sample_pos_t skipMiddleMargin=(sample_pos_t)(gSkipMiddleMarginSeconds*sound->getSampleRate());
+	bool queueUpAGap=false;
+
+	// fill chunk with 1 chunk's worth of audio
+	RPrebufferedChunk *chunk;
+	try
+	{
+		chunk=getPrebufferChunk();
+	}
+	catch(...)
+	{
+		sound->unlockSize();
+		throw;
+	}
 
 	sample_t *buffer=chunk->data;
 	size_t bufferUsed=0;
 	bool ret=false;
 
-	// fill chunk with 1 chunk's worth of audio
-	sound->lockSize();
-	try
+	sample_pos_t pos1=0,pos2=0; // declared out here incase I need their values when queuing up a gap
+
+	const unsigned channelCount=sound->getChannelCount();
+	try // GGG
 	{
-		CMutexLocker l(prebufferPositionMutex); // protect prebufferPosition from set.*Position() /// NO, NOT REALLY NECESSARY SENSE WE"RE NOT GONNA CALL prebufferChunk() NOW FROM WITHIN set.*Position(): ... and assures that we aren't past this point simultaneously trying to calculate the same 1 extra prebuffer chunk that is in the prebufferedChunks vector
+		CMutexLocker l(prebufferPositionMutex); // protect prebufferPosition from set.*Position() /// NO, NOT REALLY NECESSARY SINCE WE'RE NOT GONNA CALL prebufferChunk() NOW FROM WITHIN set.*Position(): ... and assures that we aren't past this point while simultaneously trying to calculate the same 1 extra prebuffer chunk that is in the prebufferedChunks vector
+
+		if(!playing || !prebuffering) // stop() may have changed this since the method started
+		{
+			prebuffering=false;
+			sound->unlockSize();
+			return true;
+		}
 
 		const int positionInc=(seekSpeed>0) ? 1 : -1;
 
-		const bool loop=playLooped;
-		sample_pos_t pos1,pos2;
+		const LoopTypes loopType=this->loopType; // store current value
 		if(playSelectionOnly)
 		{
 			// pos1 is selectStart; pos2 is selectStop
@@ -623,12 +671,21 @@ bool CSoundPlayerChannel::prebufferChunk()
 					tPrebufferPosition+=positionInc;
 					if(tPrebufferPosition>pos2)
 					{
-						if(loop)
-							tPrebufferPosition=pos1;
-						else
+						if(loopType==ltLoopNone)
 						{
 							ret=true;
 							break;
+						}
+						else // is looped
+						{
+							tPrebufferPosition=pos1;
+							if(loopType==ltLoopGapBeforeRepeat)
+							{
+								queueUpAGap=true;
+								/* I would like to do this but I will just have to settle for a little of the loop to be audible before the gap signal because of NOTE TTT
+								break; // prebufferPosition becomes pos1 but we also stop putting data into the chunk so that we can immediately insert the gap signal into the queue
+								*/
+							}
 						}
 					}
 				}
@@ -664,13 +721,13 @@ bool CSoundPlayerChannel::prebufferChunk()
 					tPrebufferPosition+=skipAmount;
 					if(tPrebufferPosition>pos2)
 					{
-						if(loop)
-							tPrebufferPosition=pos1;
-						else
+						if(loopType==ltLoopNone)
 						{
 							tPrebufferPosition=pos2;
 							ret=true;
 						}
+						else // is looped
+							tPrebufferPosition=pos1;
 					}
 				}
 				else if(skipAmount<0)
@@ -681,8 +738,29 @@ bool CSoundPlayerChannel::prebufferChunk()
 						tPrebufferPosition=0;
 				}
 
-
 				prebufferPosition=tPrebufferPosition;
+			}
+		}
+
+// may need to put this up in the last channel case and skip what's there if queueUpAGap==true
+
+		// if loopType is to skip most of the middle make pos2 the point to skip most of the middle
+		if(loopType==ltLoopSkipMost)
+		{
+			// make sure there is at least 2 margins between pos1 and pos2
+			// and that the gap to be placed between the two margines is shorter than what will be skipped
+			if((pos2-pos1)>(skipMiddleMargin*2+gapSignalBufferLength))
+			{
+				// see if prebufferPosition is within the area we should skip
+				if(prebufferPosition>(pos1+skipMiddleMargin) && prebufferPosition<(pos2-skipMiddleMargin))
+				{
+					if(seekSpeed>0)
+						prebufferPosition=pos2-skipMiddleMargin; // skip ahead 
+					else // if(seekSpeed<0)
+						prebufferPosition=pos1+skipMiddleMargin; // skip backwards
+					
+					queueUpAGap=true;
+				}
 			}
 		}
 
@@ -695,57 +773,129 @@ bool CSoundPlayerChannel::prebufferChunk()
 	}
 
 	// set remainder of chunk to silence so we always write full chunks which keeps CPU usage down when chunks are actually 1 sample long and the play thread keeps reading 1 sample chunks
+		// TTT
 		// also, the stretching algorithm in the play thread messes up sometimes of 
 		// successive chunks aren't the same length (isn't a problem I don't think 
 		// with the idea of the algorithm just some particular about it that I'm not 
 		// going to worry about since I will always write full chunks... someday it 
 		// may crop up again)
 	memset(chunk->data+bufferUsed,0,(PREBUFFERED_CHUNK_SIZE-(bufferUsed/channelCount))*channelCount*sizeof(sample_t));
-	bufferUsed=PREBUFFERED_CHUNK_SIZE*channelCount;
+	bufferUsed=PREBUFFERED_CHUNK_SIZE*channelCount; // I'm doing this because of the above note
 
 	chunk->offset=0.0;
 	chunk->size=bufferUsed/channelCount;
+	chunk->isGap=false;
 
-	// this is a blocked i/o write
-	const int lengthWritten=prebufferedChunkPipe.write(&chunk,1);
-	if(lengthWritten!=1)
-		printf("SANITY CHECK --  uh oh.. didn't write the right amount of data\n");
+	// remember current routing information
+	for(unsigned i=0;i<channelCount;i++)
+		chunk->outputRouting[i]=getOutputRoute(0,i);
+
+	try // wrap to catch TMemoryPipe::EPipeClosed
+	{
+		// this is a blocked i/o write
+		const int lengthWritten=prebufferedChunkPipe.write(&chunk,1);
+		if(lengthWritten!=1)
+			printf("SANITY CHECK --  uh oh.. didn't write the right amount of data\n");
+
+		if(queueUpAGap)
+		{ // we've been flagged to insert a gap (of 'gap signal') after the audio chunk
+			// queue up the gap signal chunk
+			const unsigned wholeChunkCount=gapSignalBufferLength/PREBUFFERED_CHUNK_SIZE;
+			sample_pos_t gapSignalBufferOffset=0;
+			for(unsigned t=0;t<wholeChunkCount;t++)
+			{
+				RPrebufferedChunk *chunk=getPrebufferChunk();
+
+				if(loopType==ltLoopSkipMost)
+				{ // make the play position appear to skip the middle
+					const sample_fpos_t tpos1=pos1+skipMiddleMargin;
+					const sample_fpos_t tpos2=pos2-skipMiddleMargin;
+					if(seekSpeed>0)
+						chunk->playPosition=(sample_pos_t)(tpos1+(((tpos2-tpos1)*t)/wholeChunkCount));
+					else
+						chunk->playPosition=(sample_pos_t)(tpos2+(((tpos1-tpos2)*t)/wholeChunkCount));
+				}
+				else
+					chunk->playPosition=prebufferPosition;
+
+				chunk->offset=0.0;
+				chunk->size=PREBUFFERED_CHUNK_SIZE;
+				chunk->isGap=true;
+				chunk->gapSignalBufferOffset=gapSignalBufferOffset;
+
+				// remember current routing information
+				for(unsigned i=0;i<channelCount;i++)
+					chunk->outputRouting[i]=getOutputRoute(0,i);
+
+				gapSignalBufferOffset+=PREBUFFERED_CHUNK_SIZE;
+
+				const int lengthWritten=prebufferedChunkPipe.write(&chunk,1);
+				if(lengthWritten!=1)
+					printf("SANITY CHECK --  uh oh.. didn't write the right amount of data (while inserting gap)\n");
+			}
+
+			if((gapSignalBufferLength-gapSignalBufferOffset)>0)
+			{
+				RPrebufferedChunk *chunk=getPrebufferChunk();
+
+				chunk->playPosition=prebufferPosition;
+				chunk->offset=0;
+				chunk->size=gapSignalBufferLength-gapSignalBufferOffset;
+				chunk->isGap=true;
+				chunk->gapSignalBufferOffset=gapSignalBufferOffset;
+
+				const int lengthWritten=prebufferedChunkPipe.write(&chunk,1);
+				if(lengthWritten!=1)
+					printf("SANITY CHECK --  uh oh.. didn't write the right amount of data (while inserting gap 2)\n");
+			}
+		}
+	}
+	catch(TMemoryPipe<RPrebufferedChunk *>::EPipeClosed &e)
+	{
+		// write end closed before or while we were writing to the pipe
+	}
 
 	if(ret)
 		prebuffering=false;
 
-	return(ret);
+	return ret;
 }
 
 const vector<int16_t> CSoundPlayerChannel::getOutputRoutes() const
 {
-	CMutexLocker l(routingInfoMutex);
-
 	vector<int16_t> v;
 	const TPoolAccesser<int16_t,CSound::PoolFile_t> a=sound->getGeneralDataAccesser<int16_t>("OutputRoutes_v2");
 	v.reserve(a.getSize());
 	for(size_t t=0;t<a.getSize();t++)
 		v.push_back(a[t]);
 
-	return(v);
+	return v;
 }
 
+// NOTE: this is called from AAction with the size locked on the CSound object
 void CSoundPlayerChannel::updateAfterEdit(const vector<int16_t> &restoreOutputRoutes)
 {
-	if(prebufferedChunks[0]->channelCount!=sound->getChannelCount())
-	{ // channel count has changed
-		stop();
-		CMutexLocker l(prebufferPositionMutex); // lock so that prebufferChunk won't be running
+	if(prebufferedChunks[0]->channelCount!=sound->getChannelCount() || prebufferedChunks[0]->sampleRate!=sound->getSampleRate())
+	{ // channel count or sample rate has changed
+
+		// close the pipe so prebufferChunk() and mixOntoBuffer() aren't currently running 
+		// and at the same time accessing any RPrebufferedChunks we're about to destroy
+		prebufferedChunkPipe.closeWrite();
+		prebufferedChunkPipe.closeRead();
+		
+
+		// lock so that preBufferChunk() and mixOntoBuffer() aren't running
+		CRWMutexLocker l(chunkObjectsMutex,CRWMutexLocker::ltWriter);
 
 		// re-create prebuffer chunks
 		destroyPrebufferedChunks();
 		createPrebufferedChunks();
 
+
 		// restore/recreate routing information
 		TPoolAccesser<int16_t,CSound::PoolFile_t> a=sound->getGeneralDataAccesser<int16_t>("OutputRoutes_v2");
-		if(restoreOutputRoutes.size()>1)
+		if(restoreOutputRoutes.size()>1) /* >1 because the first int16_t is the size of the subsequent data */
 		{ // restore from what was given, trusting that it was saved from the information when it had the current number of channels
-			CMutexLocker l2(routingInfoMutex);
 			a.clear();
 			a.append(restoreOutputRoutes.size());
 			for(size_t t=0;t<restoreOutputRoutes.size();t++)
@@ -753,10 +903,12 @@ void CSoundPlayerChannel::updateAfterEdit(const vector<int16_t> &restoreOutputRo
 		}
 		else
 		{ // recreate the default routing
-			CMutexLocker l2(routingInfoMutex);
 			a.clear();
 			createInitialOutputRoute();
 		}
+
+		// reopen pipe
+		prebufferedChunkPipe.open();
 	}
 }
 
@@ -878,13 +1030,13 @@ const vector<bool> CSoundPlayerChannel::getOutputRoute(unsigned deviceIndex,unsi
 	const TPoolAccesser<int16_t,CSound::PoolFile_t> a=sound->getGeneralDataAccesser<int16_t>("OutputRoutes_v2");
 
 	if(a.getSize()<=0)
-		throw(runtime_error(string(__func__)+" -- internal error -- somehow the initial route didn't get created and output route information was requested"));
+		throw runtime_error(string(__func__)+" -- internal error -- somehow the initial route didn't get created and output route information was requested");
 
 	size_t p=0;
 	const size_t deviceCount=a[p++];
 	if(deviceIndex>=deviceCount)
 		// ??? perhaps I don't want such a serious error on this
-		throw(runtime_error(string(__func__)+" -- deviceIndex out of bounds: "+istring(deviceIndex)+">="+istring(deviceCount)));
+		throw runtime_error(string(__func__)+" -- deviceIndex out of bounds: "+istring(deviceIndex)+">="+istring(deviceCount));
 
 	// skip to the output route table requested
 	for(size_t t=0;t<deviceIndex;t++)
@@ -900,14 +1052,14 @@ const vector<bool> CSoundPlayerChannel::getOutputRoute(unsigned deviceIndex,unsi
 		
 	if(audioChannel>=rowCount)
 		// ??? perhaps I don't want such a serious error on this
-		throw(runtime_error(string(__func__)+" -- audioChannel out of bounds: "+istring(audioChannel)+">="+istring(rowCount)));
+		throw runtime_error(string(__func__)+" -- audioChannel out of bounds: "+istring(audioChannel)+">="+istring(rowCount));
 
 	vector<bool> row;
 	p+=(columnCount*audioChannel); // skip to the requested row in the table
 	for(size_t t=0;t<columnCount;t++)
 		row.push_back( a[p++] ? true : false);
 
-	return(row);
+	return row;
 }
 
 
@@ -946,14 +1098,88 @@ void CSoundPlayerChannel::CPrebufferThread::main()
 	}
 }
 
+void CSoundPlayerChannel::createPrebufferedChunks()
+{
+	const unsigned channelCount=sound->getChannelCount();
+	const unsigned sampleRate=sound->getSampleRate();
+
+	for(size_t t=0;t<=CHUNK_COUNT_TO_PREBUFFER;t++) // I do one extra so the pipe can be full and one more can be calculating
+		prebufferedChunks.push_back(new RPrebufferedChunk(channelCount,sampleRate));
+
+	prebufferedChunksIndex=0;
+
+
+
+	// generate the signal to be produced if the channel is producing the gap between or within loops (see enum LoopTypes)
+	// I generate the signal as the entire length needed according to gLoopGapLengthSeconds, but I chop up this signal
+	// into multiple parts when I queue up the chunks so that the play cursor can animate across the skipped portion
+
+	gapSignalBufferLength=(sample_pos_t)(gLoopGapLengthSeconds*sampleRate);
+		/* because of NOTE TTT I round the gapSignalBufferLength up to the nearest PREBUFFERED_CHUNK_SIZE to avoid having chunks that aren't of exactly PREBUFFERED_CHUNK_SIZE samples*/
+		gapSignalBufferLength = ((gapSignalBufferLength/PREBUFFERED_CHUNK_SIZE)+1)*PREBUFFERED_CHUNK_SIZE;
+	gapSignalBuffer=new sample_t[(gapSignalBufferLength+1)*channelCount];
+
+	// set first frame to silence
+	for(unsigned i=0;i<channelCount;i++)
+		gapSignalBuffer[i]=0;
+
+	// frist frame is reserved for something else (so generate the signal after it)
+	sample_t *_gapSignalBuffer=gapSignalBuffer+channelCount;
+
+	/*
+	// light hiss
+	for(unsigned i=0;i<channelCount;i++)
+	{
+		for(unsigned t=0;t<gapSignalBufferLength;t++)
+			_gapSignalBuffer[t*channelCount+i]=ClipSample((float)rand()/RAND_MAX*MAX_SAMPLE/20.0);
+	}
+	*/
+
+	// tone
+	for(unsigned i=0;i<channelCount;i++)
+	{
+		const float freq1=300;
+		const float freq2=freq1*1.6;
+		const float freq3=freq2*1.7;
+		for(unsigned t=0;t<gapSignalBufferLength;t++)
+			_gapSignalBuffer[t*channelCount+i]=ClipSample(
+			(0.5-0.5*cos(2*M_PI*t/gapSignalBufferLength))*	// fade in/out window
+			((						// produce the tone
+				sin(t*freq1/sampleRate*2.0*M_PI)+
+				sin(t*freq2/sampleRate*2.0*M_PI)+
+				sin(t*freq3/sampleRate*2.0*M_PI)
+			)*MAX_SAMPLE/20.0));
+	}
+
+}
+
+void CSoundPlayerChannel::destroyPrebufferedChunks()
+{
+	for(size_t t=0;t<prebufferedChunks.size();t++)
+		delete prebufferedChunks[t];
+	prebufferedChunks.clear();
+	prebufferedChunksIndex=0;
+
+	gapSignalBufferLength=0;
+	delete [] gapSignalBuffer;
+}
+
+CSoundPlayerChannel::RPrebufferedChunk *CSoundPlayerChannel::getPrebufferChunk()
+{
+	RPrebufferedChunk *chunk=prebufferedChunks[prebufferedChunksIndex];
+	prebufferedChunksIndex=(prebufferedChunksIndex+1)%prebufferedChunks.size();
+	return chunk;
+}
+
 
 // --- RPrebufferedChunk -------------------------------
 
-CSoundPlayerChannel::RPrebufferedChunk::RPrebufferedChunk(unsigned _channelCount) :
-	channelCount(_channelCount)
+CSoundPlayerChannel::RPrebufferedChunk::RPrebufferedChunk(const unsigned _channelCount,const unsigned _sampleRate) :
+	channelCount(_channelCount),
+	sampleRate(_sampleRate)
 {
 	if(channelCount>MAX_CHANNELS)
-		throw(runtime_error(string(__func__)+" -- channelCount is more than MAX_CHANNELS: "+istring(channelCount)+">"+istring(MAX_CHANNELS)));
+		throw runtime_error(string(__func__)+" -- channelCount is more than MAX_CHANNELS: "+istring(channelCount)+">"+istring(MAX_CHANNELS));
 
 	// allocate 1 extra frame for the possible 2-point sample interpolation (except it's always used whether interpolating or not)
 	data=new sample_t[(PREBUFFERED_CHUNK_SIZE+1)*channelCount];
@@ -965,19 +1191,4 @@ CSoundPlayerChannel::RPrebufferedChunk::~RPrebufferedChunk()
 	data-=channelCount;
 	delete [] data;
 }
-
-void CSoundPlayerChannel::createPrebufferedChunks()
-{
-	for(size_t t=0;t<=CHUNK_COUNT_TO_PREBUFFER;t++) // I do one extra one so the pipe can be full and one can be calculating
-		prebufferedChunks.push_back(new RPrebufferedChunk(sound->getChannelCount()));
-	prebufferedChunksIndex=0;
-}
-
-void CSoundPlayerChannel::destroyPrebufferedChunks()
-{
-	for(size_t t=0;t<prebufferedChunks.size();t++)
-		delete prebufferedChunks[t];
-	prebufferedChunks.clear();
-}
-
 

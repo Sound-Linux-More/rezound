@@ -20,10 +20,6 @@
 
 #include "CDelayEffect.h"
 
-#include <stdexcept>
-
-#include <istring>
-
 #include "../CActionParameters.h"
 #include "../CActionSound.h"
 
@@ -83,11 +79,12 @@ bool CDelayEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUnd
 	if(prepareForUndo)
 		moveSelectionToTempPools(actionSound,mmSelection,actionSound.selectionLength());
 
+	unsigned channelsDoneCount=0;
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Delay -- Channel "+istring(i),start,stop,true); 
+			CStatusBar statusBar(_("Delay -- Channel ")+istring(++channelsDoneCount)+"/"+istring(actionSound.countChannels()),start,stop,true); 
 
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -138,7 +135,7 @@ void CDelayEffect::undoActionSizeSafe(const CActionSound &actionSound)
 // ??? else it will be a "Tapped Delay"
 
 CSimpleDelayEffectFactory::CSimpleDelayEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Simple Delay (Echo)","Simple Delay Effect",channelSelectDialog,dialog)
+	AActionFactory(N_("Simple Delay (Echo)"),"",channelSelectDialog,dialog)
 {
 }
 

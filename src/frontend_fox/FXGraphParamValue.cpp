@@ -28,7 +28,6 @@
 #include <istring>
 
 #include <CNestedDataFile/CNestedDataFile.h>
-#define DOT (CNestedDataFile::delimChar)
 
 #include "utils.h"
 
@@ -315,10 +314,10 @@ FXDEFMAP(FXGraphParamValue) FXGraphParamValueMap[]=
 
 FXIMPLEMENT(FXGraphParamValue,FXVerticalFrame,FXGraphParamValueMap,ARRAYNUMBER(FXGraphParamValueMap))
 
-FXGraphParamValue::FXGraphParamValue(const string _title,const int minScalar,const int maxScalar,const int _initScalar,FXComposite *p,int opts,int x,int y,int w,int h) :
+FXGraphParamValue::FXGraphParamValue(const char *_name,const int minScalar,const int maxScalar,const int _initScalar,FXComposite *p,int opts,int x,int y,int w,int h) :
 	FXVerticalFrame(p,opts|FRAME_RAISED,x,y,w,h, 0,0,0,0, 0,0),
 
-	title(_title),
+	name(_name),
 
 	initScalar(_initScalar),
 
@@ -791,7 +790,7 @@ long FXGraphParamValue::onDragNode(FXObject *sender,FXSelector sel,void *ptr)
 		updateStatus();
 		graphCanvas->update();
 	}
-	return 1;
+	return 0;
 }
 
 long FXGraphParamValue::onStopDragNode(FXObject *sender,FXSelector sel,void *ptr)
@@ -1004,33 +1003,32 @@ const int FXGraphParamValue::getMaxScalar() const
 	return hi;
 }
 
-const string FXGraphParamValue::getTitle() const
+const string FXGraphParamValue::getName() const
 {
-	return title;
+	return name;
 }
 
 void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 {
-	const string key=prefix+DOT+getTitle()+DOT;
+	const string key=prefix DOT getName();
 
-	if(f->keyExists((key+"scalar").c_str()))
-	{
-		const string s=f->getValue((key+"scalar").c_str());
-		setScalar(atoi(s.c_str()));
-	}
+	if(f->keyExists(key DOT "scalar"))
+		setScalar(f->getValue<int>(key DOT "scalar"));
 	else	
 		setScalar(initScalar);
 
 	nodes.clear();
 
-	const string k1=key+"node_positions";
-	if(f->keyExists(k1.c_str()))
+	const string k1=key DOT "node_positions";
+	const string k2=key DOT "node_values";
+	if(f->keyExists(k1)==CNestedDataFile::ktValue && f->keyExists(k2)==CNestedDataFile::ktValue)
 	{
-		const string k2=key+"node_values";
-		const size_t count=f->getArraySize(k1.c_str());
+		const vector<double> positions=f->getValue<vector<double> >(k1);
+		const vector<double> values=f->getValue<vector<double> >(k2);
+
 		// ??? I could either save the node x and values as [0,1], or I could use save the actual values ( <-- currently)
-		for(size_t t=0;t<count;t++)
-			nodes.push_back(CGraphParamValueNode(atof(f->getArrayValue(k1.c_str(),t).c_str()),atof(f->getArrayValue(k2.c_str(),t).c_str())));
+		for(size_t t=0;t<positions.size();t++)
+			nodes.push_back(CGraphParamValueNode(positions[t],values[t]));
 	}
 	else
 		clearNodes();
@@ -1042,24 +1040,26 @@ void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 
 void FXGraphParamValue::writeToFile(const string &prefix,CNestedDataFile *f) const
 {
-	const string key=prefix+DOT+getTitle()+DOT;
+	const string key=prefix DOT getName();
 
 	if(getMinScalar()!=getMaxScalar())
-		f->createKey((key+"scalar").c_str(),istring(getScalar()));
+		f->createValue<int>(key DOT "scalar",getScalar());
 
-	const string k1=key+"node_positions";
-		// ??? I could implement a createArrayKey which takes a double so I wouldn't have to convert to string here
-	f->removeKey(k1.c_str());
+	vector<double> positions,values;
 	for(size_t t=0;t<nodes.size();t++)
-		f->createArrayKey(k1.c_str(),t,istring(nodes[t].x).c_str());
+	{
+		positions.push_back(nodes[t].x);
+		values.push_back(nodes[t].y);
+	}
 
-	const string k2=key+"node_values";
-	f->removeKey(k2.c_str());
-	for(size_t t=0;t<nodes.size();t++)
-		f->createArrayKey(k2.c_str(),t,istring(nodes[t].y).c_str());
+	const string k1=key DOT "node_positions";
+	f->createValue<vector<double> >(k1,positions);
+
+	const string k2=key DOT "node_values";
+	f->createValue<vector<double> >(k2,values);
 
 	if(getMinScalar()!=getMaxScalar())
-		f->createKey((key+"scalar").c_str(),istring(getScalar()));
+		f->createValue<int>(key DOT "scalar",getScalar());
 }
 
 

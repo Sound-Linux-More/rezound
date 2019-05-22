@@ -128,7 +128,7 @@ const bool exitReZound(ASoundFileManager *soundFileManager)
 	{
 		if(soundFileManager->getOpenedCount()>1)
 		{
-			if(Question("Are you sure you want to quit?",yesnoQues)!=yesAns)
+			if(Question(_("Are you sure you want to quit?"),yesnoQues)!=yesAns)
 				return(false);
 		}
 
@@ -154,13 +154,13 @@ const bool exitReZound(ASoundFileManager *soundFileManager)
 // --- Play Control Operations -------------------------------------------------------
 // -----------------------------------------------------------------------------------
 
-void play(ASoundFileManager *soundFileManager,bool looped,bool selectionOnly)
+void play(ASoundFileManager *soundFileManager,CSoundPlayerChannel::LoopTypes loopType,bool selectionOnly)
 {
 	try
 	{
 		CLoadedSound *loaded=soundFileManager->getActive();
 		if(loaded!=NULL)
-			loaded->channel->play(0,looped,selectionOnly);
+			loaded->channel->play(0,loopType,selectionOnly);
 	}
 	catch(exception &e)
 	{

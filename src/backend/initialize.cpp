@@ -19,7 +19,6 @@
  */
 
 #include "AStatusComm.h"
-#include "AFrontendHooks.h"
 #include "initialize.h"
 #include "settings.h"
 
@@ -33,8 +32,6 @@
 #include <string>
 
 #include <CNestedDataFile/CNestedDataFile.h>
-
-#define DOT string(CNestedDataFile::delimChar)
 
 #include "ASoundPlayer.h"
 static ASoundPlayer *gSoundPlayer=NULL; // saved value for deinitialize
@@ -52,11 +49,19 @@ static ASoundPlayer *gSoundPlayer=NULL; // saved value for deinitialize
 
 #include <CPath.h>
 
-static void setupSoundTranslators();
-
 static bool checkForHelpFlag(int argc,char *argv[]);
 static bool checkForVersionFlag(int argc,char *argv[]);
 static void printUsage(const string app);
+
+
+/* 
+ * These are expected to be provided by whatever frontend is enabled,
+ * if ever more than one frontend can be enabled, then I would address
+ * issues raised then.
+ */
+extern void readFrontendSettings();
+extern void writeFrontendSettings();
+
 
 bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 {
@@ -67,8 +72,6 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 		if(checkForVersionFlag(argc,argv))
 			return false;
 
-
-		setupSoundTranslators();
 
 		// make sure that ~/.rezound exists
 		gUserDataDirectory=string(getenv("HOME"))+istring(CPath::dirDelim)+".rezound";
@@ -103,180 +106,9 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 			Error(string("Error reading registry -- ")+e.what());
 		}
 
-
-		// determine where the share data is located
-		{
-			// first try env var
-			const char *rezShareEnvVar=getenv("REZ_SHARE_DIR");
-			if(rezShareEnvVar!=NULL && CPath(rezShareEnvVar).exists())
-			{
-				printf("using environment variable $REZ_SHARE_DIR='%s' to override normal setting for share data direcory\n",rezShareEnvVar);
-				gSysDataDirectory=rezShareEnvVar;
-			}
-			// next try the source directory where the code was built
-			else if(CPath(SOURCE_DIR"/share").exists())
-				gSysDataDirectory=SOURCE_DIR"/share";
-			// next try the registry setting
-			else if(gSettingsRegistry->keyExists("shareDirectory") && CPath(gSettingsRegistry->getValue("shareDirectory")).exists())
-				gSysDataDirectory=gSettingsRegistry->getValue("shareDirectory");
-			// finally fall back on the #define set by configure saying where ReZound will be installed
-			else
-				gSysDataDirectory=DATA_DIR"/rezound";
-
-			recheckShareDataDir:
-
-			string checkFile=gSysDataDirectory+istring(CPath::dirDelim)+"presets.dat";
-
-			// now, if the presets.dat file doesn't exist in the share data dir, ask for a setting
-			if(!CPath(checkFile).exists())
-			{
-				if(Question("presets.dat not found in share data dir, '"+gSysDataDirectory+"'.\n  Would you like to manually select the share data directory directory?",yesnoQues)==yesAns)
-				{
-					gFrontendHooks->promptForDirectory(gSysDataDirectory,"Select Share Data Directory");
-					goto recheckShareDataDir;
-				}
-			}
-
-			// fully qualify the share data directory
-			gSysDataDirectory=CPath(gSysDataDirectory).realPath();
-
-			printf("using path '%s' for share data directory\n",gSysDataDirectory.c_str());
-		}
-
-
-		// parse the system presets
-		gSysPresetsFilename=gSysDataDirectory+istring(CPath::dirDelim)+"presets.dat";
-		gSysPresetsFile=new CNestedDataFile("",false);
-		try
-		{
-			gSysPresetsFile->parseFile(gSysPresetsFilename);
-		}
-		catch(exception &e)
-		{
-			Error(e.what());
-		}
-
-		
-		// parse the user presets
-		gUserPresetsFilename=gUserDataDirectory+istring(CPath::dirDelim)+"presets.dat";
-		CPath(gUserPresetsFilename).touch();
-		gUserPresetsFile=new CNestedDataFile("",false);
-		try
-		{
-			gUserPresetsFile->parseFile(gUserPresetsFilename);
-		}
-		catch(exception &e)
-		{
-			Error(e.what());
-		}
-		
-
-		gPromptDialogDirectory=gSettingsRegistry->getValue("promptDialogDirectory");
-
-	
-		if(gSettingsRegistry->keyExists("DesiredOutputSampleRate"))
-			gDesiredOutputSampleRate= atoi(gSettingsRegistry->getValue("DesiredOutputSampleRate").c_str());
-
-		if(gSettingsRegistry->keyExists("DesiredOutputChannelCount"))
-			gDesiredOutputChannelCount= atoi(gSettingsRegistry->getValue("DesiredOutputChannelCount").c_str());
-
-		if(gSettingsRegistry->keyExists("DesiredOutputBufferCount"))
-			gDesiredOutputBufferCount= atoi(gSettingsRegistry->getValue("DesiredOutputBufferCount").c_str());
-		gDesiredOutputBufferCount=max(2,gDesiredOutputBufferCount);
-
-		if(gSettingsRegistry->keyExists("DesiredOutputBufferSize"))
-			gDesiredOutputBufferSize= atoi(gSettingsRegistry->getValue("DesiredOutputBufferSize").c_str());
-		if(gDesiredOutputBufferSize<256 || log((double)gDesiredOutputBufferSize)/log(2.0)!=floor(log((double)gDesiredOutputBufferSize)/log(2.0)))
-			throw runtime_error(string(__func__)+" -- DesiredOutputBufferSize in "+registryFilename+" must be a power of 2 and >= than 256");
-
-
-#ifdef ENABLE_OSS
-		if(gSettingsRegistry->keyExists("OSSOutputDevice"))
-			gOSSOutputDevice= gSettingsRegistry->getValue("OSSOutputDevice");
-
-		if(gSettingsRegistry->keyExists("OSSInputDevice"))
-			gOSSInputDevice= gSettingsRegistry->getValue("OSSInputDevice");
-#endif
-
-#ifdef ENABLE_PORTAUDIO
-		if(gSettingsRegistry->keyExists("PortAudioOutputDevice"))
-			gPortAudioOutputDevice= atoi(gSettingsRegistry->getValue("PortAudioOutputDevice").c_str());
-
-		if(gSettingsRegistry->keyExists("PortAudioInputDevice"))
-			gPortAudioInputDevice= atoi(gSettingsRegistry->getValue("PortAudioInputDevice").c_str());
-#endif
-
-#ifdef ENABLE_JACK
-		// ??? could do these with array-keys I suppose
-		for(unsigned t=0;t<MAX_CHANNELS;t++)
-		{
-			if(gSettingsRegistry->keyExists(("JACKOutputPortName"+istring(t+1)).c_str()))
-				gJACKOutputPortNames[t]=gSettingsRegistry->getValue(("JACKOutputPortName"+istring(t+1)).c_str());
-			else
-				break;
-		}
-	
-		for(unsigned t=0;t<MAX_CHANNELS;t++)
-		{
-			if(gSettingsRegistry->keyExists(("JACKInputPortName"+istring(t+1)).c_str()))
-				gJACKInputPortNames[t]=gSettingsRegistry->getValue(("JACKInputPortName"+istring(t+1)).c_str());
-			else
-				break;
-		}
-#endif
-
-
-		// where ReZound should fallback to put working files if it can't write to where it loaded a file from
-			// ??? This could be an array where it would try multiple locations finding one that isn't full or close to full relative to the loaded file size
-		if(gSettingsRegistry->keyExists("fallbackWorkDir"))
-			gFallbackWorkDir= gSettingsRegistry->getValue("fallbackWorkDir");
-
-
-		if(gSettingsRegistry->keyExists("clipboardDir"))
-			gClipboardDir= gSettingsRegistry->getValue("clipboardDir");
-
-		if(gSettingsRegistry->keyExists("clipboardFilenamePrefix"))
-			gClipboardFilenamePrefix= gSettingsRegistry->getValue("clipboardFilenamePrefix");
-
-		if(gSettingsRegistry->keyExists("whichClipboard"))
-			gWhichClipboard= atoi(gSettingsRegistry->getValue("whichClipboard").c_str());
-
-		if(gSettingsRegistry->keyExists(("ReopenHistory"+DOT+"maxReopenHistory").c_str()))
-			gMaxReopenHistory= atoi(gSettingsRegistry->getValue(("ReopenHistory"+DOT+"maxReopenHistory").c_str()).c_str());
-
-		if(gSettingsRegistry->keyExists("followPlayPosition"))
-			gFollowPlayPosition= gSettingsRegistry->getValue("followPlayPosition")=="true";
-
-		if(gSettingsRegistry->keyExists("levelMetersEnabled"))
-			gLevelMetersEnabled= gSettingsRegistry->getValue("levelMetersEnabled")=="true";
-
-		if(gSettingsRegistry->keyExists("frequencyAnalyzerEnabled"))
-			gFrequencyAnalyzerEnabled= gSettingsRegistry->getValue("frequencyAnalyzerEnabled")=="true";
-
-		if(gSettingsRegistry->keyExists("initialLengthToShow"))
-			gInitialLengthToShow= atof(gSettingsRegistry->getValue("initialLengthToShow").c_str());
-
-		if(gSettingsRegistry->keyExists(("Meters"+DOT+"meterUpdateTime").c_str()))
-			gMeterUpdateTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"meterUpdateTime").c_str()).c_str());
-		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Level"+DOT+"RMSWindowTime").c_str()))
-			gMeterRMSWindowTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"Level"+DOT+"RMSWindowTime").c_str()).c_str());
-		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Level"+DOT+"maxPeakFallDelayTime").c_str()))
-			gMaxPeakFallDelayTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"Level"+DOT+"maxPeakFallDelayTime").c_str()).c_str());
-		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Level"+DOT+"maxPeakFallRate").c_str()))
-			gMaxPeakFallRate= atof(gSettingsRegistry->getValue(("Meters"+DOT+"Level"+DOT+"maxPeakFallRate").c_str()).c_str());
-		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Analyzer"+DOT+"peakFallDelayTime").c_str()))
-			gAnalyzerPeakFallDelayTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"Analyzer"+DOT+"peakFallDelayTime").c_str()).c_str());
-		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Analyzer"+DOT+"peakFallRate").c_str()))
-			gAnalyzerPeakFallRate= atof(gSettingsRegistry->getValue(("Meters"+DOT+"Analyzer"+DOT+"peakFallRate").c_str()).c_str());
-
-
-		if(gSettingsRegistry->keyExists("crossfadeEdges"))
-		{
-			gCrossfadeEdges= (CrossfadeEdgesTypes)atof(gSettingsRegistry->getValue("crossfadeEdges").c_str());
-			gCrossfadeStartTime= atof(gSettingsRegistry->getValue("crossfadeStartTime").c_str());
-			gCrossfadeStopTime= atof(gSettingsRegistry->getValue("crossfadeStopTime").c_str());
-			gCrossfadeFadeMethod= (CrossfadeFadeMethods)atof(gSettingsRegistry->getValue("crossfadeFadeMethod").c_str());
-		}
+		// read backend setting variables from registry
+		readBackendSettings();
+		readFrontendSettings();
 
 
 		// -- 2
@@ -286,10 +118,10 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 		// -- 3
 		for(unsigned t=1;t<=3;t++)
 		{
-			const string filename=gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard"+istring(t);
+			const string filename=gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard"+istring(t)+"."+istring(getuid());
 			try
 			{
-				AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard "+istring(t),filename));
+				AAction::clipboards.push_back(new CNativeSoundClipboard(_("Native Clipboard ")+istring(t),filename));
 			}
 			catch(exception &e)
 			{
@@ -299,10 +131,10 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 		}
 		for(unsigned t=1;t<=3;t++)
 		{
-			const string filename=gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record"+istring(t);
+			const string filename=gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record"+istring(t)+"."+istring(getuid());
 			try
 			{
-				AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard "+istring(t),filename,soundPlayer));
+				AAction::clipboards.push_back(new CRecordSoundClipboard(_("Record Clipboard ")+istring(t),filename,soundPlayer));
 			}
 			catch(exception &e)
 			{
@@ -402,125 +234,12 @@ void deinitializeBackend()
 
 
 	// -- 1
-	gSettingsRegistry->createKey("shareDirectory",gSysDataDirectory);
-	gSettingsRegistry->createKey("promptDialogDirectory",gPromptDialogDirectory);
-
-
-	gSettingsRegistry->createKey("DesiredOutputSampleRate",gDesiredOutputSampleRate);
-	gSettingsRegistry->createKey("DesiredOutputChannelCount",gDesiredOutputChannelCount);
-	gSettingsRegistry->createKey("DesiredOutputBufferCount",gDesiredOutputBufferCount);
-	gSettingsRegistry->createKey("DesiredOutputBufferSize",gDesiredOutputBufferSize);
-
-
-#ifdef ENABLE_OSS
-	gSettingsRegistry->createKey("OSSOutputDevice",gOSSOutputDevice);
-	gSettingsRegistry->createKey("OSSInputDevice",gOSSInputDevice);
-#endif
-
-#ifdef ENABLE_PORTAUDIO
-	gSettingsRegistry->createKey("PortAudioOutputDevice",gPortAudioOutputDevice);
-	gSettingsRegistry->createKey("PortAudioInputDevice",gPortAudioInputDevice);
-#endif
-
-#ifdef ENABLE_JACK
-	// ??? could do these with array-keys I suppose
-	for(unsigned t=0;t<MAX_CHANNELS;t++)
-	{
-		if(gJACKOutputPortNames[t]!="")
-			gSettingsRegistry->createKey(("JACKOutputPortName"+istring(t+1)).c_str(),gJACKOutputPortNames[t]);
-		else
-		{
-			gSettingsRegistry->removeKey(("JACKOutputPortName"+istring(t+2)).c_str());
-			break;
-		}
-	}
-	for(unsigned t=0;t<MAX_CHANNELS;t++)
-	{
-		if(gJACKInputPortNames[t]!="")
-			gSettingsRegistry->createKey(("JACKInputPortName"+istring(t+1)).c_str(),gJACKInputPortNames[t]);
-		else
-		{
-			gSettingsRegistry->removeKey(("JACKInputPortName"+istring(t+2)).c_str());
-			break;
-		}
-	}
-#endif
-
-	gSettingsRegistry->createKey("fallbackWorkDir",gFallbackWorkDir);
-
-	gSettingsRegistry->createKey("clipboardDir",gClipboardDir);
-	gSettingsRegistry->createKey("clipboardFilenamePrefix",gClipboardFilenamePrefix);
-	gSettingsRegistry->createKey("whichClipboard",gWhichClipboard);
-
-	gSettingsRegistry->createKey(("ReopenHistory"+DOT+"maxReopenHistory").c_str(),gMaxReopenHistory);
-
-	gSettingsRegistry->createKey("followPlayPosition",gFollowPlayPosition ? "true" : "false");
-
-	gSettingsRegistry->createKey("levelMetersEnabled",gLevelMetersEnabled ? "true" : "false");
-	gSettingsRegistry->createKey("frequencyAnalyzerEnabled",gFrequencyAnalyzerEnabled ? "true" : "false");
-
-	gSettingsRegistry->createKey("initialLengthToShow",gInitialLengthToShow);
-
-	gSettingsRegistry->createKey(("Meters"+DOT+"meterUpdateTime").c_str(),gMeterUpdateTime);
-	gSettingsRegistry->createKey(("Meters"+DOT+"Level"+DOT+"RMSWindowTime").c_str(),gMeterRMSWindowTime);
-	gSettingsRegistry->createKey(("Meters"+DOT+"Level"+DOT+"maxPeakFallDelayTime").c_str(),gMaxPeakFallDelayTime);
-	gSettingsRegistry->createKey(("Meters"+DOT+"Level"+DOT+"maxPeakFallRate").c_str(),gMaxPeakFallRate);
-	gSettingsRegistry->createKey(("Meters"+DOT+"Analyzer"+DOT+"peakFallDelayTime").c_str(),gAnalyzerPeakFallDelayTime);
-	gSettingsRegistry->createKey(("Meters"+DOT+"Analyzer"+DOT+"peakFallRate").c_str(),gAnalyzerPeakFallRate);
-
-	gSettingsRegistry->createKey("crossfadeEdges",(float)gCrossfadeEdges);
-		gSettingsRegistry->createKey("crossfadeStartTime",gCrossfadeStartTime);
-		gSettingsRegistry->createKey("crossfadeStopTime",gCrossfadeStopTime);
-		gSettingsRegistry->createKey("crossfadeFadeMethod",(float)gCrossfadeFadeMethod);
-
+	writeFrontendSettings();
+	writeBackendSettings();
 
 	gSettingsRegistry->save();
 	delete gSettingsRegistry;
 
-}
-
-#include "CrezSoundTranslator.h"
-#include "ClibvorbisSoundTranslator.h"
-#include "ClibaudiofileSoundTranslator.h"
-#include "ClameSoundTranslator.h"
-#include "CvoxSoundTranslator.h"
-#include "CrawSoundTranslator.h"
-#include "Cold_rezSoundTranslator.h"
-static void setupSoundTranslators()
-{
-	ASoundTranslator::registeredTranslators.clear();
-
-	static const CrezSoundTranslator rezSoundTranslator;
-	ASoundTranslator::registeredTranslators.push_back(&rezSoundTranslator);
-
-#ifdef HAVE_LIBVORBIS
-	static const ClibvorbisSoundTranslator libvorbisSoundTranslator;
-	ASoundTranslator::registeredTranslators.push_back(&libvorbisSoundTranslator);
-#endif
-
-#ifdef HAVE_LIBAUDIOFILE
-	static const ClibaudiofileSoundTranslator libaudiofileSoundTranslator;
-	ASoundTranslator::registeredTranslators.push_back(&libaudiofileSoundTranslator);
-
-	static const CrawSoundTranslator rawSoundTranslator;
-	ASoundTranslator::registeredTranslators.push_back(&rawSoundTranslator);
-#endif
-
-	if(ClameSoundTranslator::checkForApp())
-	{
-		static const ClameSoundTranslator lameSoundTranslator;
-		ASoundTranslator::registeredTranslators.push_back(&lameSoundTranslator);
-	}
-
-	if(CvoxSoundTranslator::checkForApp())
-	{
-		static const CvoxSoundTranslator voxSoundTranslator;
-		ASoundTranslator::registeredTranslators.push_back(&voxSoundTranslator);
-	}
-
-	static const Cold_rezSoundTranslator old_rezSoundTranslator;
-	ASoundTranslator::registeredTranslators.push_back(&old_rezSoundTranslator);
-	
 }
 
 

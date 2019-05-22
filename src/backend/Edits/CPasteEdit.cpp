@@ -20,13 +20,8 @@
 
 #include "CPasteEdit.h"
 
-#include <math.h>
-
-#include <stdexcept>
 #include <algorithm>
 #include <utility>
-
-#include <istring>
 
 #include "../AActionDialog.h"
 #include "../ASoundClipboard.h"
@@ -260,12 +255,13 @@ bool CPasteEdit::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 			//sample_pos_t lastIterationLength=(sample_pos_t)sample_fpos_floor(((sample_fpos_t)actionSound.selectionLength()*(sample_fpos_t)fRepeatCount)/(sample_fpos_t)repeatCount);
 		
 			// ... this will be sure to cover the remainder left off from flooring errors in the n iterations above
+				// perhaps there's a better way, maybe rounding instead of flooring when calculating oneIterationLength
 			const sample_pos_t lastIterationLength=actionSound.selectionLength()-(oneIterationLength*(unsigned)iRepeatCount);
 
 			if(lastIterationLength>0 && clipboardLength>1/*has a little bug from flooring if this is true*/)
 			{
 				const sample_pos_t shortenedClipboardLength=(sample_pos_t)sample_fpos_floor((sample_fpos_t)clipboard->getLength(_actionSound.sound->getSampleRate())*fRepeatCount);
-				clipboard->temporarilyShortenLength(_actionSound.sound->getSampleRate(),shortenedClipboardLength);
+				clipboard->temporarilyShortenLength(_actionSound.sound->getSampleRate(),max(shortenedClipboardLength,(sample_pos_t)1));
 				try
 				{
 					pasteData(clipboard,pasteChannels,_actionSound,lastIterationLength,1,!prepareForUndo,mixMethod,mixMethod,sftChangeRate);
@@ -282,7 +278,7 @@ bool CPasteEdit::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 		break;
 
 	default:
-		throw runtime_error(string(__func__)+" -- unhandled pasteType: "+istring(pasteType));
+		throw runtime_error(string(__func__)+_(" -- unhandled pasteType: ")+istring(pasteType));
 	}
 
 	return true;
@@ -360,7 +356,7 @@ void CPasteEdit::undoActionSizeSafe(const CActionSound &actionSound)
 		break;
 
 	default:
-		throw runtime_error(string(__func__)+" -- unhandled pasteType: "+istring(pasteType));
+		throw runtime_error(string(__func__)+_(" -- unhandled pasteType: ")+istring(pasteType));
 	}
 }
 
@@ -393,7 +389,7 @@ bool CPasteEdit::getResultingCrossfadePoints(const CActionSound &actionSound,sam
 		break;
 
 	default:
-		throw runtime_error(string(__func__)+" -- unhandled pasteType: "+istring(pasteType));
+		throw runtime_error(string(__func__)+_(" -- unhandled pasteType: ")+istring(pasteType));
 	}
 	return true;
 }
@@ -411,7 +407,7 @@ bool CPasteEdit::getResultingCrossfadePoints(const CActionSound &actionSound,sam
 										\
 		if(AAction::clipboards[gWhichClipboard]->isEmpty())		\
 		{ 								\
-			Message("No data has been cut or copied to the selected clipboard yet."); \
+			Message(_("No data has been cut or copied to the selected clipboard yet.")); \
 			return false; 						\
 		} 								\
 		return true; 							\
@@ -466,7 +462,7 @@ static const double getRepeatCount(const CActionParameters *actionParameters)
 // ------------------------------
 
 CInsertPasteEditFactory::CInsertPasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Insert Paste","Insert at the Start Position",channelSelectDialog,NULL)
+	AActionFactory(N_("Insert Paste"),_("Insert at the Start Position"),channelSelectDialog,NULL)
 {
 }
 
@@ -486,7 +482,7 @@ CHECK_FOR_DATA(CInsertPasteEditFactory)
 
 
 CReplacePasteEditFactory::CReplacePasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Replace Paste","Replace the Selection",channelSelectDialog,NULL)
+	AActionFactory(N_("Replace Paste"),_("Replace the Selection"),channelSelectDialog,NULL)
 {
 }
 
@@ -505,7 +501,7 @@ CHECK_FOR_DATA(CReplacePasteEditFactory)
 
 
 COverwritePasteEditFactory::COverwritePasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Overwrite Paste","Overwrite Starting at the Start Position",channelSelectDialog,NULL)
+	AActionFactory(N_("Overwrite Paste"),_("Overwrite Starting at the Start Position"),channelSelectDialog,NULL)
 {
 }
 
@@ -525,7 +521,7 @@ CHECK_FOR_DATA(COverwritePasteEditFactory)
 
 
 CLimitedOverwritePasteEditFactory::CLimitedOverwritePasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Limited Overwrite Paste","Overwrite Starting at the Start Position But Not Beyond the Stop Position",channelSelectDialog,NULL)
+	AActionFactory(N_("Limited Overwrite Paste"),_("Overwrite Starting at the Start Position But Not Beyond the Stop Position"),channelSelectDialog,NULL)
 {
 }
 
@@ -545,7 +541,7 @@ CHECK_FOR_DATA(CLimitedOverwritePasteEditFactory)
 
 
 CMixPasteEditFactory::CMixPasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Mix Paste","Mix Starting at the Start Position",channelSelectDialog,NULL)
+	AActionFactory(N_("Mix Paste"),_("Mix Starting at the Start Position"),channelSelectDialog,NULL)
 {
 }
 
@@ -564,7 +560,7 @@ CHECK_FOR_DATA(CMixPasteEditFactory)
 
 
 CLimitedMixPasteEditFactory::CLimitedMixPasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Limited Mix Paste","Mix Starting at the Start Position But Not Beyond the Stop Position",channelSelectDialog,NULL)
+	AActionFactory(N_("Limited Mix Paste"),_("Mix Starting at the Start Position But Not Beyond the Stop Position"),channelSelectDialog,NULL)
 {
 }
 
@@ -583,7 +579,7 @@ CHECK_FOR_DATA(CLimitedMixPasteEditFactory)
 
 
 CFitMixPasteEditFactory::CFitMixPasteEditFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Fit Mix Paste","Mix Starting at the Start Position But Change the Rate of the Clipboard to Fit Within the Selection",channelSelectDialog,NULL)
+	AActionFactory(N_("Fit Mix Paste"),_("Mix Starting at the Start Position But Change the Rate of the Clipboard to Fit Within the Selection"),channelSelectDialog,NULL)
 {
 }
 

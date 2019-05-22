@@ -25,7 +25,7 @@
 
 #include <algorithm>
 
-#define PREALLOC_SECONDS 5
+#define PREALLOC_SECONDS 1
 
 ASoundRecorder::ASoundRecorder() :
 	clipCount(0),
@@ -41,66 +41,47 @@ ASoundRecorder::~ASoundRecorder()
 
 void ASoundRecorder::start(const double _startThreshold,const sample_pos_t maxDuration)
 {
-	mutex.lock();
-	try
+	CMutexLocker l(mutex);
+	if(!started)
 	{
-		if(!started)
-		{
-			if(_startThreshold>0)
-				startThreshold=-1; // no threshold asked for
-			else
-				startThreshold=dBFS_to_amp(_startThreshold); // translate dBFS into an actual sample value
+		if(_startThreshold>0)
+			startThreshold=-1; // no threshold asked for
+		else
+			startThreshold=dBFS_to_amp(_startThreshold); // translate dBFS into an actual sample value
 
-			started=true;
-			if(maxDuration!=NIL_SAMPLE_POS && (MAX_LENGTH-writePos)>maxDuration)
-				stopPosition=writePos+maxDuration;
-			else
-				stopPosition=NIL_SAMPLE_POS;
-		}
-
-		mutex.unlock();
-	}
-	catch(...)
-	{
-		mutex.unlock();
-		throw;
+		started=true;
+		if(maxDuration!=NIL_SAMPLE_POS && (MAX_LENGTH-writePos)>maxDuration)
+			stopPosition=writePos+maxDuration;
+		else
+			stopPosition=NIL_SAMPLE_POS;
 	}
 }
 
 void ASoundRecorder::stop()
 {
-	mutex.lock();
-	try
+	CMutexLocker l(mutex);
+	if(started)
 	{
-		if(started)
+		started=false;
+
+		// remove extra prealloceded space
+		sound->lockForResize();
+		try
 		{
-			started=false;
+			if(prealloced>0)
+				// remove extra space
+				sound->removeSpace(sound->getLength()-prealloced,prealloced);
+			prealloced=0;
 
-			// remove extra prealloceded space
-			sound->lockForResize();
-			try
-			{
-				if(prealloced>0)
-					// remove extra space
-					sound->removeSpace(sound->getLength()-prealloced,prealloced);
-				prealloced=0;
-
-				sound->unlockForResize();
-			}
-			catch(...)
-			{
-				sound->unlockForResize();
-				throw;
-			}
+			sound->unlockForResize();
 		}
+		catch(...)
+		{
+			sound->unlockForResize();
+			throw;
+		}
+	}
 
-		mutex.unlock();
-	}
-	catch(...)
-	{
-		mutex.unlock();
-		throw;
-	}
 }
 
 void ASoundRecorder::redo(const sample_pos_t maxDuration)
@@ -110,27 +91,17 @@ void ASoundRecorder::redo(const sample_pos_t maxDuration)
 	// any extra allocated space beyond what was recorded that doesn't need to be
 	// there
 
-	mutex.lock();
-	try
-	{
-		// clear all cues that were added during the last record
-		addedCues.clear();
+	CMutexLocker l(mutex);
+	// clear all cues that were added during the last record
+	addedCues.clear();
 
-		writePos=origLength;
-		prealloced=sound->getLength()-origLength;
+	writePos=origLength;
+	prealloced=sound->getLength()-origLength;
 
-		if(maxDuration!=NIL_SAMPLE_POS && (MAX_LENGTH-writePos)>maxDuration)
-			stopPosition=writePos+maxDuration;
-		else
-			stopPosition=NIL_SAMPLE_POS;
-
-		mutex.unlock();
-	}
-	catch(...)
-	{
-		mutex.unlock();
-		throw;
-	}
+	if(maxDuration!=NIL_SAMPLE_POS && (MAX_LENGTH-writePos)>maxDuration)
+		stopPosition=writePos+maxDuration;
+	else
+		stopPosition=NIL_SAMPLE_POS;
 }
 
 void ASoundRecorder::done()
@@ -188,6 +159,14 @@ void ASoundRecorder::initialize(CSound *_sound)
 	prealloced=0;
 	origLength=sound->getLength();
 	writePos=origLength; // ??? - 1?
+
+	for(unsigned i=0;i<MAX_CHANNELS;i++)
+	{
+		DCOffset[i]=0;
+		DCOffsetSum[i]=0;
+		DCOffsetCompensation[i]=0;
+	}
+	DCOffsetCount=0;
 }
 
 
@@ -205,7 +184,7 @@ void ASoundRecorder::deinitialize()
 }
 
 
-void ASoundRecorder::onData(const sample_t *samples,const size_t _sampleFramesRecorded)
+void ASoundRecorder::onData(sample_t *samples,const size_t _sampleFramesRecorded)
 {
 /* just to see the data if I need to
 	{
@@ -216,10 +195,25 @@ void ASoundRecorder::onData(const sample_t *samples,const size_t _sampleFramesRe
 */
 
 	size_t sampleFramesRecorded=_sampleFramesRecorded;
-	mutex.lock();
+	CMutexLocker l(mutex);
 	try
 	{
 		const unsigned channelCount=sound->getChannelCount();
+
+		// modify samples by the DC Offset compensation
+		for(unsigned i=0;i<channelCount;i++)
+		{
+			if(DCOffsetCompensation[i]!=0)
+			{
+				sample_t *_samples=samples+i;
+				const mix_sample_t DCOffsetCompensation=this->DCOffsetCompensation[i];
+				for(size_t t=0;t<sampleFramesRecorded;t++)
+				{
+					*_samples=ClipSample(*_samples+DCOffsetCompensation);
+					_samples+=channelCount;
+				}
+			}
+		}
 
 		// give realtime peak data updates
 		for(unsigned i=0;i<channelCount;i++)
@@ -243,6 +237,32 @@ void ASoundRecorder::onData(const sample_t *samples,const size_t _sampleFramesRe
 			}
 			lastPeakValues[i]=(float)maxSample/(float)MAX_SAMPLE;
 		}
+
+		// calculate the DC offset of data being recorded
+		for(unsigned i=0;i<channelCount;i++)
+		{
+			const sample_t *_samples=samples+i;
+			double &DCOffsetSum=this->DCOffsetSum[i];
+			for(size_t t=0;t<sampleFramesRecorded;t++)
+			{
+				DCOffsetSum+=*_samples;
+				// next sample in interleaved format
+				_samples+=channelCount;
+			}
+		}
+		DCOffsetCount+=sampleFramesRecorded;
+
+		if(DCOffsetCount>=(sound->getSampleRate()*5))
+		{ // at least 5 second has been sampled, so record this as the current DCOffset and start over
+			for(unsigned i=0;i<channelCount;i++)
+			{
+				DCOffset[i]=(sample_t)(DCOffsetSum[i]/DCOffsetCount);
+				DCOffsetSum[i]=0;
+			}
+			DCOffsetCount=0;
+		}
+
+
 		statusTrigger.trip();
 
 		if(started)
@@ -267,13 +287,12 @@ void ASoundRecorder::onData(const sample_t *samples,const size_t _sampleFramesRe
 							samples+=(t*channelCount);
 							sampleFramesRecorded-=t;
 
-							goto goAheadAndSave; // using 'goto', because 'break' can go past two loops
+							goto goAheadAndSave; // using 'goto', because 'break' can't go past two loops
 						}
 						_samples+=channelCount;
 					}
 
 				}
-				mutex.unlock();
 				return;
 			}
 
@@ -321,16 +340,13 @@ void ASoundRecorder::onData(const sample_t *samples,const size_t _sampleFramesRe
 
 			if(stopPosition!=NIL_SAMPLE_POS && writePos>=stopPosition)
 			{
-				mutex.unlock();
 				stop();
 				return;
 			}
 		}
-		mutex.unlock();
 	}
 	catch(...)
 	{
-		mutex.unlock();
 		throw;
 	}
 }
@@ -391,7 +407,7 @@ bool ASoundRecorder::cueNameExists(const string name) const
 void ASoundRecorder::addCueNow(const string name,bool isAnchored)
 {
 	if(sound->containsCue(name) || cueNameExists(istring(name).truncate(MAX_SOUND_CUE_NAME_LENGTH)))
-		throw runtime_error(string(__func__)+" -- a cue already exist with the name: '"+name+"'");
+		throw runtime_error(string(__func__)+_(" -- a cue already exist with the name")+": '"+name+"'");
 
 	// this actually adds the cue at the last 20th of a second or so
 	// depending on the how often the derived class is invoking onData
@@ -410,6 +426,18 @@ float ASoundRecorder::getAndResetLastPeakValue(unsigned channel)
 	float p=lastPeakValues[channel];
 	lastPeakValues[channel]=0.0;
 	return p;
+}
+
+sample_t ASoundRecorder::getDCOffset(unsigned channel) const
+{
+	return DCOffset[channel];
+}
+
+void ASoundRecorder::compensateForDCOffset()
+{
+	// subtract current DC Offset output current DC Offset compensation 
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+		DCOffsetCompensation[t]+= -DCOffset[t];
 }
 
 void ASoundRecorder::setStatusTrigger(TriggerFunc triggerFunc,void *data)

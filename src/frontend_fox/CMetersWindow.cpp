@@ -25,6 +25,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <fox/FXBackBufferedCanvas.h>
+
 #include "../backend/CSound_defs.h"
 #include "../backend/unit_conv.h"
 #include "../backend/ASoundPlayer.h"
@@ -52,23 +54,29 @@ so that the meter and analyzer widgets are not tied to using ASoundPlayer
 #define M_BRT_YELLOW (FXRGB(255,255,112))
 #define M_BRT_RED (FXRGB(255,38,0))
 
+#define M_PHASE_METER_AXIS (FXRGB(100,100,100))
+
 #define MIN_METER_HEIGHT 15
 #define MIN_METERS_WINDOW_HEIGHT 75
 
+#define M_RMS_BALANCE_COLOR M_GREEN
+#define M_PEAK_BALANCE_COLOR M_GREEN
+
 #define ANALYZER_BAR_WIDTH 3
 
-#define NUM_LEVEL_TICKS 17
+#define NUM_LEVEL_METER_TICKS 17
+#define NUM_BALANCE_METER_TICKS 9
 
-// --- CMeter ----------------------------------------------------------------
+// --- CLevelMeter -----------------------------------------------------------
 
-class CMeter : public FXHorizontalFrame
+class CLevelMeter : public FXHorizontalFrame
 {
-	FXDECLARE(CMeter);
+	FXDECLARE(CLevelMeter);
 public:
-	CMeter::CMeter(FXComposite *parent) :
+	CLevelMeter::CLevelMeter(FXComposite *parent) :
 		FXHorizontalFrame(parent,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|LAYOUT_TOP | FRAME_NONE,0,0,0,0, 0,0,0,0, 0,0),
 		statusFont(getApp()->getNormalFont()),
-		canvas(new FXCanvas(this,this,ID_CANVAS,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,400,0)),
+		canvas(new FXCanvas(this,this,ID_CANVAS,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y)),
 		grandMaxPeakLevelLabel(new FXLabel(this,"",NULL,LABEL_NORMAL|LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FILL_Y,0,0,0,0, 1,1,0,0)),
 		RMSLevel(0),
 		peakLevel(0),
@@ -77,6 +85,8 @@ public:
 		maxPeakFallTimer(0),
 		stipplePattern(NULL)
 	{
+		setBackColor(M_BACKGROUND);
+
 		// create the font to use for numbers
 		FXFontDesc d;
 		statusFont->getFontDesc(d);
@@ -102,7 +112,7 @@ public:
 
 	}
 
-	CMeter::~CMeter()
+	CLevelMeter::~CLevelMeter()
 	{
 		delete statusFont;
 	}
@@ -114,20 +124,20 @@ public:
 		setHeight(max(statusFont->getFontHeight(),MIN_METER_HEIGHT)); // make meter only as tall as necessary (also with a defined minimum)
 	}
 
-	long CMeter::onCanvasPaint(FXObject *sender,FXSelector sel,void *ptr)
+	long CLevelMeter::onCanvasPaint(FXObject *sender,FXSelector sel,void *ptr)
 	{
 		FXDCWindow dc(canvas);
 
 		const FXint width=canvas->getWidth();
 		const FXint height=canvas->getHeight();
 
-		// draw NUM_LEVEL_TICKS tick marks above level indication
+		// draw NUM_LEVEL_METER_TICKS tick marks above level indication
 		dc.setForeground(M_BACKGROUND);
 		dc.fillRectangle(0,0,width,2);
 		dc.setForeground(M_TEXT_COLOR);
-		for(int t=0;t<NUM_LEVEL_TICKS;t++)
+		for(int t=0;t<NUM_LEVEL_METER_TICKS;t++)
 		{
-			const int x=(width-1)*t/(NUM_LEVEL_TICKS-1);
+			const int x=(width-1)*t/(NUM_LEVEL_METER_TICKS-1);
 			dc.drawLine(x,0,x,1);
 		}
 
@@ -210,7 +220,7 @@ public:
 		else
 			dc.setForeground(M_BRT_GREEN);
 		dc.fillRectangle(x-1,2,2,height-3);
-			
+
 		return 1;
 	}
 
@@ -240,6 +250,16 @@ public:
 		canvas->update(); // flag for repainting
 	}
 
+	sample_t getRMSLevel() const
+	{
+		return RMSLevel;
+	}
+
+	sample_t getPeakLevel() const
+	{
+		return peakLevel;
+	}
+
 	void setGrandMaxPeakLevel(const sample_t maxPeakLevel)
 	{
 		grandMaxPeakLevel=maxPeakLevel;
@@ -265,7 +285,7 @@ public:
 	};
 
 protected:
-	CMeter() { }
+	CLevelMeter() { }
 
 private:
 	friend class CMetersWindow;
@@ -279,14 +299,305 @@ private:
 	
 };
 
-FXDEFMAP(CMeter) CMeterMap[]=
+FXDEFMAP(CLevelMeter) CLevelMeterMap[]=
 {
-	//	  Message_Type			ID					Message_Handler
-	FXMAPFUNC(SEL_PAINT,			CMeter::ID_CANVAS,			CMeter::onCanvasPaint),
-	FXMAPFUNC(SEL_LEFTBUTTONRELEASE,	CMeter::ID_GRAND_MAX_PEAK_LEVEL_LABEL,	CMeter::onResetGrandMaxPeakLevel),
+	//	  Message_Type			ID						Message_Handler
+	FXMAPFUNC(SEL_PAINT,			CLevelMeter::ID_CANVAS,				CLevelMeter::onCanvasPaint),
+	FXMAPFUNC(SEL_LEFTBUTTONRELEASE,	CLevelMeter::ID_GRAND_MAX_PEAK_LEVEL_LABEL,	CLevelMeter::onResetGrandMaxPeakLevel),
 };
 
-FXIMPLEMENT(CMeter,FXHorizontalFrame,CMeterMap,ARRAYNUMBER(CMeterMap))
+FXIMPLEMENT(CLevelMeter,FXHorizontalFrame,CLevelMeterMap,ARRAYNUMBER(CLevelMeterMap))
+
+
+
+
+
+// --- CBalanceMeter -----------------------------------------------------------
+
+class CBalanceMeter : public FXHorizontalFrame
+{
+	FXDECLARE(CBalanceMeter);
+public:
+	CBalanceMeter::CBalanceMeter(FXComposite *parent) :
+		FXHorizontalFrame(parent,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT | FRAME_NONE, 0,0,0,0, 0,0,0,0, 0,0),
+		statusFont(getApp()->getNormalFont()),
+		leftLabel(new FXLabel(this,"-1.0")),
+		canvas(new FXCanvas(this,this,ID_CANVAS,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y)),
+		rightLabel(new FXLabel(this,"+1.0")),
+		RMSBalance(0),
+		peakBalance(0),
+		stipplePattern(NULL)
+	{
+		setBackColor(M_BACKGROUND);
+
+		// create the font to use for numbers
+		FXFontDesc d;
+		statusFont->getFontDesc(d);
+		d.size=60;
+		d.weight=FONTWEIGHT_NORMAL;
+		statusFont=new FXFont(getApp(),d);
+
+		leftLabel->setFont(statusFont);
+		leftLabel->setTextColor(M_TEXT_COLOR);
+		leftLabel->setBackColor(M_BACKGROUND);
+
+		rightLabel->setFont(statusFont);
+		rightLabel->setTextColor(M_TEXT_COLOR);
+		rightLabel->setBackColor(M_BACKGROUND);
+
+		static char pix[]={0xaa,0x55};
+		stipplePattern=new FXBitmap(getApp(),pix,0,8,2);
+
+		stipplePattern->create();
+
+	}
+
+	CBalanceMeter::~CBalanceMeter()
+	{
+		delete statusFont;
+	}
+
+	void create()
+	{
+		FXHorizontalFrame::create();
+		setHeight(max(statusFont->getFontHeight(),MIN_METER_HEIGHT)); // make meter only as tall as necessary (also with a defined minimum)
+	}
+
+	long CBalanceMeter::onCanvasPaint(FXObject *sender,FXSelector sel,void *ptr)
+	{
+		FXDCWindow dc(canvas);
+
+		const FXint width=canvas->getWidth();
+		const FXint height=canvas->getHeight();
+
+		// draw NUM_LEVEL_METER_TICKS tick marks above level indication
+		dc.setForeground(M_BACKGROUND);
+		dc.fillRectangle(0,0,width,2);
+		dc.setForeground(M_TEXT_COLOR);
+		for(int t=0;t<NUM_BALANCE_METER_TICKS;t++)
+		{
+			const int x=(width-1)*t/(NUM_BALANCE_METER_TICKS-1);
+			dc.drawLine(x,0,x,1);
+		}
+
+		// draw horz line below level indication
+		dc.setForeground(M_TEXT_COLOR);
+		dc.drawLine(0,height-1,width,height-1);
+
+		// draw gray background underneath the stippled level indication 
+		dc.setForeground(M_METER_OFF);
+		dc.fillRectangle(0,2,width,height-3);
+
+
+		// if the global setting is disabled, stop drawing right here
+		if(!gLevelMetersEnabled)
+			return 1;
+
+
+		// draw RMS balance indication
+		FXint x=(FXint)(RMSBalance*width)/2;
+		dc.setFillStyle(FILL_STIPPLED);
+		dc.setStipple(stipplePattern);
+
+		dc.setForeground(M_RMS_BALANCE_COLOR);
+		if(x>0)
+			dc.fillRectangle(width/2,2,x,height-3);
+		else // drawing has to be done a little differently when x is negative
+			dc.fillRectangle(width/2+x,2,-x,height-3);
+
+
+		// draw the peak balance indicator
+		FXint y=height/2;
+		x=(FXint)(peakBalance*width)/2;
+		dc.setFillStyle(FILL_SOLID);
+		dc.setForeground(M_PEAK_BALANCE_COLOR);
+		if(x>0)
+			dc.fillRectangle(width/2,y,x,2);
+		else // drawing has to be done a little differently when x is negative
+			dc.fillRectangle(width/2+x,y,-x,2);
+
+		dc.setForeground(M_TEXT_COLOR);
+		dc.drawLine(width/2,2,width/2,height-1);
+
+		return 1;
+	}
+
+	void setBalance(sample_t leftRMSLevel,sample_t rightRMSLevel,sample_t leftPeakLevel,sample_t rightPeakLevel)
+	{
+		RMSBalance=((float)rightRMSLevel-(float)leftRMSLevel)/(float)MAX_SAMPLE;
+		peakBalance=((float)rightPeakLevel-(float)leftPeakLevel)/(float)MAX_SAMPLE;
+		canvas->update(); // flag for repainting
+	}
+
+	enum
+	{
+		ID_CANVAS=FXHorizontalFrame::ID_LAST
+	};
+
+protected:
+	CBalanceMeter() { }
+
+private:
+	FXFont *statusFont;
+
+	FXLabel *leftLabel;
+	FXCanvas *canvas;
+	FXLabel *rightLabel;
+
+	float RMSBalance;
+	float peakBalance;
+
+	FXBitmap *stipplePattern;
+	
+};
+
+FXDEFMAP(CBalanceMeter) CBalanceMeterMap[]=
+{
+	//	  Message_Type			ID						Message_Handler
+	FXMAPFUNC(SEL_PAINT,			CBalanceMeter::ID_CANVAS,			CBalanceMeter::onCanvasPaint),
+};
+
+FXIMPLEMENT(CBalanceMeter,FXHorizontalFrame,CBalanceMeterMap,ARRAYNUMBER(CBalanceMeterMap))
+
+
+
+
+
+// --- CStereoPhaseMeter -------------------------------------------------------------
+
+class CStereoPhaseMeter : public FXHorizontalFrame
+{
+	FXDECLARE(CStereoPhaseMeter);
+public:
+	CStereoPhaseMeter::CStereoPhaseMeter(FXComposite *parent,sample_t *_samplingBuffer,size_t _samplingNFrames,unsigned _samplingNChannels,unsigned _samplingLeftChannel,unsigned _samplingRightChannel) :
+		FXHorizontalFrame(parent,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0),
+		canvasFrame(new FXVerticalFrame(this,LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|FRAME_THICK,0,0,0,0, 2,2,2,2, 0,1)),
+			canvas(new FXBackBufferedCanvas(canvasFrame,this,ID_CANVAS,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
+
+		statusFont(getApp()->getNormalFont()),
+
+		samplingBuffer(_samplingBuffer),
+		samplingNFrames(_samplingNFrames),
+		samplingNChannels(_samplingNChannels),
+		samplingLeftChannel(_samplingLeftChannel),
+		samplingRightChannel(_samplingRightChannel),
+
+		clear(true)
+	{
+		hide();
+		setBackColor(M_BACKGROUND);
+			canvasFrame->setBackColor(M_BACKGROUND);
+			
+		canvas->setBackBufferOptions(IMAGE_OWNED|IMAGE_ALPHA); // IMAGE_ALPHA: the alpha channel is not used, but it's a place holder so I can work with 32bit values
+
+		// create the font to use for numbers
+		FXFontDesc d;
+		statusFont->getFontDesc(d);
+		d.size=60;
+		d.weight=FONTWEIGHT_NORMAL;
+		statusFont=new FXFont(getApp(),d);
+	}
+
+	CStereoPhaseMeter::~CStereoPhaseMeter()
+	{
+		delete statusFont;
+	}
+
+	long CStereoPhaseMeter::onResize(FXObject *sender,FXSelector sel,void *ptr)
+	{
+		// make square
+		resize(getHeight(),getHeight());
+		clearCanvas();
+		return 1;
+	}
+
+	long CStereoPhaseMeter::onCanvasPaint(FXObject *sender,FXSelector sel,void *ptr)
+	{
+		FXColor *data=(FXColor *)canvas->getBackBufferData();
+
+		// the w and h that we're going to render to (minus some borders and tick marks)
+		const FXint canvasSize=canvas->getWidth();  // w==h is guarenteed in onResize()
+
+		if(clear)
+		{
+			memset(data,0,canvasSize*canvasSize*sizeof(FXColor));
+			clear=false;
+		}
+
+		// if the global setting is disabled, stop drawing right here
+		if(!gStereoPhaseMetersEnabled)
+			return 1;
+
+		// fade previous frame (so we get a ghosting history)
+		for(FXint t=0;t<canvasSize*canvasSize;t++)
+		{
+			const FXColor c=data[t];
+			data[t]= c==0 ? 0 : FXRGB( FXREDVAL(c)*7/8, FXGREENVAL(c)*7/8, FXBLUEVAL(c)*7/8 );
+		}
+
+		// draw the axies
+		for(FXint t=0;t<canvasSize;t++)
+		{
+				// I have no idea with '-canvasSize/2' is necessary but it doesn't look right if I omit it
+			data[t+(canvasSize*canvasSize/2)-canvasSize/2]=M_PHASE_METER_AXIS; // horz
+			data[(t*canvasSize)+canvasSize/2]=M_PHASE_METER_AXIS; // vert
+		}
+
+		// draw the points
+		for(size_t t=0;t<samplingNFrames;t++)
+		{
+			// let x and y be the normalized (1.0) sample values (x:left y:right) then scaled up to the canvas width/height and centered in the square
+			const FXint x= (FXint)(samplingBuffer[t*samplingNChannels+samplingLeftChannel ]*(int)canvasSize/2/MAX_SAMPLE + canvasSize/2);
+			const FXint y=(FXint)(-samplingBuffer[t*samplingNChannels+samplingRightChannel]*(int)canvasSize/2/MAX_SAMPLE + canvasSize/2); // negation because increasing values go down on the screen which is up-side-down from the Cartesian plane
+			if(x>=0 && x<canvasSize && y>=0 && y<canvasSize)
+				data[y*canvasSize+x]=M_BRT_GREEN;
+		}
+
+		return 0;
+	}
+
+	void updateCanvas()
+	{
+		canvas->update();
+	}
+
+	void clearCanvas()
+	{
+		clear=true;
+	}
+
+	enum
+	{
+		ID_CANVAS=FXHorizontalFrame::ID_LAST,
+	};
+
+protected:
+	CStereoPhaseMeter() { }
+
+private:
+	FXPacker *canvasFrame;
+		FXBackBufferedCanvas *canvas;
+	FXFont *statusFont;
+
+	const sample_t *samplingBuffer;
+	const size_t samplingNFrames;
+	const unsigned samplingNChannels;
+	const unsigned samplingLeftChannel;
+	const unsigned samplingRightChannel;
+
+	bool clear;
+};
+
+FXDEFMAP(CStereoPhaseMeter) CStereoPhaseMeterMap[]=
+{
+	//	  Message_Type			ID				Message_Handler
+	FXMAPFUNC(SEL_PAINT,			CStereoPhaseMeter::ID_CANVAS,	CStereoPhaseMeter::onCanvasPaint),
+	FXMAPFUNC(SEL_CONFIGURE,		0,				CStereoPhaseMeter::onResize),
+};
+
+FXIMPLEMENT(CStereoPhaseMeter,FXHorizontalFrame,CStereoPhaseMeterMap,ARRAYNUMBER(CStereoPhaseMeterMap))
+
+
 
 
 
@@ -295,7 +606,6 @@ FXIMPLEMENT(CMeter,FXHorizontalFrame,CMeterMap,ARRAYNUMBER(CMeterMap))
 
 // --- CAnalyzer -------------------------------------------------------------
 
-#include <fox/FXBackBufferedCanvas.h>
 class CAnalyzer : public FXHorizontalFrame
 {
 	FXDECLARE(CAnalyzer);
@@ -312,6 +622,7 @@ public:
 
 		drawBarFreq(false)
 	{
+		hide();
 		setBackColor(M_BACKGROUND);
 			canvasFrame->setBackColor(M_BACKGROUND);
 			labelFrame->setBackColor(M_BACKGROUND);
@@ -326,7 +637,7 @@ public:
 		zoomDial->setRange(1,200);
 		zoomDial->setValue(25);
 		zoomDial->setRevolutionIncrement(200*2);
-		zoomDial->setTipText("Adjust Zoom Factor for Analyzer\nRight-click for Default");
+		zoomDial->setTipText(_("Adjust Zoom Factor for Analyzer\nRight-click for Default"));
 		zoom=zoomDial->getValue();
 
 		canvasFrame->setWidth(150);
@@ -357,11 +668,9 @@ public:
 		dc.setForeground(M_BACKGROUND);
 		dc.fillRectangle(0,0,canvas->getWidth(),canvas->getHeight());
 
-
 		// if the global setting is disabled, stop drawing right here
 		if(!gFrequencyAnalyzerEnabled)
 			return 1;
-
 
 		// the w and h that we're going to render to (minus some borders and tick marks)
 		const size_t canvasWidth=canvas->getWidth(); 
@@ -385,6 +694,7 @@ public:
 			size_t y=((canvasHeight-1)*t/(4-1));
 			dc.drawLine(0,y,canvasWidth,y);
 		}
+
 			
 		// draw frequency analysis bars  (or render text if fftw wasn't installed)
 		dc.setForeground(M_GREEN);
@@ -402,8 +712,8 @@ public:
 #ifndef HAVE_LIBRFFTW
 		else
 		{
-			dc.drawText(3,3+12,"Configure with FFTW",19);
-			dc.drawText(3,20+12,"for Freq. Analysis",18);
+			dc.drawText(3,3+12,_("Configure with FFTW"),19);
+			dc.drawText(3,20+12,_("for Freq. Analysis"),18);
 		}
 #endif
 
@@ -563,10 +873,8 @@ protected:
 	CAnalyzer() { }
 
 private:
-	friend class CMetersWindow;
-
 	FXPacker *canvasFrame;
-		FXCanvas *canvas;
+		FXBackBufferedCanvas *canvas;
 		FXPacker *labelFrame;
 	FXDial *zoomDial;
 	FXFont *statusFont;
@@ -618,7 +926,7 @@ FXIMPLEMENT(CMetersWindow,FXHorizontalFrame,CMetersWindowMap,ARRAYNUMBER(CMeters
 
 
 /*
- * To update the meters often I add a timeout to be fired every x-th of a second.
+ * To update the meters I add a timeout to be fired every x-th of a second.
  */
 
 CMetersWindow::CMetersWindow(FXComposite *parent) :
@@ -628,6 +936,8 @@ CMetersWindow::CMetersWindow(FXComposite *parent) :
 		headerFrame(new FXHorizontalFrame(levelMetersFrame,LAYOUT_FILL_X|FRAME_NONE,0,0,0,0, 0,0,0,0, 0,0)),
 			labelFrame(new FXPacker(headerFrame,LAYOUT_FILL_X|LAYOUT_BOTTOM|FRAME_NONE,0,0,0,0, 0,0,0,0, 0,0)),
 			grandMaxPeakLevelLabel(new FXLabel(headerFrame,"max",NULL,LABEL_NORMAL|LAYOUT_FIX_WIDTH|LAYOUT_RIGHT,0,0,0,0, 1,1,0,0)),
+		balanceMetersFrame(new FXHorizontalFrame(levelMetersFrame,FRAME_NONE | LAYOUT_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 0,0)),
+			balanceMetersRightMargin(new FXLabel(balanceMetersFrame," ",NULL,LAYOUT_RIGHT | FRAME_NONE | LAYOUT_FIX_WIDTH|LAYOUT_FILL_Y)),
 	analyzer(new CAnalyzer(this)),
 	soundPlayer(NULL)
 {
@@ -647,13 +957,13 @@ CMetersWindow::CMetersWindow(FXComposite *parent) :
 			labelFrame->setBackColor(M_BACKGROUND);
 			#define MAKE_DB_LABEL(text) { FXLabel *l=new FXLabel(labelFrame,(text),NULL,LAYOUT_FIX_X|LAYOUT_FIX_Y,0,0,0,0, 0,0,0,0); l->setBackColor(M_BACKGROUND); l->setTextColor(M_TEXT_COLOR); l->setFont(statusFont); }
 			MAKE_DB_LABEL("dBFS") // create the -infinity label as just the units label
-			for(int t=1;t<NUM_LEVEL_TICKS;t++)
+			for(int t=1;t<NUM_LEVEL_METER_TICKS;t++)
 			{
 				istring s;
-				if(t>NUM_LEVEL_TICKS/2)
-					s=istring(round(scalar_to_dB((double)t/(NUM_LEVEL_TICKS-1))*10)/10,3,1); // round to nearest tenth
+				if(t>NUM_LEVEL_METER_TICKS/2)
+					s=istring(round(scalar_to_dB((double)t/(NUM_LEVEL_METER_TICKS-1))*10)/10,3,1); // round to nearest tenth
 				else 
-					s=istring(round(scalar_to_dB((double)t/(NUM_LEVEL_TICKS-1))),3,1); // round to nearest int
+					s=istring(round(scalar_to_dB((double)t/(NUM_LEVEL_METER_TICKS-1))),3,1); // round to nearest int
 
 				if(s.rfind(".0")!=istring::npos) // remove .0's from the right side
 					s.erase(s.length()-2,2);
@@ -666,9 +976,14 @@ CMetersWindow::CMetersWindow(FXComposite *parent) :
 			grandMaxPeakLevelLabel->setTextColor(M_TEXT_COLOR);
 			grandMaxPeakLevelLabel->setBackColor(M_BACKGROUND);
 
+		balanceMetersFrame->setBackColor(M_BACKGROUND);
+			balanceMetersRightMargin->setFont(statusFont);
+			balanceMetersRightMargin->setTextColor(M_TEXT_COLOR);
+			balanceMetersRightMargin->setBackColor(M_BACKGROUND);
+
 
 	// schedule the first update meters event
-	timeout=getApp()->addTimeout(gMeterUpdateTime,this,ID_UPDATE_TIMEOUT);
+	timeout=getApp()->addTimeout(this,ID_UPDATE_TIMEOUT,gMeterUpdateTime);
 }
 
 CMetersWindow::~CMetersWindow()
@@ -678,21 +993,28 @@ CMetersWindow::~CMetersWindow()
 
 long CMetersWindow::onUpdateMeters(FXObject *sender,FXSelector sel,void *ptr)
 {
-	if(soundPlayer!=NULL && meters.size()>0 && soundPlayer->isInitialized())
+	if(soundPlayer!=NULL && levelMeters.size()>0 && soundPlayer->isInitialized())
 	{
 		if(gLevelMetersEnabled)
 		{
-			for(size_t t=0;t<meters.size();t++)
-				meters[t]->setLevel(soundPlayer->getRMSLevel(t),soundPlayer->getPeakLevel(t));
+			// set the level for all the level meters
+			for(size_t t=0;t<levelMeters.size();t++)
+				levelMeters[t]->setLevel(soundPlayer->getRMSLevel(t),soundPlayer->getPeakLevel(t));
 
-			// make sure all the meters' grandMaxPeakLabels are the same width
+			// set the balance meter position
+			for(size_t t=0;t<balanceMeters.size();t++)
+				// there is a balance meter for every two level meters
+				// 	NOTE: ??? using getPeakLevel doesn't given an accurate peaked balance because the two peaks are from two separate points of time.. I'm not sure if this is a really bad issue right now or not
+				balanceMeters[t]->setBalance(levelMeters[t*2+0]->getRMSLevel(),levelMeters[t*2+1]->getRMSLevel(),levelMeters[t*2+0]->getPeakLevel(),levelMeters[t*2+1]->getPeakLevel());
+
+			// make sure all the levelMeters' grandMaxPeakLabels are the same width
 			int maxGrandMaxPeakLabelWidth=grandMaxPeakLevelLabel->getWidth();
 			bool resize=false;
-			for(size_t t=0;t<meters.size();t++)
+			for(size_t t=0;t<levelMeters.size();t++)
 			{
-				if(maxGrandMaxPeakLabelWidth<meters[t]->grandMaxPeakLevelLabel->getWidth())
+				if(maxGrandMaxPeakLabelWidth<levelMeters[t]->grandMaxPeakLevelLabel->getWidth())
 				{
-					maxGrandMaxPeakLabelWidth=meters[t]->grandMaxPeakLevelLabel->getWidth();
+					maxGrandMaxPeakLabelWidth=levelMeters[t]->grandMaxPeakLevelLabel->getWidth();
 					resize=true;
 				}
 			}
@@ -700,9 +1022,17 @@ long CMetersWindow::onUpdateMeters(FXObject *sender,FXSelector sel,void *ptr)
 			if(resize)
 			{
 				grandMaxPeakLevelLabel->setWidth(maxGrandMaxPeakLabelWidth);
-				for(size_t t=0;t<meters.size();t++)
-					meters[t]->grandMaxPeakLevelLabel->setWidth(maxGrandMaxPeakLabelWidth);
+				for(size_t t=0;t<levelMeters.size();t++)
+					levelMeters[t]->grandMaxPeakLevelLabel->setWidth(maxGrandMaxPeakLabelWidth);
+				balanceMetersRightMargin->setWidth(maxGrandMaxPeakLabelWidth);
 			}
+		}
+
+		if(gStereoPhaseMetersEnabled)
+		{
+			soundPlayer->getSamplingForStereoPhaseMeters(samplingForStereoPhaseMeters,samplingForStereoPhaseMeters.getSize());
+			for(size_t t=0;t<stereoPhaseMeters.size();t++)
+				stereoPhaseMeters[t]->updateCanvas();
 		}
 
 		if(gFrequencyAnalyzerEnabled)
@@ -719,8 +1049,8 @@ long CMetersWindow::onUpdateMeters(FXObject *sender,FXSelector sel,void *ptr)
 	}
 
 	// schedule another update again in METER_UPDATE_RATE milliseconds
-	timeout=getApp()->addTimeout(gMeterUpdateTime,this,ID_UPDATE_TIMEOUT);
-	return 0;
+	timeout=getApp()->addTimeout(this,ID_UPDATE_TIMEOUT,gMeterUpdateTime);
+	return 0; // returning 0 because 1 makes it use a ton of CPU (because returning 1 causes FXApp::refresh() to be called)
 }
 
 long CMetersWindow::onLabelFrameConfigure(FXObject *sender,FXSelector,void*)
@@ -751,20 +1081,44 @@ void CMetersWindow::setSoundPlayer(ASoundPlayer *_soundPlayer)
 	soundPlayer=_soundPlayer;
 
 	for(size_t t=0;t<soundPlayer->devices[0].channelCount;t++)
-		meters.push_back(new CMeter(levelMetersFrame));
+		levelMeters.push_back(new CLevelMeter(levelMetersFrame));
+
+	for(size_t t=0;t<soundPlayer->devices[0].channelCount/2;t++)
+		balanceMeters.push_back(new CBalanceMeter(balanceMetersFrame));
+
+	samplingForStereoPhaseMeters.setSize(gStereoPhaseMeterPointCount*soundPlayer->devices[0].channelCount);
+	for(size_t t=0;t<soundPlayer->devices[0].channelCount/2;t++)
+	{
+		stereoPhaseMeters.insert(stereoPhaseMeters.begin(),
+			new CStereoPhaseMeter(
+				this,
+				samplingForStereoPhaseMeters,
+				gStereoPhaseMeterPointCount,
+				soundPlayer->devices[0].channelCount,
+				t*2+0,
+				t*2+1
+			)
+		);
+	}
 
 	setHeight(
 		max(
-			headerFrame->getHeight() + (soundPlayer->devices[0].channelCount * max(statusFont->getFontHeight(),MIN_METER_HEIGHT+levelMetersFrame->getVSpacing())) + (getVSpacing()*(numChildren()-1)) + (getPadTop()+getPadBottom()+levelMetersFrame->getPadTop()+levelMetersFrame->getPadBottom() + 2+2+2+2/*frame rendering*/),
+								// +1 for the balance meter(s)
+			headerFrame->getHeight() + ((soundPlayer->devices[0].channelCount+1) * max(statusFont->getFontHeight(),MIN_METER_HEIGHT+levelMetersFrame->getVSpacing())) + (getVSpacing()*(numChildren()-1)) + (getPadTop()+getPadBottom()+levelMetersFrame->getPadTop()+levelMetersFrame->getPadBottom() + 2+2+2+2/*frame rendering*/),
 			(unsigned)MIN_METERS_WINDOW_HEIGHT
 		)
 	);
+
+	// make sure the GUI initially reflects the global settings
+	enableLevelMeters(isLevelMetersEnabled());
+	enableStereoPhaseMeters(isStereoPhaseMetersEnabled());
+	enableFrequencyAnalyzer(isFrequencyAnalyzerEnabled());
 }
 
 void CMetersWindow::resetGrandMaxPeakLevels()
 {
-	for(size_t t=0;t<meters.size();t++)
-		meters[t]->setGrandMaxPeakLevel(0);
+	for(size_t t=0;t<levelMeters.size();t++)
+		levelMeters[t]->setGrandMaxPeakLevel(0);
 }
 
 bool CMetersWindow::isLevelMetersEnabled() const
@@ -776,10 +1130,49 @@ void CMetersWindow::enableLevelMeters(bool enable)
 {
 	gLevelMetersEnabled=enable;
 	if(!enable)
-	{
-		for(size_t t=0;t<meters.size();t++)
-			meters[t]->setLevel(0,0); // just to cause a canvas update
+	{ 
+		// just to cause a canvas update
+		for(size_t t=0;t<levelMeters.size();t++)
+			levelMeters[t]->setLevel(0,0);
+		for(size_t t=0;t<balanceMeters.size();t++)
+			balanceMeters[t]->setBalance(0,0,0,0);
 	}
+
+	/* looks stupid
+	if(enable)
+		levelMetersFrame->show();
+	else
+		levelMetersFrame->hide();
+	*/
+	showHideAll();
+}
+
+bool CMetersWindow::isStereoPhaseMetersEnabled() const
+{
+	return gStereoPhaseMetersEnabled;
+}
+
+void CMetersWindow::enableStereoPhaseMeters(bool enable)
+{
+	gStereoPhaseMetersEnabled=enable;
+	if(!enable)
+	{ 
+		// just to cause a canvas update
+		for(size_t t=0;t<stereoPhaseMeters.size();t++)
+		{
+			if(stereoPhaseMeters[t]->shown())
+				stereoPhaseMeters[t]->clearCanvas();
+		}
+	}
+
+	for(size_t t=0;t<stereoPhaseMeters.size();t++)
+	{
+		if(enable)
+			stereoPhaseMeters[t]->show();
+		else
+			stereoPhaseMeters[t]->hide();
+	}
+	showHideAll();
 }
 
 bool CMetersWindow::isFrequencyAnalyzerEnabled() const
@@ -791,6 +1184,23 @@ void CMetersWindow::enableFrequencyAnalyzer(bool enable)
 {
 	gFrequencyAnalyzerEnabled=enable;
 	if(!enable)
-		analyzer->clearCanvas();
+	{
+		if(analyzer->shown())
+			analyzer->clearCanvas();
+	}
+
+	if(enable)
+		analyzer->show();
+	else
+		analyzer->hide();
+	showHideAll();
 }
 
+void CMetersWindow::showHideAll()
+{
+	recalc();
+	if(isLevelMetersEnabled() || isStereoPhaseMetersEnabled() || isFrequencyAnalyzerEnabled())
+		show();
+	else
+		hide();
+}

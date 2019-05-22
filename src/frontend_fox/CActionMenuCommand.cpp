@@ -21,7 +21,6 @@
 #include "CActionMenuCommand.h"
 
 #include <stdexcept>
-#include <string>
 
 #include "CSoundFileManager.h"
 
@@ -49,7 +48,8 @@ FXIMPLEMENT(CActionMenuCommand,FXMenuCommand,CActionMenuCommandMap,ARRAYNUMBER(C
 CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposite* p, const FXString& accelKeyText, FXIcon* ic, FXuint opts) :
 	FXMenuCommand(
 		p,
-		(_actionFactory->getName()+"\t"+accelKeyText.text()).c_str(),
+		// i18n/translate the action's name, append '...' if it has a dialog and set the accelerator key
+		(string(gettext(_actionFactory->getName().c_str()))+(_actionFactory->hasDialog() ? "..." : "")+"\t"+accelKeyText.text()).c_str(),
 		(ic==NULL ? FOXIcons->normal_action_buff : ic),
 		this,
 		ID_HOTKEY,
@@ -57,8 +57,7 @@ CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposit
 		),
 	actionFactory(_actionFactory)
 {
-	if(actionFactory->getName()!=actionFactory->getDescription()) // don't be stupid (no need for a popup hint)
-		tip=actionFactory->getDescription().c_str();
+	tip=actionFactory->getDescription().c_str();
 
 	prevEvent.state=0;
 	prevEvent.click_button=0;
@@ -67,7 +66,7 @@ CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposit
 CActionMenuCommand::CActionMenuCommand(FXComposite *p,const CActionMenuCommand &src) :
 	FXMenuCommand(
 		p,
-		src.actionFactory->getName().c_str(),
+		src.getText(),
 		src.getIcon(),
 		this,
 		src.getSelector(),
@@ -81,6 +80,11 @@ CActionMenuCommand::CActionMenuCommand(FXComposite *p,const CActionMenuCommand &
 
 CActionMenuCommand::~CActionMenuCommand()
 {
+}
+
+const string CActionMenuCommand::getUntranslatedText() const
+{
+	return actionFactory->getName()+(actionFactory->hasDialog() ? "..." : "");
 }
 
 long CActionMenuCommand::onMouseClick(FXObject *sender,FXSelector sel,void *ptr)
@@ -119,7 +123,7 @@ long CActionMenuCommand::onCommand(FXObject *sender,FXSelector sel,void *ptr)
 	else
 		getApp()->beep();
 
-	return(1);
+	return 1;
 }
 
 long CActionMenuCommand::onQueryTip(FXObject* sender,FXSelector sel,void *ptr)

@@ -47,6 +47,7 @@ public:
 	double getHorzZoom() const;
 	void setVertZoom(double v);
 
+	void centerTime(const sample_pos_t time);
 	void centerStartPos();
 	void centerStopPos();
 	void showAmount(double seconds,sample_pos_t pos,int marginPixels=0);
@@ -69,6 +70,7 @@ public:
 	virtual void layout();
 
 	void redraw();
+	void redraw(FXint x,FXint w);
 
 	// events I get by message (actually sent by FXWaveCanvas since that's what will be clicked on)
 	long onResize(FXObject *object,FXSelector sel,void *ptr);
@@ -88,6 +90,8 @@ protected:
 	FXWaveScrollArea() {}
 
 private:
+	friend class FXWaveRuler; // so it can cause an auto scroll and so it can call canvas->repaint()
+
 	FXRezWaveView *parent;
 	FXWaveCanvas *canvas;
 	CLoadedSound *loadedSound;

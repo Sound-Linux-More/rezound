@@ -39,12 +39,12 @@ CAddChannelsEdit::~CAddChannelsEdit()
 bool CAddChannelsEdit::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
 	actionSound.sound->addChannels(where,count);
-	return(true);
+	return true;
 }
 
 AAction::CanUndoResults CAddChannelsEdit::canUndo(const CActionSound &actionSound) const
 {
-	return(curYes);
+	return curYes;
 }
 
 void CAddChannelsEdit::undoActionSizeSafe(const CActionSound &actionSound)
@@ -57,7 +57,7 @@ void CAddChannelsEdit::undoActionSizeSafe(const CActionSound &actionSound)
 // ------------------------------
 
 CAddChannelsEditFactory::CAddChannelsEditFactory(AActionDialog *dialog) :
-	AActionFactory("Add Channels","Add New Channels of Audio",NULL,dialog,true,false)
+	AActionFactory(N_("Add Channels"),_("Add New Channels of Audio"),NULL,dialog,true,false)
 {
 }
 
@@ -67,19 +67,10 @@ CAddChannelsEditFactory::~CAddChannelsEditFactory()
 
 CAddChannelsEdit *CAddChannelsEditFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
 {
-	return(new CAddChannelsEdit(
+	return new CAddChannelsEdit(
 		actionSound,
 		actionParameters->getUnsignedParameter("Insert Where"),
 		actionParameters->getUnsignedParameter("Insert Count")
-	));
-}
-
-#include "../CLoadedSound.h"
-#include "../CSoundPlayerChannel.h"
-bool CAddChannelsEditFactory::doPreActionSetup(CLoadedSound *loadedSound)
-{
-	// ??? if there were many more actions that required this, I should have a flag set to the factory that told it to stop the channel if it was playing before doing the action
-	loadedSound->channel->stop();
-	return(true);
+	);
 }
 

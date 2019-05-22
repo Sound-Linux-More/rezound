@@ -54,6 +54,7 @@ void ASoundPlayer::initialize()
 		maxRMSLevels[t]=peakLevels[t]=0;
 		resetMaxRMSLevels[t]=resetPeakLevels[t]=false;
 	}
+	samplingForStereoPhaseMeters.setSize(gStereoPhaseMeterPointCount*devices[0].channelCount); // ??? only device zero
 
 	// only handling the first device ???
 	for(unsigned t=0;t<devices[0].channelCount;t++)
@@ -153,9 +154,14 @@ void ASoundPlayer::mixSoundPlayerChannels(const unsigned nChannels,sample_t * co
 			maxRMSLevels[i]=maxRMSLevel;
 			peakLevels[i]=peak;
 		}
+
+		// set peak levels to zero for values above the current number of channels
 		for(unsigned i=nChannels;i<MAX_CHANNELS;i++)
 			peakLevels[i]=0;
 	}
+
+	if(gStereoPhaseMetersEnabled)
+		samplingForStereoPhaseMeters.write(buffer,bufferSize*nChannels); // NOTE: nChannels is supposed to equal devices[0].channelCount
 
 #ifdef HAVE_LIBRFFTW
 	if(gFrequencyAnalyzerEnabled)
@@ -215,6 +221,12 @@ const sample_t ASoundPlayer::getPeakLevel(unsigned channel) const
 	const sample_t p=peakLevels[channel];
 	resetPeakLevels[channel]=true;
 	return p;
+}
+
+
+const size_t ASoundPlayer::getSamplingForStereoPhaseMeters(sample_t *buffer,size_t bufferSizeInSamples) const
+{
+	return samplingForStereoPhaseMeters.read(buffer,min(bufferSizeInSamples,gStereoPhaseMeterPointCount*devices[0].channelCount))/devices[0].channelCount; // ??? only device zero
 }
 
 #ifdef HAVE_LIBRFFTW
@@ -484,7 +496,7 @@ ASoundPlayer *ASoundPlayer::createInitializedSoundPlayer()
 	{
 #if !defined(ENABLE_PORAUDIO) && !defined(ENABLE_JACK)
 		// OSS was the only defined method
-		Error(string(e.what())+"\nPlaying will be disabled.");
+		Error(string(e.what())+"\n"+_("Playing will be disabled."));
 #else
 		// OSS was not the original method chosen at configure time so now fall back to using OSS if it wasn't disabled
 	#ifdef ENABLE_OSS
@@ -500,10 +512,10 @@ ASoundPlayer *ASoundPlayer::createInitializedSoundPlayer()
 		}
 		catch(exception &e)
 		{ // now really give up
-			Error(string("Error occurred after trying to fall back to OSS\n")+e.what()+"\nPlaying will be disabled.");
+			Error(string(_("Error occurred after trying to fall back to OSS"))+"\n"+e.what()+"\n"+_("Playing will be disabled."));
 		}
 	#else
-		Error(string(e.what())+"\nPlaying will be disabled.");
+		Error(string(e.what())+"\n"+_("Playing will be disabled."));
 	#endif
 #endif
 	}

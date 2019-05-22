@@ -20,8 +20,6 @@
 
 #include "CBalanceAction.h"
 
-#include <stdexcept>
-
 #include "../CActionSound.h"
 #include "../CActionParameters.h"
 
@@ -56,7 +54,7 @@ bool CBalanceAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForU
 	const sample_pos_t start=actionSound.start;
 	const sample_pos_t selectionLength=actionSound.selectionLength();
 
-	CStatusBar statusBar("Changing Balance",0,selectionLength,true);
+	CStatusBar statusBar(_("Changing Balance"),0,selectionLength,true);
 
 	sample_pos_t srcPos=prepareForUndo ? 0 : start;
 	const CRezPoolAccesser srcA=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,channelA) : actionSound.sound->getAudio(channelA);
@@ -80,6 +78,11 @@ bool CBalanceAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForU
 			else if(b>0.0)
 			{
 				destA[destPos]=(sample_t)(srcA[srcPos]*(1.0f-b));
+				destB[destPos]=srcB[srcPos];
+			}
+			else if(prepareForUndo) // don't copy if it's the same pool
+			{
+				destA[destPos]=srcA[srcPos];
 				destB[destPos]=srcB[srcPos];
 			}
 
@@ -173,13 +176,13 @@ void CBalanceAction::undoActionSizeSafe(const CActionSound &_actionSound)
 	restoreSelectionFromTempPools(actionSound,actionSound.start,actionSound.selectionLength());
 }
 
-const string CBalanceAction::getBalanceTypeExplaination()
+const string CBalanceAction::getBalanceTypeExplanation()
 {
-	return "\
+	return _("\
 Strict Balance: -100% means normal A and no B, 0 means normal A and normal B, 100% means no A and normal B\n\
 1x Balance: -100% means normal A and no B, 0 means half A and half B, 100% means no A and normal B\n\
 2x Balance: -100% means 2x A and no B, 0 means normal A and normal B, 100% means no A and 2x B\
-";
+");
 }
 
 
@@ -189,7 +192,7 @@ Strict Balance: -100% means normal A and no B, 0 means normal A and normal B, 10
 // ---------------------------------------------
 
 CSimpleBalanceActionFactory::CSimpleBalanceActionFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Balance","Balance",channelSelectDialog,dialog)
+	AActionFactory(N_("Balance"),"",channelSelectDialog,dialog)
 {
 }
 
@@ -211,7 +214,7 @@ CBalanceAction *CSimpleBalanceActionFactory::manufactureAction(const CActionSoun
 // ---------------------------------------------
 
 CCurvedBalanceActionFactory::CCurvedBalanceActionFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
-	AActionFactory("Curved Balance","Curved Balance",channelSelectDialog,dialog)
+	AActionFactory(N_("Curved Balance"),"",channelSelectDialog,dialog)
 {
 }
 
