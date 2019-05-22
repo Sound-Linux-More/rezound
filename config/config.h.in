@@ -4,6 +4,9 @@
 #undef DATA_DIR
 
 /* */
+#undef ENABLE_ALSA
+
+/* */
 #undef ENABLE_JACK
 
 /* */
@@ -58,6 +61,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `asound' library (-lasound). */
+#undef HAVE_LIBASOUND
 
 /* */
 #undef HAVE_LIBAUDIOFILE

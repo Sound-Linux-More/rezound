@@ -23,7 +23,7 @@
 # Place - Suite 330, Boston, MA  02111-1307, USA
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(rezound, 0.10.0beta, [http://sourceforge.net/tracker/?atid=105056&group_id=5056])
+AC_INIT(rezound, 0.11.0beta, [http://sourceforge.net/tracker/?atid=105056&group_id=5056])
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER([config/config.h])
 AM_INIT_AUTOMAKE
@@ -338,6 +338,37 @@ AC_ARG_ENABLE(
 	]
 )
 
+# handle the --enable-alsa flag
+AH_TEMPLATE(ENABLE_ALSA)
+AC_ARG_ENABLE(
+	alsa,
+	AC_HELP_STRING([--enable/disable-alsa],[enable/disable ReZound to use ALSA for audio I/O]),
+	[ # action if either enable or disable flag is given
+		if [[ "$enableval" = "yes" ]]
+		then 
+			AC_CHECK_HEADER(
+				[1.0.0],
+				[
+					AC_DEFINE(ENABLE_ALSA)
+					AC_MSG_RESULT([*** enabling ALSA for audio I/O])
+				]
+			)
+		else
+			AC_MSG_RESULT([*** disabling ALSA for audio I/O])
+		fi
+	],
+	[ # action if neither enable or disable flag is given
+		AM_PATH_ALSA(
+			[1.0.0],
+			[
+				AC_DEFINE(ENABLE_ALSA)
+				AC_MSG_RESULT([*** enabling ALSA for audio I/O])
+			],
+			[]
+		)
+	]
+)
+
 # handle the --enable-portaudio flag
 AH_TEMPLATE(ENABLE_PORTAUDIO)
 if test -z "$enable_standalone"; then
@@ -571,7 +602,7 @@ AC_SUBST(MAYBE_LADSPA_LIB)
 dnl ############################################################################
 dnl # Handle the flags for a library to to tempo/pitch changing independantly  *
 dnl ############################################################################
-AM_PATH_SOUNDTOUCH([],[],AC_MSG_WARN([***** libSoundTouch not found -- tempo and pitch changing will be disabled (http://www.sunpoint.net/~oparviai/soundtouch/) *****]))
+AM_PATH_SOUNDTOUCH([],[],AC_MSG_WARN([***** libSoundTouch not found -- tempo and pitch changing will be disabled (http://www.iki.fi/oparviai/soundtouch) *****]))
 
 
 
@@ -677,6 +708,13 @@ AC_ARG_ENABLE(
 # Final                                                                    #
 ############################################################################
 
+#AC_CONFIG_FILES([
+#	Makefile
+#	src/Makefile
+#		src/misc/Makefile
+#			src/misc/CNestedDataFile/Makefile
+#	po/Makefile.in
+#])
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile

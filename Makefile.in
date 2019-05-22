@@ -43,6 +43,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
 ACLOCAL = @ACLOCAL@
+ALSA_CFLAGS = @ALSA_CFLAGS@
+ALSA_LIBS = @ALSA_LIBS@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
@@ -195,12 +197,12 @@ SUBDIRS = \
 
 
 pkgdoc_DATA = \
-		docs/AUTHORS\
-		docs/COPYING\
-		docs/NEWS\
-		docs/README\
-		docs/FrontendFoxFeatures.txt\
-		docs/Features.txt
+	docs/AUTHORS\
+	docs/COPYING\
+	docs/NEWS\
+	docs/README\
+	docs/FrontendFoxFeatures.txt\
+	docs/Features.txt
 
 
 pkgdata_DATA = \
@@ -238,11 +240,11 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure \
-	$(top_srcdir)/config/am_include.mk ./config/config.h.in \
-	ABOUT-NLS Makefile.am aclocal.m4 config/config.guess \
-	config/config.rpath config/config.sub config/depcomp \
-	config/install-sh config/ltmain.sh config/missing \
-	config/mkinstalldirs configure configure.ac
+	$(top_srcdir)/config/am_include.mk ././config/config.h.in \
+	./config/config.h.in ABOUT-NLS Makefile.am aclocal.m4 \
+	config/config.guess config/config.rpath config/config.sub \
+	config/depcomp config/install-sh config/ltmain.sh \
+	config/missing config/mkinstalldirs configure configure.ac
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 
@@ -261,7 +263,7 @@ $(top_builddir)/config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 $(srcdir)/configure:  $(srcdir)/configure.ac $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
 	cd $(srcdir) && $(AUTOCONF)
 
-$(ACLOCAL_M4):  configure.ac config/m4/ac_define_dir.m4 config/m4/audiofile.m4 config/m4/codeset.m4 config/m4/cxx-lib.m4 config/m4/cxx.m4 config/m4/gettext.m4 config/m4/glibc21.m4 config/m4/iconv.m4 config/m4/intdiv0.m4 config/m4/inttypes-pri.m4 config/m4/inttypes.m4 config/m4/inttypes_h.m4 config/m4/isc-posix.m4 config/m4/lcmessage.m4 config/m4/lib-ld.m4 config/m4/lib-link.m4 config/m4/lib-prefix.m4 config/m4/libFLAC++.m4 config/m4/libFLAC.m4 config/m4/ogg.m4 config/m4/progtest.m4 config/m4/soundtouch.m4 config/m4/stdint_h.m4 config/m4/uintmax_t.m4 config/m4/ulonglong.m4 config/m4/vorbis.m4
+$(ACLOCAL_M4):  configure.ac config/m4/ac_define_dir.m4 config/m4/alsa.m4 config/m4/audiofile.m4 config/m4/codeset.m4 config/m4/cxx-lib.m4 config/m4/cxx.m4 config/m4/gettext.m4 config/m4/glibc21.m4 config/m4/iconv.m4 config/m4/intdiv0.m4 config/m4/inttypes-pri.m4 config/m4/inttypes.m4 config/m4/inttypes_h.m4 config/m4/isc-posix.m4 config/m4/lcmessage.m4 config/m4/lib-ld.m4 config/m4/lib-link.m4 config/m4/lib-prefix.m4 config/m4/libFLAC++.m4 config/m4/libFLAC.m4 config/m4/ogg.m4 config/m4/progtest.m4 config/m4/soundtouch.m4 config/m4/stdint_h.m4 config/m4/uintmax_t.m4 config/m4/ulonglong.m4 config/m4/vorbis.m4
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 
 config/config.h: config/stamp-h1
@@ -467,7 +469,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/./config $(distdir)/config $(distdir)/po
+	$(mkinstalldirs) $(distdir)/././config $(distdir)/./config $(distdir)/config $(distdir)/po
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

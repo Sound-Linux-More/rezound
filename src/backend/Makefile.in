@@ -42,6 +42,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
 ACLOCAL = @ACLOCAL@
+ALSA_CFLAGS = @ALSA_CFLAGS@
+ALSA_LIBS = @ALSA_LIBS@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
@@ -231,6 +233,8 @@ noinst_HEADERS = \
 	   CNULLSoundPlayer.h \
 	   COSSSoundPlayer.h \
 	   COSSSoundRecorder.h \
+	   CALSASoundPlayer.h \
+	   CALSASoundRecorder.h \
 	   CPortAudioSoundPlayer.h \
 	   CPortAudioSoundRecorder.h \
 	   CJACKSoundPlayer.h \
@@ -278,6 +282,8 @@ libbackend_la_SOURCES = \
 			Cold_rezSoundTranslator.cpp \
 			COSSSoundPlayer.cpp \
 			COSSSoundRecorder.cpp \
+			CALSASoundPlayer.cpp \
+			CALSASoundRecorder.cpp \
 	   		CPortAudioSoundPlayer.cpp \
 	   		CPortAudioSoundRecorder.cpp \
 	   		CJACKSoundPlayer.cpp \
@@ -297,10 +303,10 @@ libbackend_la_SOURCES = \
 
 
 # SOUNDTOUCH_CXXFLAGS is in Remaster/Makefile.am
-AM_CXXFLAGS = @AUDIOFILE_CFLAGS@ @JACK_CFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@ @LIBFLACPP_CFLAGS@ @LIBFLAC_CFLAGS@
+AM_CXXFLAGS = @AUDIOFILE_CFLAGS@ @ALSA_CFLAGS@ @JACK_CFLAGS@ @OGG_CFLAGS@ @VORBIS_CFLAGS@ @LIBFLACPP_CFLAGS@ @LIBFLAC_CFLAGS@
 
 # SOUNDTOUCH_LIBS is in Remaster/Makefile.am
-libbackend_la_LIBADD = @LTLIBINTL@ @AUDIOFILE_LIBS@ @JACK_LIBS@ @OGG_LIBS@ @VORBISFILE_LIBS@ @VORBISENC_LIBS@ @VORBIS_LIBS@ @LIBFLACPP_LIBS@ @LIBFLAC_LIBS@
+libbackend_la_LIBADD = @LTLIBINTL@ @AUDIOFILE_LIBS@ @ALSA_LIBS@ @JACK_LIBS@ @OGG_LIBS@ @VORBISFILE_LIBS@ @VORBISENC_LIBS@ @VORBIS_LIBS@ @LIBFLACPP_LIBS@ @LIBFLAC_LIBS@
 subdir = src/backend
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -319,13 +325,13 @@ am_libbackend_la_OBJECTS = AAction.lo AActionDialog.lo AFrontendHooks.lo \
 	CFLACSoundTranslator.lo CMIDISDSSoundTranslator.lo \
 	CLoadedSound.lo CNativeSoundClipboard.lo \
 	Cold_rezSoundTranslator.lo COSSSoundPlayer.lo \
-	COSSSoundRecorder.lo CPortAudioSoundPlayer.lo \
-	CPortAudioSoundRecorder.lo CJACKSoundPlayer.lo \
-	CJACKSoundRecorder.lo CrawSoundTranslator.lo \
-	CRecordSoundClipboard.lo CrezSoundTranslator.lo CSound.lo \
-	CSoundPlayerChannel.lo CTrigger.lo CPluginMapping.lo \
-	CvoxSoundTranslator.lo initialize.lo main_controls.lo \
-	mypopen.lo settings.lo
+	COSSSoundRecorder.lo CALSASoundPlayer.lo CALSASoundRecorder.lo \
+	CPortAudioSoundPlayer.lo CPortAudioSoundRecorder.lo \
+	CJACKSoundPlayer.lo CJACKSoundRecorder.lo \
+	CrawSoundTranslator.lo CRecordSoundClipboard.lo \
+	CrezSoundTranslator.lo CSound.lo CSoundPlayerChannel.lo \
+	CTrigger.lo CPluginMapping.lo CvoxSoundTranslator.lo \
+	initialize.lo main_controls.lo mypopen.lo settings.lo
 libbackend_la_OBJECTS = $(am_libbackend_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
@@ -341,6 +347,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/ASoundTranslator.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/AStatusComm.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/ApipedSoundTranslator.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CALSASoundPlayer.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CALSASoundRecorder.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CActionParameters.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CActionSound.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CFLACSoundTranslator.Plo \
@@ -429,6 +437,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ASoundTranslator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AStatusComm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ApipedSoundTranslator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CALSASoundPlayer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CALSASoundRecorder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CActionParameters.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CActionSound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CFLACSoundTranslator.Plo@am__quote@
