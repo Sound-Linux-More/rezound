@@ -1,0 +1,52 @@
+/* config/config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define to empty if the keyword does not work.  */
+#undef const
+
+/* Define as __inline if that's what the C compiler calls it.  */
+#undef inline
+
+/* Define to `long' if <sys/types.h> doesn't define.  */
+#undef off_t
+
+/* Define to `unsigned' if <sys/types.h> doesn't define.  */
+#undef size_t
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if lex declares yytext as a char * by default, not a char[].  */
+#undef YYTEXT_POINTER
+
+/* This is defined only if the check for sstream passes */
+#undef HAVE_SSTREAM 
+
+/* Define if you have the <dlfcn.h> header file.  */
+#undef HAVE_DLFCN_H
+
+/* Define if you have the audiofile library (-laudiofile).  */
+#undef HAVE_LIBAUDIOFILE
+
+/* Define if you have the m library (-lm).  */
+#undef HAVE_LIBM
+
+/* Define if you have the pthread library (-lpthread).  */
+#undef HAVE_LIBPTHREAD
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/*  This is the prefix passed to configure */
+#undef INSTALL_PREFIX
+
+/*  This is the top source directory for
+pre-installed testing */
+#undef SOURCE_DIR
+
+/*  This the --datadir (share) set
+by configure  */
+#undef DATA_DIR
+

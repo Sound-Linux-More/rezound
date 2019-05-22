@@ -1,0 +1,740 @@
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
+
+# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+# ReZound frontend_fox/Makefile.am Written by Anthony Ventimiglia
+################################################################################
+
+
+# vim:tw=78
+# ReZound config/am_include.mk Written by Anthony Ventimiglia
+
+
+SHELL = @SHELL@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+DESTDIR =
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ../..
+AUTOCONF = @AUTOCONF@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
+AS = @AS@
+AWK = @AWK@
+CC = @CC@
+CPP = @CPP@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+DLLTOOL = @DLLTOOL@
+ECHO = @ECHO@
+EXEEXT = @EXEEXT@
+LEX = @LEX@
+LIBTOOL = @LIBTOOL@
+LN_S = @LN_S@
+MAKEINFO = @MAKEINFO@
+OBJDUMP = @OBJDUMP@
+OBJEXT = @OBJEXT@
+PACKAGE = @PACKAGE@
+RANLIB = @RANLIB@
+RESWRAP = @RESWRAP@
+STRIP = @STRIP@
+VERSION = @VERSION@
+YACC = @YACC@
+
+AUTOHEADER = @AUTOHEADER@ -l config
+ACLOCAL = @ACLOCAL@ -I config/m4
+AUTOMAKE = @AUTOMAKE@ --foreign
+
+INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing 	 -I$(top_srcdir)/src/PoolFile 	 -I$(top_srcdir)/src/PoolFile/DiskTable
+
+
+CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
+#CXXFLAGS=-Wall -g @CXXFLAGS@
+
+LDFLAGS = @LDFLAGS@
+
+# doc directory
+pkgdocdir = $(prefix)/doc/@PACKAGE@
+
+noinst_LTLIBRARIES = libfrontend.la
+libfrontend_la_SOURCES =  			CFOXIcons.cpp 			CActionMenuCommand.cpp 			CChannelSelectDialog.cpp 			CCrossfadeEdgesDialog.cpp 			CActionParamDialog.cpp 			CCueDialog.cpp 			CCueListDialog.cpp 			CMainWindow.cpp 			CNewSoundDialog.cpp 			CRecordDialog.cpp 			CPasteChannelsDialog.cpp 			CProgressDialog.cpp 			CSoundFileManager.cpp 			CFrontendHooks.cpp 			CSoundListWindow.cpp 			CSoundWindow.cpp 			CStatusComm.cpp 			CUserNotesDialog.cpp 			drawPortion.cpp 			EditActionDialogs.cpp 			EffectActionDialogs.cpp 			FilterActionDialogs.cpp 			RemasterActionDialogs.cpp 			CAboutDialog.cpp 			FXConstantParamValue.cpp 			FXTextParamValue.cpp 			FXComboTextParamValue.cpp 			FXGraphParamValue.cpp 			FXModalDialogBox.cpp 			FXRezWaveView.cpp 			rememberShow.cpp 			settings.cpp
+
+
+bin_PROGRAMS = ReZound
+
+ReZound_SOURCES = main.cpp 
+
+ReZound_LDADD = libfrontend.la 	$(top_builddir)/src/backend/libbackend.la 	$(top_builddir)/src/backend/Edits/libEdits.la 	$(top_builddir)/src/backend/Effects/libEffects.la 	$(top_builddir)/src/backend/Filters/libFilters.la 	$(top_builddir)/src/backend/Looping/libLooping.la 	$(top_builddir)/src/backend/Remaster/libRemaster.la 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la 	$(top_builddir)/src/PoolFile/libPoolFile.la
+
+
+noinst_HEADERS =  	fox_compat.h 	CFOXIcons.h 	CActionMenuCommand.h 	CChannelSelectDialog.h 	CCrossfadeEdgesDialog.h 	CActionParamDialog.h 	CCueDialog.h 	CCueListDialog.h 	CMainWindow.h 	CNewSoundDialog.h 	CRecordDialog.h 	CPasteChannelsDialog.h 	CProgressDialog.h 	CSoundFileManager.h 	CFrontendHooks.h 	CSoundListWindow.h 	CSoundWindow.h 	CStatusComm.h 	CUserNotesDialog.h 	EditActionDialogs.h 	EffectActionDialogs.h 	FilterActionDialogs.h 	RemasterActionDialogs.h 	CAboutDialog.h 	FXConstantParamValue.h 	FXTextParamValue.h 	FXComboTextParamValue.h 	FXGraphParamValue.h 	FXModalDialogBox.h 	FXRezWaveView.h 	drawPortion.h 	rememberShow.h 	settings.h 
+
+
+EXTRA_DIST = convert_images.sh
+
+# Have some rules to manage creating and removing a soft-link 
+# called 'rezound' to the 'ReZound' binary because lower case 
+# is the norm.
+LINK_NAME = rezound
+mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+CONFIG_HEADER = ../../config/config.h
+CONFIG_CLEAN_FILES = 
+LTLIBRARIES =  $(noinst_LTLIBRARIES)
+
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I../../config
+CPPFLAGS = @CPPFLAGS@
+LIBS = @LIBS@
+libfrontend_la_LDFLAGS = 
+libfrontend_la_LIBADD = 
+libfrontend_la_OBJECTS =  CFOXIcons.lo CActionMenuCommand.lo \
+CChannelSelectDialog.lo CCrossfadeEdgesDialog.lo CActionParamDialog.lo \
+CCueDialog.lo CCueListDialog.lo CMainWindow.lo CNewSoundDialog.lo \
+CRecordDialog.lo CPasteChannelsDialog.lo CProgressDialog.lo \
+CSoundFileManager.lo CFrontendHooks.lo CSoundListWindow.lo \
+CSoundWindow.lo CStatusComm.lo CUserNotesDialog.lo drawPortion.lo \
+EditActionDialogs.lo EffectActionDialogs.lo FilterActionDialogs.lo \
+RemasterActionDialogs.lo CAboutDialog.lo FXConstantParamValue.lo \
+FXTextParamValue.lo FXComboTextParamValue.lo FXGraphParamValue.lo \
+FXModalDialogBox.lo FXRezWaveView.lo rememberShow.lo settings.lo
+bin_PROGRAMS =  ReZound$(EXEEXT)
+PROGRAMS =  $(bin_PROGRAMS)
+
+ReZound_OBJECTS =  main.$(OBJEXT)
+ReZound_DEPENDENCIES =  libfrontend.la \
+$(top_builddir)/src/backend/libbackend.la \
+$(top_builddir)/src/backend/Edits/libEdits.la \
+$(top_builddir)/src/backend/Effects/libEffects.la \
+$(top_builddir)/src/backend/Filters/libFilters.la \
+$(top_builddir)/src/backend/Looping/libLooping.la \
+$(top_builddir)/src/backend/Remaster/libRemaster.la \
+$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
+$(top_builddir)/src/PoolFile/libPoolFile.la
+ReZound_LDFLAGS = 
+CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@
+HEADERS =  $(noinst_HEADERS)
+
+DIST_COMMON =  Makefile.am Makefile.in TODO
+
+
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+
+TAR = gtar
+GZIP_ENV = --best
+SOURCES = $(libfrontend_la_SOURCES) $(ReZound_SOURCES)
+OBJECTS = $(libfrontend_la_OBJECTS) $(ReZound_OBJECTS)
+
+all: all-redirect
+.SUFFIXES:
+.SUFFIXES: .S .c .cpp .lo .o .obj .s
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/config/am_include.mk
+	cd $(top_srcdir) && $(AUTOMAKE) --foreign --include-deps src/frontend_fox/Makefile
+
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+
+mostlyclean-noinstLTLIBRARIES:
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+
+distclean-noinstLTLIBRARIES:
+
+maintainer-clean-noinstLTLIBRARIES:
+
+.c.o:
+	$(COMPILE) -c $<
+
+# FIXME: We should only use cygpath when building on Windows,
+# and only if it is available.
+.c.obj:
+	$(COMPILE) -c `cygpath -w $<`
+
+.s.o:
+	$(COMPILE) -c $<
+
+.S.o:
+	$(COMPILE) -c $<
+
+mostlyclean-compile:
+	-rm -f *.o core *.core
+	-rm -f *.$(OBJEXT)
+
+clean-compile:
+
+distclean-compile:
+	-rm -f *.tab.c
+
+maintainer-clean-compile:
+
+.c.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+.s.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+.S.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
+
+distclean-libtool:
+
+maintainer-clean-libtool:
+
+libfrontend.la: $(libfrontend_la_OBJECTS) $(libfrontend_la_DEPENDENCIES)
+	$(CXXLINK)  $(libfrontend_la_LDFLAGS) $(libfrontend_la_OBJECTS) $(libfrontend_la_LIBADD) $(LIBS)
+
+mostlyclean-binPROGRAMS:
+
+clean-binPROGRAMS:
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+
+distclean-binPROGRAMS:
+
+maintainer-clean-binPROGRAMS:
+
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo " $(LIBTOOL)  --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	    $(LIBTOOL)  --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	  else :; fi; \
+	done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	done
+
+ReZound$(EXEEXT): $(ReZound_OBJECTS) $(ReZound_DEPENDENCIES)
+	@rm -f ReZound$(EXEEXT)
+	$(CXXLINK) $(ReZound_LDFLAGS) $(ReZound_OBJECTS) $(ReZound_LDADD) $(LIBS)
+.cpp.o:
+	$(CXXCOMPILE) -c $<
+.cpp.obj:
+	$(CXXCOMPILE) -c `cygpath -w $<`
+.cpp.lo:
+	$(LTCXXCOMPILE) -c $<
+
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $$unique $(LISP)
+
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+
+mostlyclean-tags:
+
+clean-tags:
+
+distclean-tags:
+	-rm -f TAGS ID
+
+maintainer-clean-tags:
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+subdir = src/frontend_fox
+
+distdir: $(DISTFILES)
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  if test -d $$d/$$file; then \
+	    cp -pr $$d/$$file $(distdir)/$$file; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+	  fi; \
+	done
+CAboutDialog.lo CAboutDialog.o : CAboutDialog.cpp CAboutDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	CFOXIcons.h ../backend/license.h
+CActionMenuCommand.lo CActionMenuCommand.o : CActionMenuCommand.cpp \
+	CActionMenuCommand.h ../../config/common.h \
+	../../config/config.h fox_compat.h CSoundFileManager.h \
+	../backend/ASoundFileManager.h ../backend/CActionParameters.h \
+	../backend/CSound_defs.h ../backend/CGraphParamValueNode.h \
+	../backend/AAction.h ../backend/settings.h \
+	../backend/CActionSound.h ../backend/AStatusComm.h \
+	../backend/CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp CFOXIcons.h
+CActionParamDialog.lo CActionParamDialog.o : CActionParamDialog.cpp \
+	CActionParamDialog.h ../../config/common.h \
+	../../config/config.h fox_compat.h FXModalDialogBox.h \
+	FXConstantParamValue.h ../backend/CSound_defs.h \
+	FXTextParamValue.h FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h \
+	../../src/misc/istring \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h CStatusComm.h \
+	../backend/AStatusComm.h settings.h ../backend/settings.h \
+	../backend/CActionParameters.h ../backend/CActionSound.h
+CChannelSelectDialog.lo CChannelSelectDialog.o : \
+	CChannelSelectDialog.cpp CChannelSelectDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../backend/AActionDialog.h \
+	../backend/CActionSound.h ../backend/CSound_defs.h \
+	../backend/settings.h ../../src/misc/istring \
+	../backend/CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp
+CCrossfadeEdgesDialog.lo CCrossfadeEdgesDialog.o : \
+	CCrossfadeEdgesDialog.cpp CCrossfadeEdgesDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	CActionParamDialog.h FXModalDialogBox.h FXConstantParamValue.h \
+	../backend/CSound_defs.h FXTextParamValue.h \
+	FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h \
+	settings.h ../backend/settings.h ../backend/CActionParameters.h
+CCueDialog.lo CCueDialog.o : CCueDialog.cpp CCueDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../backend/AActionDialog.h \
+	../backend/CSound_defs.h ../../src/misc/istring CStatusComm.h \
+	../backend/AStatusComm.h ../backend/CActionParameters.h \
+	../backend/CGraphParamValueNode.h ../backend/CActionSound.h \
+	../backend/settings.h ../backend/CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp
+CCueListDialog.lo CCueListDialog.o : CCueListDialog.cpp CCueListDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	CFOXIcons.h rememberShow.h ../backend/CLoadedSound.h \
+	../backend/Edits/CCueAction.h ../backend/AAction.h \
+	../backend/settings.h ../backend/CActionSound.h \
+	../backend/CSound_defs.h ../backend/AStatusComm.h \
+	../backend/CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp \
+	../backend/CActionParameters.h \
+	../backend/CGraphParamValueNode.h CCueDialog.h \
+	FXModalDialogBox.h ../backend/AActionDialog.h
+CFOXIcons.lo CFOXIcons.o : CFOXIcons.cpp CFOXIcons.h \
+	../../config/common.h ../../config/config.h
+CFrontendHooks.lo CFrontendHooks.o : CFrontendHooks.cpp CFrontendHooks.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	../backend/AFrontendHooks.h ../backend/CSound_defs.h \
+	../../src/misc/istring settings.h ../backend/settings.h \
+	CNewSoundDialog.h FXModalDialogBox.h CRecordDialog.h \
+	../backend/ASoundTranslator.h
+CMainWindow.lo CMainWindow.o : CMainWindow.cpp CMainWindow.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	CActionMenuCommand.h CSoundFileManager.h \
+	../backend/ASoundFileManager.h settings.h ../backend/settings.h \
+	CFOXIcons.h CAboutDialog.h ../backend/main_controls.h \
+	../backend/CLoadedSound.h ../backend/AAction.h \
+	../backend/CActionSound.h ../backend/CSound_defs.h \
+	../backend/AStatusComm.h ../backend/CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp \
+	../backend/ASoundClipboard.h ../backend/CSoundPlayerChannel.h \
+	../backend/CTrigger.h ../backend/CEnvelope.h CSoundWindow.h \
+	FXRezWaveView.h CUserNotesDialog.h FXModalDialogBox.h \
+	CCrossfadeEdgesDialog.h CActionParamDialog.h \
+	FXConstantParamValue.h FXTextParamValue.h \
+	FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h \
+	rememberShow.h ../../src/misc/CNestedDataFile/CNestedDataFile.h \
+	CChannelSelectDialog.h CPasteChannelsDialog.h \
+	EditActionDialogs.h ../backend/Edits/EditActions.h \
+	../backend/Edits/CCropEdit.h \
+	../backend/Edits/CCopyCutDeleteEdit.h \
+	../backend/Edits/CMuteEdit.h ../backend/Edits/CSelectionEdit.h \
+	../backend/Edits/CPasteEdit.h \
+	../backend/Edits/CInsertSilenceEdit.h \
+	../backend/Edits/CRotateEdit.h \
+	../backend/Effects/EffectActions.h \
+	../backend/Effects/CChangeAmplitudeEffect.h \
+	../backend/Effects/CChangeRateEffect.h \
+	../backend/Effects/CDelayEffect.h \
+	../backend/Effects/CFlangeEffect.h \
+	../backend/Effects/CReverseEffect.h \
+	../backend/Effects/CStaticReverbEffect.h \
+	../backend/Effects/CVariedRepeatEffect.h \
+	../backend/Effects/CTestEffect.h EffectActionDialogs.h \
+	../backend/Filters/FilterActions.h \
+	../backend/Filters/CSinglePoleFilter.h FilterActionDialogs.h \
+	../backend/Looping/LoopingActions.h \
+	../backend/Looping/CMakeSymetricAction.h \
+	../backend/Remaster/RemasterActions.h \
+	../backend/Remaster/CUnclipAction.h \
+	../backend/Remaster/CRemoveDCAction.h \
+	../backend/Remaster/CNoiseGateAction.h \
+	../backend/Remaster/CCompressorAction.h RemasterActionDialogs.h
+CNewSoundDialog.lo CNewSoundDialog.o : CNewSoundDialog.cpp \
+	CNewSoundDialog.h ../../config/common.h ../../config/config.h \
+	fox_compat.h FXModalDialogBox.h ../backend/CSound_defs.h \
+	../../src/misc/CPath.h ../../src/misc/istring CFrontendHooks.h \
+	../backend/AFrontendHooks.h ../backend/AStatusComm.h
+CPasteChannelsDialog.lo CPasteChannelsDialog.o : \
+	CPasteChannelsDialog.cpp CPasteChannelsDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../backend/AActionDialog.h \
+	../backend/CSound_defs.h ../../src/misc/istring settings.h \
+	../backend/settings.h ../backend/AAction.h \
+	../backend/CActionSound.h ../backend/AStatusComm.h \
+	../backend/CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp \
+	../backend/ASoundClipboard.h
+CProgressDialog.lo CProgressDialog.o : CProgressDialog.cpp \
+	CProgressDialog.h ../../config/common.h ../../config/config.h \
+	fox_compat.h
+CRecordDialog.lo CRecordDialog.o : CRecordDialog.cpp CRecordDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../backend/CSound_defs.h \
+	../backend/ASoundRecorder.h ../backend/CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp ../backend/CTrigger.h \
+	../backend/AStatusComm.h CFOXIcons.h drawPortion.h
+CSoundFileManager.lo CSoundFileManager.o : CSoundFileManager.cpp \
+	CSoundFileManager.h ../../config/common.h ../../config/config.h \
+	fox_compat.h ../backend/ASoundFileManager.h \
+	../../src/misc/istring settings.h ../backend/settings.h \
+	../backend/CLoadedSound.h CSoundWindow.h FXRezWaveView.h \
+	../backend/CSound_defs.h CSoundListWindow.h
+CSoundListWindow.lo CSoundListWindow.o : CSoundListWindow.cpp \
+	CSoundListWindow.h ../../config/common.h ../../config/config.h \
+	fox_compat.h rememberShow.h CSoundWindow.h FXRezWaveView.h \
+	../backend/CSound_defs.h ../backend/CLoadedSound.h CFOXIcons.h \
+	settings.h ../backend/settings.h ../../src/misc/CPath.h
+CSoundWindow.lo CSoundWindow.o : CSoundWindow.cpp CSoundWindow.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXRezWaveView.h ../backend/CSound_defs.h CSoundFileManager.h \
+	../backend/ASoundFileManager.h ../../src/misc/istring \
+	../backend/CLoadedSound.h ../backend/CSoundPlayerChannel.h \
+	../../src/misc/CMutex.h ../backend/CTrigger.h \
+	../backend/CEnvelope.h ../backend/CActionParameters.h \
+	../backend/CGraphParamValueNode.h ../backend/Edits/CCueAction.h \
+	../backend/AAction.h ../backend/settings.h \
+	../backend/CActionSound.h ../backend/AStatusComm.h \
+	../backend/CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp CCueDialog.h \
+	FXModalDialogBox.h ../backend/AActionDialog.h CCueListDialog.h \
+	CFOXIcons.h settings.h
+CStatusComm.lo CStatusComm.o : CStatusComm.cpp CStatusComm.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	../backend/AStatusComm.h CProgressDialog.h
+CUserNotesDialog.lo CUserNotesDialog.o : CUserNotesDialog.cpp \
+	CUserNotesDialog.h ../../config/common.h ../../config/config.h \
+	fox_compat.h FXModalDialogBox.h ../backend/CLoadedSound.h \
+	../backend/CSound.h ../backend/CSound_defs.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp
+drawPortion.lo drawPortion.o : drawPortion.cpp ../backend/CSound.h \
+	../../config/common.h ../../config/config.h \
+	../backend/CSound_defs.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp ../backend/unit_conv.h \
+	drawPortion.h fox_compat.h
+EditActionDialogs.lo EditActionDialogs.o : EditActionDialogs.cpp \
+	EditActionDialogs.h ../../config/common.h ../../config/config.h \
+	fox_compat.h CActionParamDialog.h FXModalDialogBox.h \
+	FXConstantParamValue.h ../backend/CSound_defs.h \
+	FXTextParamValue.h FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h
+EffectActionDialogs.lo EffectActionDialogs.o : EffectActionDialogs.cpp \
+	EffectActionDialogs.h ../../config/common.h \
+	../../config/config.h fox_compat.h CActionParamDialog.h \
+	FXModalDialogBox.h FXConstantParamValue.h \
+	../backend/CSound_defs.h FXTextParamValue.h \
+	FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h \
+	../backend/unit_conv.h ../../src/misc/istring
+FilterActionDialogs.lo FilterActionDialogs.o : FilterActionDialogs.cpp \
+	FilterActionDialogs.h ../../config/common.h \
+	../../config/config.h fox_compat.h CActionParamDialog.h \
+	FXModalDialogBox.h FXConstantParamValue.h \
+	../backend/CSound_defs.h FXTextParamValue.h \
+	FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h \
+	../backend/unit_conv.h ../../src/misc/istring
+FXComboTextParamValue.lo FXComboTextParamValue.o : \
+	FXComboTextParamValue.cpp FXComboTextParamValue.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	../../src/misc/istring \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h
+FXConstantParamValue.lo FXConstantParamValue.o : \
+	FXConstantParamValue.cpp FXConstantParamValue.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	../backend/CSound_defs.h ../../src/misc/istring \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h
+FXGraphParamValue.lo FXGraphParamValue.o : FXGraphParamValue.cpp \
+	FXGraphParamValue.h ../../config/common.h ../../config/config.h \
+	fox_compat.h ../backend/CSound_defs.h \
+	../backend/CGraphParamValueNode.h ../../src/misc/istring \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h \
+	../backend/CSound.h ../../src/PoolFile/TPoolFile.h \
+	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h \
+	../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp drawPortion.h
+FXModalDialogBox.lo FXModalDialogBox.o : FXModalDialogBox.cpp \
+	FXModalDialogBox.h ../../config/common.h ../../config/config.h \
+	fox_compat.h CFOXIcons.h rememberShow.h
+FXRezWaveView.lo FXRezWaveView.o : FXRezWaveView.cpp FXRezWaveView.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	../backend/CSound_defs.h settings.h ../backend/settings.h \
+	drawPortion.h ../backend/CLoadedSound.h ../backend/CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolFile.cpp \
+	../../src/PoolFile/TStaticPoolAccesser.h \
+	../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../src/misc/TAutoBuffer.h ../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolAccesser.cpp \
+	../backend/CSoundPlayerChannel.h ../backend/CTrigger.h \
+	../backend/CEnvelope.h
+FXTextParamValue.lo FXTextParamValue.o : FXTextParamValue.cpp \
+	FXTextParamValue.h ../../config/common.h ../../config/config.h \
+	fox_compat.h ../../src/misc/istring \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h
+main.o: main.cpp ../../config/common.h ../../config/config.h \
+	fox_compat.h ../../src/misc/CPath.h CMainWindow.h CStatusComm.h \
+	../backend/AStatusComm.h CSoundFileManager.h \
+	../backend/ASoundFileManager.h CFrontendHooks.h \
+	../backend/AFrontendHooks.h ../backend/CSound_defs.h \
+	../backend/initialize.h settings.h ../backend/settings.h \
+	CFOXIcons.h CAboutDialog.h CChannelSelectDialog.h \
+	FXModalDialogBox.h ../backend/AActionDialog.h \
+	../backend/CActionSound.h CPasteChannelsDialog.h \
+	CNewSoundDialog.h CRecordDialog.h CCueDialog.h CCueListDialog.h \
+	CUserNotesDialog.h CCrossfadeEdgesDialog.h CActionParamDialog.h \
+	FXConstantParamValue.h FXTextParamValue.h \
+	FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h CSoundListWindow.h
+RemasterActionDialogs.lo RemasterActionDialogs.o : \
+	RemasterActionDialogs.cpp RemasterActionDialogs.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	CActionParamDialog.h FXModalDialogBox.h FXConstantParamValue.h \
+	../backend/CSound_defs.h FXTextParamValue.h \
+	FXComboTextParamValue.h FXGraphParamValue.h \
+	../backend/CGraphParamValueNode.h ../backend/AActionDialog.h \
+	../backend/unit_conv.h ../../src/misc/istring
+rememberShow.lo rememberShow.o : rememberShow.cpp rememberShow.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	../../src/misc/istring \
+	../../src/misc/CNestedDataFile/CNestedDataFile.h settings.h \
+	../backend/settings.h
+settings.lo settings.o : settings.cpp settings.h ../../config/common.h \
+	../../config/config.h fox_compat.h ../backend/settings.h
+
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am: install-binPROGRAMS install-exec-local
+install-exec: install-exec-am
+
+install-data-am:
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am: uninstall-binPROGRAMS uninstall-local
+uninstall: uninstall-am
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
+all-redirect: all-am
+install-strip:
+	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
+installdirs:
+	$(mkinstalldirs)  $(DESTDIR)$(bindir)
+
+
+mostlyclean-generic:
+
+clean-generic:
+
+distclean-generic:
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+
+maintainer-clean-generic:
+mostlyclean-am:  mostlyclean-noinstLTLIBRARIES mostlyclean-compile \
+		mostlyclean-libtool mostlyclean-binPROGRAMS \
+		mostlyclean-tags mostlyclean-generic
+
+mostlyclean: mostlyclean-am
+
+clean-am:  clean-noinstLTLIBRARIES clean-compile clean-libtool \
+		clean-binPROGRAMS clean-tags clean-generic \
+		mostlyclean-am clean-local
+
+clean: clean-am
+
+distclean-am:  distclean-noinstLTLIBRARIES distclean-compile \
+		distclean-libtool distclean-binPROGRAMS distclean-tags \
+		distclean-generic clean-am
+	-rm -f libtool
+
+distclean: distclean-am
+
+maintainer-clean-am:  maintainer-clean-noinstLTLIBRARIES \
+		maintainer-clean-compile maintainer-clean-libtool \
+		maintainer-clean-binPROGRAMS maintainer-clean-tags \
+		maintainer-clean-generic distclean-am
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+
+maintainer-clean: maintainer-clean-am
+
+.PHONY: mostlyclean-noinstLTLIBRARIES distclean-noinstLTLIBRARIES \
+clean-noinstLTLIBRARIES maintainer-clean-noinstLTLIBRARIES \
+mostlyclean-compile distclean-compile clean-compile \
+maintainer-clean-compile mostlyclean-libtool distclean-libtool \
+clean-libtool maintainer-clean-libtool mostlyclean-binPROGRAMS \
+distclean-binPROGRAMS clean-binPROGRAMS maintainer-clean-binPROGRAMS \
+uninstall-binPROGRAMS install-binPROGRAMS tags mostlyclean-tags \
+distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
+dvi-am dvi check check-am installcheck-am installcheck \
+install-exec-local install-exec-am install-exec install-data-am \
+install-data install-am install uninstall-local uninstall-am uninstall \
+all-redirect all-am all installdirs mostlyclean-generic \
+distclean-generic clean-generic maintainer-clean-generic clean \
+mostlyclean distclean maintainer-clean
+
+
+$(top_srcdir)/src/frontend_fox/CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
+$(top_srcdir)/src/frontend_fox/CFOXIcons.cpp: $(top_srcdir)/src/images/*.gif
+	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh ${RESWRAP} $(top_srcdir)/src/images
+
+CFOXIcons.cpp: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
+CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.h
+
+clean-local: 
+	-rm -f CFOXIcons.cpp CFOXIcons.h
+
+install-exec-local:
+	cd $(bindir) && rm -f $(LINK_NAME) && $(LN_S) ReZound $(LINK_NAME)
+uninstall-local:
+	cd $(bindir) && rm -f $(LINK_NAME)
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:
