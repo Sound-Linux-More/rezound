@@ -131,14 +131,34 @@ void CActionParamDialog::addTextEntry(const string name,const string units,const
 }
 
 
-void CActionParamDialog::addComboTextEntry(const string name,const vector<string> &items,const string helpText)
+void CActionParamDialog::addComboTextEntry(const string name,const vector<string> &items,const string helpText,bool isEditable)
 {
-	FXComboTextParamValue *comboTextEntry=new FXComboTextParamValue(controlsFrame,0,name.c_str(),items);
+	FXComboTextParamValue *comboTextEntry=new FXComboTextParamValue(controlsFrame,0,name.c_str(),items,isEditable);
 	comboTextEntry->setHelpText(helpText.c_str());
 	parameters.push_back(pair<ParamTypes,void *>(ptComboText,(void *)comboTextEntry));
 	retValueConvs.push_back(NULL);
 }
 
+FXComboTextParamValue *CActionParamDialog::getComboText(const string name)
+{
+	for(size_t t=0;t<parameters.size();t++)
+	{
+		if(parameters[t].first==ptComboText && ((FXComboTextParamValue *)parameters[t].second)->getTitle()==name)
+			return((FXComboTextParamValue *)parameters[t].second);
+	}
+	return(NULL);
+}
+
+
+void CActionParamDialog::addCheckBoxEntry(const string name,const bool checked,const string helpText)
+{
+	FXCheckBoxParamValue *checkBoxEntry=new FXCheckBoxParamValue(controlsFrame,0,name.c_str(),checked);
+	checkBoxEntry->setHelpText(helpText.c_str());
+	parameters.push_back(pair<ParamTypes,void *>(ptCheckBox,(void *)checkBoxEntry));
+	retValueConvs.push_back(NULL);
+}
+
+void setComboBoxItems(const string name,const vector<string> &items);
 
 void CActionParamDialog::addGraph(const string name,const string units,FXGraphParamValue::f_at_xs interpretValue,FXGraphParamValue::f_at_xs uninterpretValue,f_at_x optRetValueConv,const int minScalar,const int maxScalar,const int initialScalar)
 {
@@ -170,6 +190,10 @@ void CActionParamDialog::setValue(size_t index,const double value)
 
 	case ptComboText:
 		((FXComboTextParamValue *)parameters[index].second)->setValue((FXint)value);
+		break;
+
+	case ptCheckBox:
+		((FXCheckBoxParamValue *)parameters[index].second)->setValue((bool)value);
 		break;
 
 	case ptGraph:
@@ -235,6 +259,15 @@ bool CActionParamDialog::show(CActionSound *actionSound,CActionParameters *actio
 					FXint ret=comboTextEntry->getValue();
 
 					actionParameters->addUnsignedParameter((unsigned)ret);	
+				}
+				break;
+
+			case ptCheckBox:
+				{
+					FXCheckBoxParamValue *checkBoxEntry=(FXCheckBoxParamValue *)parameters[t].second;
+					bool ret=checkBoxEntry->getValue();
+
+					actionParameters->addBoolParameter(ret);	
 				}
 				break;
 
@@ -310,6 +343,10 @@ long CActionParamDialog::onPresetUseButton(FXObject *sender,FXSelector sel,void 
 				((FXComboTextParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
 				break;
 
+			case ptCheckBox:
+				((FXCheckBoxParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
+				break;
+
 			case ptGraph:
 				((FXGraphParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
 				break;
@@ -378,6 +415,10 @@ long CActionParamDialog::onPresetSaveButton(FXObject *sender,FXSelector sel,void
 
 				case ptComboText:
 					((FXComboTextParamValue *)parameters[t].second)->writeToFile(title,presetsFile);
+					break;
+
+				case ptCheckBox:
+					((FXCheckBoxParamValue *)parameters[t].second)->writeToFile(title,presetsFile);
 					break;
 
 				case ptGraph:

@@ -18,33 +18,39 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __CEnvelope_H__
-#define __CEnvelope_H__
-
-#include "../../config/common.h"
+#ifndef __CAddChannelsEdit_H__
+#define __CAddChannelsEdit_H__
 
 
-class CEnvelope;
+#include "../../../config/common.h"
 
-class CEnvelope
+#include "../AAction.h"
+
+class CAddChannelsEdit : public AAction
 {
 public:
+	CAddChannelsEdit(const CActionSound actionSound,unsigned where,unsigned count);
+	virtual ~CAddChannelsEdit();
 
-    CEnvelope();
-    CEnvelope(int _attackFactor,int _releaseFactor);
-    CEnvelope(const CEnvelope &src);
+protected:
+	bool doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo);
+	void undoActionSizeSafe(const CActionSound &actionSound);
+	CanUndoResults canUndo(const CActionSound &actionSound) const;
 
-    void init();
-
-    CEnvelope &operator=(const CEnvelope &src);
-    bool operator==(const CEnvelope &rhs);
-
-    // we're in trouble if attackFactor or releaseFactor are in use and are zero!!!
-    int attackFactor,releaseFactor;
-    int envelopeCount;
-    bool attacking,releasing;
+private:
+	unsigned where,count;
 
 };
 
-#endif
+class CAddChannelsEditFactory : public AActionFactory
+{
+public:
+	CAddChannelsEditFactory(AActionDialog *channelSelectDialog);
 
+	CAddChannelsEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
+
+protected:
+	bool doPreActionSetup(CLoadedSound *loadedSound);
+};
+
+#endif

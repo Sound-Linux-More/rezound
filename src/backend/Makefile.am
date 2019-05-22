@@ -48,7 +48,6 @@ noinst_HEADERS= \
 	   AStatusComm.h \
 	   CActionParameters.h \
 	   CActionSound.h \
-	   CEnvelope.h \
 	   CGraphParamValueNode.h \
 	   CLoadedSound.h \
 	   CNativeSoundClipboard.h \
@@ -71,7 +70,8 @@ noinst_HEADERS= \
 	   main_controls.h \
 	   settings.h \
 	   unit_conv.h \
-	   license.h 
+	   license.h \
+	   mypopen.h 
 	   
 
 ## see PoolFile Makefile.am for explanation here out
@@ -91,7 +91,6 @@ libbackend_la_SOURCES= \
 			ASoundClipboard.cpp \
 			CNativeSoundClipboard.cpp \
 			CRecordSoundClipboard.cpp \
-			CEnvelope.cpp \
 			CGraphParamValueNode.cpp \
 			CLoadedSound.cpp  \
 			COSSSoundPlayer.cpp \
@@ -107,4 +106,6 @@ libbackend_la_SOURCES= \
 			ClibvorbisSoundTranslator.cpp \
 			ClameSoundTranslator.cpp \
 			CrawSoundTranslator.cpp \
-		        initialize.cpp
+		        initialize.cpp \
+		        mypopen.cpp
+

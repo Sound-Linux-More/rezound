@@ -47,6 +47,28 @@ public:
 
 
 
+// --- swap channels ---------------------
+
+class CSwapChannelsDialog : public CActionParamDialog
+{
+public:
+	CSwapChannelsDialog(FXWindow *mainWindow);
+
+	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
+};
+
+
+
+// --- add channels ----------------------
+
+class CAddChannelsDialog : public CActionParamDialog
+{
+public:
+	CAddChannelsDialog(FXWindow *mainWindow);
+};
+
+
+
 
 
 

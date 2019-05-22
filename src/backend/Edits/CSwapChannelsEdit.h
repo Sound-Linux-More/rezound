@@ -18,21 +18,39 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __EditActions_H__
-#define __EditActions_H__
+#ifndef __CSwapChannelsEdit_H__
+#define __CSwapChannelsEdit_H__
+
 
 #include "../../../config/common.h"
 
-#include "CCropEdit.h"
-#include "CCopyCutDeleteEdit.h"
-#include "CMuteEdit.h"
-#include "CSelectionEdit.h"
-#include "CPasteEdit.h"
-//#include "CTrimEdit.h"
-#include "CInsertSilenceEdit.h"
-#include "CRotateEdit.h"
-#include "CSwapChannelsEdit.h"
-#include "CAddChannelsEdit.h"
-#include "CRemoveChannelsEdit.h"
+#include "../AAction.h"
+
+class CSwapChannelsEdit : public AAction
+{
+public:
+	CSwapChannelsEdit(const CActionSound actionSound,unsigned channelA,unsigned channelB);
+	virtual ~CSwapChannelsEdit();
+
+protected:
+	bool doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo);
+	void undoActionSizeSafe(const CActionSound &actionSound);
+	CanUndoResults canUndo(const CActionSound &actionSound) const;
+
+private:
+	unsigned channelA,channelB;
+
+};
+
+class CSwapChannelsEditFactory : public AActionFactory
+{
+public:
+	CSwapChannelsEditFactory(AActionDialog *channelSelectDialog);
+
+	CSwapChannelsEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
+
+protected:
+	bool doPreActionSetup(CLoadedSound *loadedSound);
+};
 
 #endif

@@ -69,12 +69,12 @@ CPasteChannelsDialog::CPasteChannelsDialog(FXWindow *mainWindow) :
 	// put top source labels 
 	new FXLabel(checkBoxMatrix,"");
 	for(unsigned x=0;x<MAX_CHANNELS;x++)
-		new FXLabel(checkBoxMatrix,("Channel "+istring(x+1)).c_str());
+		new FXLabel(checkBoxMatrix,("Channel "+istring(x)).c_str());
 
 	for(unsigned y=0;y<MAX_CHANNELS;y++)
 	{
 		// put side destination label
-		new FXLabel(checkBoxMatrix,("Channel "+istring(y+1)).c_str(),NULL,LAYOUT_RIGHT);
+		new FXLabel(checkBoxMatrix,("Channel "+istring(y)).c_str(),NULL,LAYOUT_RIGHT);
 
 		// built a row of check boxes
 		for(unsigned x=0;x<MAX_CHANNELS;x++)
@@ -92,7 +92,7 @@ bool CPasteChannelsDialog::show(CActionSound *_actionSound,CActionParameters *ac
 
 	// determine if and which channel is the only channel available in the clipbaord
 	bool isSingleClipboardChannel=false;
-	size_t singleClipboardChannel;
+	size_t singleClipboardChannel=0;
 	for(size_t t=0;t<MAX_CHANNELS;t++)
 	{
 		if(clipboard->getWhichChannels()[t])

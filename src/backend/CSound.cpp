@@ -29,12 +29,15 @@
 
 #include <istring>
 
+#include "settings.h"
+
 
 /* TODO:
 	- add try and catch around space modifier methods that call matchUpChannelLengths even upon exception
 	- create MAX_LENGTH for an arbitrary maximum length incase I need to enforce such a limit
 	- I need to rework the bounds checking not to ever add where+len since it could overflow, but do it correctly where it should never have a problem
 		- make some macros for doing this since I do it in several places
+		- I have already fixed some of the methods
 
 	- the peak chunk mantainance is not absolutly perfect... if I delete a portion of the data and thus remove some of the 
 	  entries in the peak chunk data, the min and maxes aren't exactly correct now because the PEAK_CHUNK_SIZE samples which 
@@ -69,6 +72,7 @@
 #define CUES_POOL_NAME "Cues"
 #define NOTES_POOL_NAME "UserNotes"
 
+#define GET_WORKING_FILENAME(workDir,filename) (workDir+CPath::dirDelim+CPath(filename).baseName()+".pf$")
 
 CSound::CSound() :
 	poolFile(REZOUND_POOLFILE_BLOCKSIZE,REZOUND_WORKING_POOLFILE_SIGNATURE),
@@ -87,7 +91,6 @@ CSound::CSound() :
 {
 	for(unsigned t=0;t<MAX_CHANNELS;t++)
 		peakChunkAccessers[t]=NULL;
-
 }
 
 CSound::CSound(const string &_filename,const unsigned _sampleRate,const unsigned _channelCount,const sample_pos_t _size) :
@@ -120,7 +123,6 @@ CSound::CSound(const string &_filename,const unsigned _sampleRate,const unsigned
 		} catch(...) {}
 		throw;
 	}
-
 }
 
 CSound::~CSound()
@@ -145,7 +147,8 @@ CSound::~CSound()
 
 void CSound::changeWorkingFilename(const string newOriginalFilename)
 {
-	poolFile.rename(getWorkingFilename(newOriginalFilename));
+	const string workDir=CPath(poolFile.getFilename()).dirName();
+	poolFile.rename(GET_WORKING_FILENAME(workDir,newOriginalFilename));
 }
 
 void CSound::closeSound()
@@ -159,23 +162,23 @@ void CSound::closeSound()
 // locks to keep the size from changing (multiple locks can be obtained of this type)
 void CSound::lockSize() const
 {
-    poolFile.sharedLock();
+	poolFile.sharedLock();
 }
 
 bool CSound::trylockSize() const
 {
-    return(poolFile.sharedTrylock());
+	return(poolFile.sharedTrylock());
 }
 
 void CSound::unlockSize() const
 {
-    poolFile.sharedUnlock();
+	poolFile.sharedUnlock();
 }
 
 // locks to be able to change the size (only one lock can be obtained of this type)
 void CSound::lockForResize() const
 {
-    poolFile.exclusiveLock();
+	poolFile.exclusiveLock();
 }
 
 bool CSound::trylockForResize() const
@@ -185,51 +188,45 @@ bool CSound::trylockForResize() const
 
 void CSound::unlockForResize() const
 {
-    poolFile.exclusiveUnlock();
+	poolFile.exclusiveUnlock();
 }
 
 CSound::CInternalRezPoolAccesser CSound::getAudioInternal(unsigned channel)
 {
-    return(poolFile.getPoolAccesser<sample_t>(channelPoolIDs[channel]));
+	return(poolFile.getPoolAccesser<sample_t>(channelPoolIDs[channel]));
 }
 
 CSound::CInternalRezPoolAccesser CSound::getTempDataInternal(unsigned tempAudioPoolKey,unsigned channel)
 {
-    return(poolFile.getPoolAccesser<sample_t>(createTempAudioPoolName(tempAudioPoolKey,channel)));
+	return(poolFile.getPoolAccesser<sample_t>(createTempAudioPoolName(tempAudioPoolKey,channel)));
 }
 
 CRezPoolAccesser CSound::getAudio(unsigned channel)
 {
-    if(channel>=channelCount)
-        throw(runtime_error(string(__func__)+" -- invalid channel: "+istring(channel)));
+	if(channel>=channelCount)
+		throw(runtime_error(string(__func__)+" -- invalid channel: "+istring(channel)));
 
-    return(poolFile.getPoolAccesser<sample_t>(channelPoolIDs[channel]));
+	return(poolFile.getPoolAccesser<sample_t>(channelPoolIDs[channel]));
 }
 
 const CRezPoolAccesser CSound::getAudio(unsigned channel) const
 {
-    if(channel>=channelCount)
-        throw(runtime_error(string(__func__)+" -- invalid channel: "+istring(channel)));
+	if(channel>=channelCount)
+		throw(runtime_error(string(__func__)+" -- invalid channel: "+istring(channel)));
 
-    return(poolFile.getPoolAccesser<sample_t>(channelPoolIDs[channel]));
+	return(poolFile.getPoolAccesser<sample_t>(channelPoolIDs[channel]));
 }
 
 
 
 CRezPoolAccesser CSound::getTempAudio(unsigned tempAudioPoolKey,unsigned channel)
 {
-    if(channel>=channelCount)
-        throw(runtime_error(string(__func__)+" -- invalid channel: "+istring(channel)));
-
-    return(poolFile.getPoolAccesser<sample_t>(createTempAudioPoolName(tempAudioPoolKey,channel)));
+	return(poolFile.getPoolAccesser<sample_t>(createTempAudioPoolName(tempAudioPoolKey,channel)));
 }
 
 const CRezPoolAccesser CSound::getTempAudio(unsigned tempAudioPoolKey,unsigned channel) const
 {
-    if(channel>=channelCount)
-        throw(runtime_error(string(__func__)+" -- invalid channel: "+istring(channel)));
-
-    return(poolFile.getPoolAccesser<sample_t>(createTempAudioPoolName(tempAudioPoolKey,channel)));
+	return(poolFile.getPoolAccesser<sample_t>(createTempAudioPoolName(tempAudioPoolKey,channel)));
 }
 
 /*
@@ -405,37 +402,221 @@ void CSound::invalidateAllPeakData()
 	createPeakChunkAccessers();
 }
 
-void CSound::deleteChannel(unsigned channel)
+
+void CSound::addChannel()
 {
+	prvAddChannel(true);
+}
 
-	throw(runtime_error(string(__func__)+" -- unimplemented"));
-#if 0
-/*
-    poolFile.exclusiveLock();
-    try
-    {
-*/
-        if(channel<1 || channel>=channelCount)
-            throw(runtime_error(string(__func__)+" -- (cannot delete channel when only one exists) channel parameter out of range: "+istring(channel)));
+void CSound::prvAddChannel(bool addAudioSpaceForNewChannel)
+{
+	ASSERT_RESIZE_LOCK
 
-	// need to rename the pools
-	// need to make channelPoolIDs a TBasicList so I can remove the item
-	// need to remove the peak data pools for this channel
-		// and therefore modify peakChunkAccessers (make a TBasicList also)
+	if((getChannelCount()+1)>MAX_CHANNELS)
+		throw(runtime_error(string(__func__)+" -- adding another channel would exceed the maximum of "+istring(MAX_CHANNELS)+" channels"));
+
+	const string audioPoolName=AUDIO_POOL_NAME+istring(channelCount+1);
+	const string peakChunkPoolName=PEAK_CHUNK_POOL_NAME+istring(channelCount);
+
+	peakChunkAccessers[channelCount]=NULL;
+	bool addedToChannelCount=false;
+	try
+	{
+		CInternalRezPoolAccesser audioPool=poolFile.createPool<sample_t>(audioPoolName);
+		channelPoolIDs[channelCount]=poolFile.getPoolIdByName(audioPoolName);
+
+		CPeakChunkRezPoolAccesser peakChunkPool=poolFile.createPool<RPeakChunk>(peakChunkPoolName);
+		peakChunkAccessers[channelCount]=new CPeakChunkRezPoolAccesser(peakChunkPool);
+
+		channelCount++;
+		addedToChannelCount=true;
+
+		if(addAudioSpaceForNewChannel)
+			matchUpChannelLengths(getLength());
+	}
+	catch(...)
+	{ // attempt to recover
+		if(addedToChannelCount)
+			channelCount--;
+
+		poolFile.removePool(audioPoolName,false);
+		delete peakChunkAccessers[channelCount];
+		poolFile.removePool(peakChunkPoolName,false);
+
+		throw;
+	}
 	
-	
-        poolFile.removePool(channelPoolIDs[channel]);
-        channelCount--;
+	saveMetaInfo();
+}
+
+void CSound::addChannels(unsigned where,unsigned count)
+{
+	ASSERT_RESIZE_LOCK
+
+	if(where>getChannelCount())
+		throw(runtime_error(string(__func__)+" -- where out of range: "+istring(where)+">"+istring(getChannelCount())));
+	if((count+getChannelCount())>MAX_CHANNELS)
+		throw(runtime_error(string(__func__)+" -- adding "+istring(count)+" channels would exceed the maximum of "+istring(MAX_CHANNELS)+" channels"));
+
+	/*
+	 * This way may seem a little obtuse, but it's the easiest way without 
+	 * renaming pools, regetting poolIds, invalidating any outstanding 
+	 * accessors (because now their poolIds are invalid) and stuff.. simply 
+	 * add a channel to the end and move it where it needs to be and do this 
+	 * for each channel to add
+	 */
+
+	size_t swapCount=getChannelCount()-where;
+	for(unsigned t=0;t<count;t++)
+	{
+		// add a channel to the end
+		addChannel();
+
+		// through a series of swaps move that channel to where+t
+		for(unsigned i=0;i<swapCount;i++)
+			swapChannels(channelCount-i-1,channelCount-i-2,0,getLength());
+	}
+}
+
+void CSound::removeChannel()
+{
+	ASSERT_RESIZE_LOCK
+
+	if(getChannelCount()<=1)
+		throw(runtime_error(string(__func__)+" -- removing a channel would cause channel count to go to zero"));
+
+	const string audioPoolName=AUDIO_POOL_NAME+istring(channelCount);
+	const string peakChunkPoolName=PEAK_CHUNK_POOL_NAME+istring(channelCount-1);
+
+	poolFile.removePool(audioPoolName);
+	poolFile.removePool(peakChunkPoolName);
+
+	channelCount--;
+	saveMetaInfo();
+}
+
+void CSound::removeChannels(unsigned where,unsigned count)
+{
+	ASSERT_RESIZE_LOCK
+
+	if(where>getChannelCount())
+		throw(runtime_error(string(__func__)+" -- where out of range: "+istring(where)+">"+istring(getChannelCount())));
+	if(count>(getChannelCount()-where))
+		throw(runtime_error(string(__func__)+" -- where/count out of range: "+istring(where)+"/"+istring(count)));
+	if(where==0 && count>=getChannelCount())
+		throw(runtime_error(string(__func__)+" -- removing "+istring(count)+" channels at "+istring(where)+" would cause the channel count to go to zero"));
+
+	unsigned swapCount=channelCount-where-1;
+	for(unsigned t=0;t<count;t++)
+	{
+		// through a series of swaps move the channel at where to the end
+		if(swapCount>0)
+		{
+			for(unsigned i=0;i<swapCount;i++)
+				swapChannels(where+i,where+i+1,0,getLength());
+			swapCount--;
+		}
+
+		// remove the last channel
+		removeChannel();
+	}
+}
+
+int CSound::moveChannelsToTemp(const bool whichChannels[MAX_CHANNELS])
+{
+	ASSERT_RESIZE_LOCK
+
+	unsigned removeCount=0;
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+	{
+		removeCount+=whichChannels[t] ? 1 : 0;
+		if(whichChannels[t] && t>=getChannelCount())
+			throw(runtime_error(string(__func__)+" -- whichChannels specifies to remove channel "+istring(t)+" which does not exist"));
+	}
+	if(removeCount>=getChannelCount())
+		throw(runtime_error(string(__func__)+" -- whichChannels specifies all the channels, which would cause the channel count to go to zero"));
+
+	// through a series of swaps move all the channels to be removed to become the last channels in the sound
+	removeCount=0;
+	for(unsigned _t=getChannelCount();_t>0;_t--)
+	{
+		unsigned t=_t-1;
+		if(whichChannels[t])
+		{
+			for(unsigned i=t;i<getChannelCount()-1-removeCount;i++)
+				swapChannels(i,i+1,0,getLength());
+			removeCount++;
+		}
+	}
+
+	const int tempAudioPoolKey=tempAudioPoolKeyCounter++;
+
+	// move the last 'removeCount' channels to a temp pool
+	for(unsigned t=getChannelCount()-removeCount;t<getChannelCount();t++)
+		moveDataOutOfChannel(tempAudioPoolKey,t,0,getLength());
+
+	// remove the last 'removeCount' channels
+	for(unsigned t=0;t<removeCount;t++)
+		removeChannel();
+
+	return(tempAudioPoolKey);
+}
+
 /*
-        poolFile.exclusiveUnlock();
-    }
-    catch(...)
-    {
-        poolFile.exclusiveUnlock();
-        throw;
-    }
-*/
-#endif
+ * - tempPoolKey is the value returned by the previous call to moveChannelsToTemp()
+ * - whichChannels MUST match the whichChannels that was given to moveChannelsToTemp and 
+ *   this sound MUST have the channel layout that it had after the return from.  The 
+ *   sound MUST also be the same length as it was when moveChannelsToTemp() was called
+ *   the previous call to moveChannelsToTemp()
+ */
+void CSound::moveChannelsFromTemp(int tempAudioPoolKey,const bool whichChannels[MAX_CHANNELS])
+{
+	ASSERT_RESIZE_LOCK
+
+	// just make sure that we will be able to add the channels without exceeding MAX_CHANNELS
+	unsigned addCount=0;
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+		addCount+=whichChannels[t] ? 1 : 0;
+	if((addCount+getChannelCount())>MAX_CHANNELS)
+		throw(runtime_error(string(__func__)+" -- re-adding the channels specified by whichChannels would exceed the maximum of "+istring(MAX_CHANNELS)+" channels"));
+
+	// make sure all the temp audio pools exist for the channels specified by whichChannels and that they have the correct length
+	// and note that the temp pool channel number would be as if it were at the end (k), because that's where it would have been when removed in moveChannelsToTemp
+	int k=getChannelCount();
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+	{
+		if(whichChannels[t])
+		{
+			if(!poolFile.containsPool(createTempAudioPoolName(tempAudioPoolKey,k)))
+				throw(runtime_error(string(__func__)+" -- whichChannels specifies to add channel "+istring(t)+" from temp which does not exist as a temp audio pool"));
+			if(getTempAudio(tempAudioPoolKey,k).getSize()!=getLength())
+				throw(runtime_error(string(__func__)+" -- the length of the audio in this sound object is not the same now as it was when moveChannelsToTemp() was called"));
+			k++;
+		}
+	}
+
+	
+	// move the temp audio pools back as channels at the end of the sound
+	for(unsigned t=0;t<MAX_CHANNELS;t++)
+	{
+		if(whichChannels[t])
+		{
+			prvAddChannel(false);
+			moveDataIntoChannel(tempAudioPoolKey,getChannelCount()-1,getChannelCount()-1,0,getLength(),true);
+		}
+	}
+	
+	// through a series of swaps put the channels back in their original positions
+	unsigned movedChannelIndex=getChannelCount()-addCount;
+	for(unsigned t=0;t<getChannelCount();t++)
+	{
+		if(whichChannels[t])
+		{
+			for(unsigned i=movedChannelIndex;i>t;i--)
+				swapChannels(i-1,i,0,getLength());
+			movedChannelIndex++;
+		}
+	}
 }
 
 
@@ -500,7 +681,7 @@ void CSound::removeSpace(const bool whichChannels[MAX_CHANNELS],sample_pos_t whe
 
 	if(where>size)
 		throw(runtime_error(string(__func__)+" -- where parameter out of range: "+istring(where)));
-	if(where+length>size)
+	if(length>(size-where))
 		throw(runtime_error(string(__func__)+" -- length parameter out of range: "+istring(length)));
 
 	for(unsigned t=0;t<channelCount;t++)
@@ -528,7 +709,7 @@ unsigned CSound::copyDataToTemp(const bool whichChannels[MAX_CHANNELS],sample_po
 
 	if(where>size)
 		throw(runtime_error(string(__func__)+" -- where parameter out of range: "+istring(where)));
-	if(where+length>size)
+	if(length>(size-where))
 		throw(runtime_error(string(__func__)+" -- length parameter out of range: "+istring(length)));
 
 	const unsigned tempAudioPoolKey=tempAudioPoolKeyCounter++;
@@ -548,7 +729,7 @@ unsigned CSound::moveDataToTempAndReplaceSpace(const bool whichChannels[MAX_CHAN
 
 	if(where>size)
 		throw(runtime_error(string(__func__)+" -- where parameter out of range: "+istring(where)));
-	if(where+length>size)
+	if(length>(size-where))
 		throw(runtime_error(string(__func__)+" -- length parameter out of range: "+istring(length)));
 /*
 	if(replaceLength>MAX_LENGTH)
@@ -591,7 +772,7 @@ void CSound::removeSpaceAndMoveDataFromTemp(const bool whichChannels[MAX_CHANNEL
 {
 	ASSERT_RESIZE_LOCK 
 
-	if(removeLength!=0 && removeWhere+removeLength>size)
+	if(removeLength!=0 && (removeWhere>size || removeLength>(size-removeWhere)))
 		throw(runtime_error(string(__func__)+" -- removeWhere/removeLength parameter out of range: "+istring(removeWhere)+"/"+istring(removeLength)));
 	if(moveWhere>(size-removeLength))
 		throw(runtime_error(string(__func__)+" -- moveWhere parameter out of range: "+istring(moveWhere)+" for removeWhere "+istring(removeLength)));
@@ -601,7 +782,7 @@ void CSound::removeSpaceAndMoveDataFromTemp(const bool whichChannels[MAX_CHANNEL
 		if(whichChannels[t])
 		{ // remove then add the space (by moving from temp pool)
 			removeSpaceFromChannel(t,removeWhere,removeLength);
-			moveDataIntoChannel(tempAudioPoolKey,t,moveWhere,moveLength,removeTempAudioPools);
+			moveDataIntoChannel(tempAudioPoolKey,t,t,moveWhere,moveLength,removeTempAudioPools);
 		}
 	}
 
@@ -688,6 +869,37 @@ void CSound::rotateRight(const bool whichChannels[MAX_CHANNELS],const sample_pos
 }
 
 
+void CSound::swapChannels(unsigned channelA,unsigned channelB,const sample_pos_t where,const sample_pos_t length)
+{
+	ASSERT_RESIZE_LOCK 
+
+	if(channelA>=getChannelCount())
+		throw(runtime_error(string(__func__)+" -- channelA is out of range: "+istring(channelA)+">="+istring(getChannelCount())));
+	if(channelB>=getChannelCount())
+		throw(runtime_error(string(__func__)+" -- channelB is out of range: "+istring(channelB)+">="+istring(getChannelCount())));
+
+	if(where>size)
+		throw(runtime_error(string(__func__)+" -- where parameter out of range: "+istring(where)));
+	if(length>(size-where))
+		throw(runtime_error(string(__func__)+" -- where/length parameter out of range: "+istring(where)+"/"+istring(length)));
+
+	if(channelA==channelB)
+		return;
+	if(length<=0)
+		return;
+
+
+	const unsigned tempAudioPoolKeyA=tempAudioPoolKeyCounter++;
+	const unsigned tempAudioPoolKeyB=tempAudioPoolKeyCounter++;
+
+	// move data from each channel to its temp pool
+	moveDataOutOfChannel(tempAudioPoolKeyA,channelA,where,length);
+	moveDataOutOfChannel(tempAudioPoolKeyB,channelB,where,length);
+
+	// move the data back into the channel from each temp pool but swapped (and pass true to remove the temp pool)
+	moveDataIntoChannel(tempAudioPoolKeyA,channelA,channelB,where,length,true);
+	moveDataIntoChannel(tempAudioPoolKeyB,channelB,channelA,where,length,true);
+}
 
 
 void CSound::addSpaceToChannel(unsigned channel,sample_pos_t where,sample_pos_t length,bool doZeroData)
@@ -796,26 +1008,26 @@ void CSound::moveDataOutOfChannel(unsigned tempAudioPoolKey,unsigned channel,sam
 	}
 }
 
-void CSound::moveDataIntoChannel(unsigned tempAudioPoolKey,unsigned channel,sample_pos_t where,sample_pos_t length,bool removeTempAudioPool)
+void CSound::moveDataIntoChannel(unsigned tempAudioPoolKey,unsigned channelInTempPool,unsigned channelInAudio,sample_pos_t where,sample_pos_t length,bool removeTempAudioPool)
 {
 	if(length==0)
 		return;
 
-	CInternalRezPoolAccesser destAccesser=getAudioInternal(channel);
+	CInternalRezPoolAccesser destAccesser=getAudioInternal(channelInAudio);
 
-	const sample_pos_t peakChunkCountHave=peakChunkAccessers[channel]==NULL ? 0 : peakChunkAccessers[channel]->getSize();
+	const sample_pos_t peakChunkCountHave=peakChunkAccessers[channelInAudio]==NULL ? 0 : peakChunkAccessers[channelInAudio]->getSize();
 	const sample_pos_t peakChunkCountNeeded=calcPeakChunkCount(destAccesser.getSize()+length);
 
-	CInternalRezPoolAccesser srcAccesser=getTempDataInternal(tempAudioPoolKey,channel);
+	CInternalRezPoolAccesser srcAccesser=getTempDataInternal(tempAudioPoolKey,channelInTempPool);
 	if(length>srcAccesser.getSize())
 		throw(runtime_error(string(__func__)+" -- length parameter out of range: "+istring(length)));
 		
 	destAccesser.moveData(where,srcAccesser,0,length);
 
 	if(removeTempAudioPool)
-		poolFile.removePool(createTempAudioPoolName(tempAudioPoolKey,channel));
+		poolFile.removePool(createTempAudioPoolName(tempAudioPoolKey,channelInTempPool));
 
-	if(peakChunkAccessers[channel]!=NULL)
+	if(peakChunkAccessers[channelInAudio]!=NULL)
 	{
 		// add more peak chunks if the needed size is more than we have
 		if(peakChunkCountNeeded>peakChunkCountHave)
@@ -823,12 +1035,12 @@ void CSound::moveDataIntoChannel(unsigned tempAudioPoolKey,unsigned channel,samp
 			const sample_pos_t insertWhere=where/PEAK_CHUNK_SIZE;
 			const sample_pos_t insertCount=peakChunkCountNeeded-peakChunkCountHave;
 
-			peakChunkAccessers[channel]->insert(insertWhere,insertCount);
+			peakChunkAccessers[channelInAudio]->insert(insertWhere,insertCount);
 			for(sample_pos_t t=0;t<insertCount;t++)
-				(*(peakChunkAccessers[channel]))[insertWhere+t].dirty=true;
+				(*(peakChunkAccessers[channelInAudio]))[insertWhere+t].dirty=true;
 		}
 		else // just mark the one we inserted into as dirty
-			(*(peakChunkAccessers[channel]))[where/PEAK_CHUNK_SIZE].dirty=true;
+			(*(peakChunkAccessers[channelInAudio]))[where/PEAK_CHUNK_SIZE].dirty=true;
 	}
 
 }
@@ -1175,15 +1387,67 @@ void CSound::verifySAT()
 }
 
 
-
 void CSound::flush()
 {
 	poolFile.flushData();
 }
 
+
 /*
-	By the time this is called, all the protected data members about format info have be set
+	Finds a working directory for a working file
+	for the given filename.  A suitable working 
+	directory should be writable and have free 
+	space of 110% of the given file's size
 */
+#include <sys/vfs.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+const string findWorkDir(const string filename)
+{
+	vector<string> workingDirs;
+		workingDirs.push_back(CPath(filename).dirName()); // first try the dirname of the given filename
+		workingDirs.push_back(gFallbackWorkDir); // next try to fallback working dir (in the future, this may be a list)
+
+	for(size_t t=0;t<workingDirs.size();t++)
+	{ 
+		const string workDir=workingDirs[t];
+		const string testFilename=workDir+CPath::dirDelim+"rezrez842rezrez";
+		FILE *f=fopen(testFilename.c_str(),"wb");
+		if(f!=NULL)
+		{ // directry is writable
+			fclose(f);
+			remove(testFilename.c_str());
+
+			struct statfs s;
+			if(statfs(workDir.c_str(),&s)!=0)
+			{
+				int e=errno;
+				fprintf(stderr,"error getting free space on working directory candidate: %s -- %s\n",workDir.c_str(),strerror(e));
+				continue; // couldn't stat the fs for some reason
+			}
+
+			const int64_t fsSize= (int64_t)s.f_bsize * (int64_t)s.f_bfree;
+			const int64_t fileSize=CPath(filename).getSize(false);
+
+			if(fsSize<(fileSize+(fileSize/10)))
+			{
+				fprintf(stderr,"insufficient free space in working directory candidate: %s\n",workDir.c_str());
+				continue; // not enough free space on that partition
+			}
+
+			return(workDir);
+		}
+		else
+		{
+			int e=errno;
+			fprintf(stderr,"cannot write to working directory candidate: %s -- %s\n",workDir.c_str(),strerror(e));
+		}
+	}
+
+	throw(runtime_error(string(__func__)+" -- no suitable working directory available to load the file: "+filename));
+}
+
 void CSound::createWorkingPoolFile(const string originalFilename,const unsigned _sampleRate,const unsigned _channelCount,const sample_pos_t _size)
 {
 	if(poolFile.isOpen())
@@ -1196,9 +1460,12 @@ void CSound::createWorkingPoolFile(const string originalFilename,const unsigned 
 	sampleRate=_sampleRate;
 	size=_size;
 
-	const string filename=getWorkingFilename(originalFilename);
-	remove(filename.c_str());
-	poolFile.openFile(filename,true);
+	// determine a suitable place for the working file
+	const string workDir=findWorkDir(originalFilename);
+
+	const string workingFilename=GET_WORKING_FILENAME(workDir,originalFilename);
+	PoolFile_t::removeFile(workingFilename);
+	poolFile.openFile(workingFilename,true);
 	removeAllTempAudioPools();
 
 	CFormatInfoPoolAccesser a=poolFile.createPool<RFormatInfo>(FORMAT_INFO_POOL_NAME);
@@ -1231,23 +1498,39 @@ bool CSound::createFromWorkingPoolFileIfExists(const string originalFilename,boo
 
 	try
 	{
-		if(promptIfFound)
+
+		vector<string> workingDirs;
+			workingDirs.push_back(CPath(originalFilename).dirName());
+			workingDirs.push_back(gFallbackWorkDir);
+
+		// look in all possible working spaces 
+		string workingFilename="";
+		for(size_t t=0;t<workingDirs.size();t++)
 		{
-			if(CPath(getWorkingFilename(originalFilename)).exists())
+			const string f=GET_WORKING_FILENAME(workingDirs[t],originalFilename);
+				// ??? and we need to know that if this file is being used by any other loaded file.. then this is not the file and we need to alter the working filename at that point some how.. or just refuse to load the file at all
+			if(CPath(f).exists())
 			{
-				// ??? probably have a cancel button to avoid loaded the sound at all.. probably throw an exception of a different type which is an ESkipLoadingFile
-				if(Question("File: "+getWorkingFilename(originalFilename)+"\n\nA temporary file was found indicating that this file was previously being edited when a crash occurred or the process was killed.\n\nDo you wish to attempt to recover from this temporary file (otherwise the file will be deleted)?",yesnoQues)==noAns)
-				{
-						// ??? doesn't remove other file sin the set if it was a multi file set >2gb
-					remove(getWorkingFilename(originalFilename).c_str());
-					return(false);
-				}
+				workingFilename=f;
+				break;
 			}
-			else
-				return(false);
 		}
 
-		poolFile.openFile(getWorkingFilename(originalFilename),false);
+		if(workingFilename=="")
+			return(false); // wasn't found
+
+		if(promptIfFound)
+		{
+			// ??? probably have a cancel button to avoid loaded the sound at all.. probably throw an exception of a different type which is an ESkipLoadingFile
+			if(Question("File: "+workingFilename+"\n\nA temporary file was found indicating that this file was previously being edited when a crash occurred or the process was killed.\n\nDo you wish to attempt to recover from this temporary file (otherwise the file will be deleted)?",yesnoQues)==noAns)
+			{
+				// ??? doesn't remove other files in the set of files if it was a multi file set >2gb
+				PoolFile_t::removeFile(workingFilename);
+				return(false);
+			}
+		}
+
+		poolFile.openFile(workingFilename,false);
 		_isModified=true;
 
 		removeAllTempAudioPools();
@@ -1280,14 +1563,14 @@ bool CSound::createFromWorkingPoolFileIfExists(const string originalFilename,boo
 			channelCount=r.channelCount;
 		}
 		else
-			throw(runtime_error(string(__func__)+" -- unhandled format version: "+istring(version)));
+			throw(runtime_error(string(__func__)+" -- unhandled format version: "+istring(version)+" in found working file: "+workingFilename));
 
 		if(channelCount<0 || channelCount>MAX_CHANNELS)
 		{
 			deletePeakChunkAccessers();
 			deleteCueAccesser();
 			poolFile.closeFile(false,false);
-			throw(runtime_error(string(__func__)+" -- invalid number of channels: "+istring(channelCount)));
+			throw(runtime_error(string(__func__)+" -- invalid number of channels: "+istring(channelCount)+" in found working file: "+workingFilename));
 		}
 
 		for(unsigned t=0;t<channelCount;t++)
@@ -1354,12 +1637,6 @@ void CSound::saveMetaInfo()
 	// flush();
 }
 
-const string CSound::getWorkingFilename(const string originalFilename)
-{
-	// ??? this directory needs to be a setting.. and perhaps in the home directory too ~/.ReZound or some other configured temp sapce directory
- 	return("/tmp/"+CPath(originalFilename).baseName()+".pf$");
-}
-
 void CSound::createPeakChunkAccessers()
 {
 	if(poolFile.isOpen())
@@ -1410,14 +1687,15 @@ CSound::CInternalRezPoolAccesser CSound::createTempAudioPool(unsigned tempAudioP
 
 void CSound::removeAllTempAudioPools()
 {
-	for(size_t t=0;t<poolFile.getPoolCount();t++)
+	for(size_t t=0;t<poolFile.getPoolIndexCount();t++)
 	{
-		const string _poolName=poolFile.getPoolNameById(t);
+		const PoolFile_t::poolId_t poolId=poolFile.getPoolIdByIndex(t);
+		const string _poolName=poolFile.getPoolNameById(poolId);
 		const char *poolName=_poolName.c_str();
-			// ??? since I'm using strstr, string probably needs some string searching methods
+			// ??? since I'm using strstr, string probably needs/has some string searching methods
 		if(strstr(poolName,TEMP_AUDIO_POOL_NAME)==poolName)
 		{
-			poolFile.removePool(t);
+			poolFile.removePool(poolId);
 			t--;
 		}
 	}

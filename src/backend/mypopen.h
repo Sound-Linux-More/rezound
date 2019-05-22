@@ -18,48 +18,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#include "CEnvelope.h"
+#ifndef __MYPOPEN_H__
+#define __MYPOPEN_H__
 
-CEnvelope::CEnvelope()
-{
-    init();
-}
+#include "../../config/common.h"
 
-CEnvelope::CEnvelope(int _attackFactor,int _releaseFactor)
-{
-    init();
-    attackFactor=_attackFactor;
-    releaseFactor=_releaseFactor;
-}
+#include <stdio.h>
 
-CEnvelope::CEnvelope(const CEnvelope &src)
-{
-    init();
-    operator=(src);
-}
+#ifdef LINKING_STATICALLY
 
-void CEnvelope::init()
-{
-    releaseFactor=attackFactor=0;
-    attacking=false;
-    releasing=false;
-    envelopeCount=0;
-}
+FILE *mypopen(const char cmd[],const char type[]);
+int mypclose(FILE *p);
 
-CEnvelope &CEnvelope::operator=(const CEnvelope &src)
-{
-    init();
-    attackFactor=src.attackFactor;
-    releaseFactor=src.releaseFactor;
-    return(*this);
-}
+#else
 
-bool CEnvelope::operator==(const CEnvelope &rhs)
-{
-    if(attackFactor!=rhs.attackFactor)
-        return(false);
-    if(releaseFactor!=rhs.releaseFactor)
-        return(false);
-    return(true);
-}
+#define mypopen popen
+#define mypclose pclose
 
+#endif // LINKING_STATICALLY
+
+#endif

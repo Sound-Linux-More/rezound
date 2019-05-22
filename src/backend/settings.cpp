@@ -38,6 +38,15 @@ string gSysPresetsFilename="";
 CNestedDataFile *gSysPresetsFile=NULL;
 
 
+string gOSSOutputDevice="/dev/dsp";
+string gOSSInputDevice="/dev/dsp";
+
+
+string gFallbackWorkDir="/tmp"; // ??? would be something else on non-unix platforms
+
+
+string gClipboardDir="/tmp"; // ??? would be something else on non-unix platforms
+string gClipboardFilenamePrefix="rezclip";
 size_t gWhichClipboard=0;
 
 

@@ -165,15 +165,35 @@ void initializeBackend(ASoundPlayer *&_soundPlayer)
 
 		gPromptDialogDirectory=gSettingsRegistry->getValue("promptDialogDirectory");
 
-		
+
+		if(gSettingsRegistry->keyExists("OSSOutputDevice"))
+			gOSSOutputDevice= gSettingsRegistry->getValue("OSSOutputDevice");
+
+		if(gSettingsRegistry->keyExists("OSSInputDevice"))
+			gOSSInputDevice= gSettingsRegistry->getValue("OSSInputDevice");
+
+
+		// where ReZound should fallback to put working files if it can't write to where it loaded a file from
+			// ??? This could be an array where it would try multiple locations finding one that isn't full or close to full relative to the loaded file size
+		if(gSettingsRegistry->keyExists("fallbackWorkDir"))
+			gFallbackWorkDir= gSettingsRegistry->getValue("fallbackWorkDir");
+
+
 		if(gSettingsRegistry->keyExists("whichClipboard"))
 			gWhichClipboard= atoi(gSettingsRegistry->getValue("whichClipboard").c_str());
+
+		if(gSettingsRegistry->keyExists("clipboardDir"))
+			gClipboardDir= gSettingsRegistry->getValue("clipboardDir");
+
+		if(gSettingsRegistry->keyExists("clipboardFilenamePrefix"))
+			gClipboardFilenamePrefix= gSettingsRegistry->getValue("clipboardFilenamePrefix");
 
 		if(gSettingsRegistry->keyExists("followPlayPosition"))
 			gFollowPlayPosition= gSettingsRegistry->getValue("followPlayPosition")=="true";
 
 		if(gSettingsRegistry->keyExists("initialLengthToShow"))
 			gInitialLengthToShow= atof(gSettingsRegistry->getValue("initialLengthToShow").c_str());
+
 
 		if(gSettingsRegistry->keyExists("crossfadeEdges"))
 		{
@@ -185,13 +205,12 @@ void initializeBackend(ASoundPlayer *&_soundPlayer)
 
 
 		// -- 2
-						// ??? this base filename needs to be an application setting just as in CSound.cpp
-		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 1","/tmp/rezound.clipboard1"));
-		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 2","/tmp/rezound.clipboard2"));
-		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 3","/tmp/rezound.clipboard3"));
-		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 1","/tmp/rezound.record1"));
-		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 2","/tmp/rezound.record2"));
-		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 3","/tmp/rezound.record3"));
+		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 1",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard1"));
+		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 2",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard2"));
+		AAction::clipboards.push_back(new CNativeSoundClipboard("Native Clipboard 3",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".clipboard3"));
+		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 1",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record1"));
+		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 2",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record2"));
+		AAction::clipboards.push_back(new CRecordSoundClipboard("Record Clipboard 3",gClipboardDir+CPath::dirDelim+gClipboardFilenamePrefix+".record3"));
 
 			// make sure the global clipboard selector index is in range
 		if(gWhichClipboard>=AAction::clipboards.size())
@@ -246,9 +265,18 @@ void deinitializeBackend()
 	// -- 1
 	gSettingsRegistry->createKey("shareDirectory",gSysDataDirectory);
 	gSettingsRegistry->createKey("promptDialogDirectory",gPromptDialogDirectory);
+
+	gSettingsRegistry->createKey("OSSOutputDevice",gOSSOutputDevice);
+	gSettingsRegistry->createKey("OSSInputDevice",gOSSInputDevice);
+
+	gSettingsRegistry->createKey("fallbackWorkDir",gFallbackWorkDir);
+
+	gSettingsRegistry->createKey("clipboardDir",gClipboardDir);
+	gSettingsRegistry->createKey("clipboardFilenamePrefix",gClipboardFilenamePrefix);
 	gSettingsRegistry->createKey("whichClipboard",gWhichClipboard);
 	gSettingsRegistry->createKey("followPlayPosition",gFollowPlayPosition ? "true" : "false");
 	gSettingsRegistry->createKey("initialLengthToShow",gInitialLengthToShow);
+
 	gSettingsRegistry->createKey("crossfadeEdges",(float)gCrossfadeEdges);
 		gSettingsRegistry->createKey("crossfadeStartTime",gCrossfadeStartTime);
 		gSettingsRegistry->createKey("crossfadeStopTime",gCrossfadeStopTime);

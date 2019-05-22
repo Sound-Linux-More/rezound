@@ -25,3 +25,5 @@
 
 #undef HAVE_LIBVORBIS
 
+#undef LINKING_STATICALLY
+

@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <stdio.h> // for fprintf
+#include <math.h> // for log
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,13 +34,14 @@
 
 #include <sys/soundcard.h>
 
+
 #include <stdexcept>
 #include <string>
 #include <iostream>
 
 #include <istring>
 
-#include "AStatusComm.h"
+#include "settings.h"
 
 
 // ??? edit this to be able to detect necessary parameters from the typeof sample_t
@@ -51,11 +53,12 @@
 #define OSS_PCM_FORMAT AFMT_S16_LE
 #define SAMPLE_RATE 44100
 #define CHANNELS 2
-
+		
+#define BUFFER_SIZE_FRAMES 1024							// buffer size in frames (MUST be a power of 2)
 #define BUFFER_COUNT 4
-#define BUFFER_SIZE_BYTES 4096						// buffer size in bytes
-#define BUFFER_SIZE_BYTES_LOG2 12					// log2(BUFFER_SIZE_BYTES) -- that is 2^this is BUFFER_SIZE_BYTES
-#define BUFFER_SIZE_FRAMES (BUFFER_SIZE_BYTES/(sizeof(sample_t))/CHANNELS) 	// in sample frames
+
+#define BUFFER_SIZE_BYTES (BUFFER_SIZE_FRAMES*sizeof(sample_t)*CHANNELS)	// buffer size in bytes
+#define BUFFER_SIZE_BYTES_LOG2 ((size_t)(log(BUFFER_SIZE_BYTES)/log(2.0)))	// log2(BUFFER_SIZE_BYTES) -- that is 2^this is BUFFER_SIZE_BYTES
 
 
 COSSSoundPlayer::COSSSoundPlayer() :
@@ -63,6 +66,7 @@ COSSSoundPlayer::COSSSoundPlayer() :
 
 	initialized(false),
 	audio_fd(-1),
+	supportsFullDuplex(false),
 
 	playThread(this)
 {
@@ -85,10 +89,11 @@ void COSSSoundPlayer::initialize()
 		ASoundPlayer::initialize();
 
 		// open OSS device
-		const char *device="/dev/dsp";
-		if((audio_fd=open(device,O_WRONLY,0)) == -1) 
-			throw(runtime_error(string(__func__)+" -- error opening OSS device '"+string(device)+" -- "+strerror(errno)));
-		//printf("OSS: device: %s\n","/dev/dsp");
+		const string device=gOSSOutputDevice;
+		if((audio_fd=open(device.c_str(),O_WRONLY,0)) == -1) 
+			throw(runtime_error(string(__func__)+" -- error opening OSS device '"+device+" -- "+strerror(errno)));
+		//printf("OSS: device: %s\n",device.c_str());
+
 
 		// set the bit rate and endianness
 		int format=OSS_PCM_FORMAT; // signed 16-bit little endian
@@ -130,7 +135,7 @@ void COSSSoundPlayer::initialize()
 		} 
 		if (sampleRate!=SAMPLE_RATE)
 		{ 
-			fprintf(stderr,("warning: OSS used a different sample rate ("+istring(sampleRate)+") than what was asked for ("+istring(SAMPLE_RATE)+")\n").c_str());
+			fprintf(stderr,("warning: OSS used a different sample rate ("+istring(sampleRate)+") than what was asked for ("+istring(SAMPLE_RATE)+"); will have to do extra calculations to compensate\n").c_str());
 			//close(audio_fd);
 			//throw(runtime_error(string(__func__)+" -- error setting the sample rate -- the sample rate is not supported"));
 		} 
@@ -161,14 +166,24 @@ void COSSSoundPlayer::initialize()
 			close(audio_fd);
 			throw(runtime_error(string(__func__)+" -- error getting the buffering parameters -- "+strerror(errno)));
 		}
-		
+
+
+		// get the device's capabilities bit mask
+		int caps;
+		if(ioctl(audio_fd, SNDCTL_DSP_GETCAPS, &caps)==-1)
+			caps=0;
+
+		// determine if the device supports full duplex mode
+		// 	??? http://www.4front-tech.com/pguide/audio2.html#fulldup says that this should be checked AFTER attempting to put the card into full duplex mode... Shouldn't I be able to check the for ability before attempting to use it?
+		supportsFullDuplex= (caps&DSP_CAP_DUPLEX) ? true : false;
+
 		/*
 		printf("OSS player: info.fragments: %d\n",info.fragments);
 		printf("OSS player: info.fragstotal: %d\n",info.fragstotal);
 		printf("OSS player: info.fragsize: %d\n",info.fragsize);
 		printf("OSS player: info.bytes: %d\n",info.bytes);
+		printf("OSS player: supportsFullDuplex: %d\n",supportsFullDuplex);
 		*/
-
 
 		// start play thread
 		playThread.kill=false;
@@ -194,7 +209,21 @@ void COSSSoundPlayer::deinitialize()
 		close(audio_fd);
 
 		initialized=false;
+
+		//printf("OSS player: deinitialized\n");
 	}
+}
+
+void COSSSoundPlayer::aboutToRecord()
+{
+	if(!supportsFullDuplex)
+		deinitialize();
+}
+
+void COSSSoundPlayer::doneRecording()
+{
+	if(!initialized && !supportsFullDuplex)
+		initialize();
 }
 
 

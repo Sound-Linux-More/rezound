@@ -106,7 +106,7 @@ protected:
 
 
 	// this method can be overridden to do and setup before any dialog is shown for doing the action
-	virtual bool doPreActionSetup() { return(true); }
+	virtual bool doPreActionSetup(CLoadedSound *loadedSound) { return(true); }
 
 	/*
 	 * - The derived class is to implement this method to 'new' the derived AAction class and construct it
@@ -260,7 +260,10 @@ private:
 	sample_pos_t restoreWhere,restoreLength;
 	sample_pos_t restoreLength2;
 	sample_pos_t restoreTotalLength;
+
+	// use to backup the cues and output routing information for undo purposes
 	vector<CSound::RCue> restoreCues;
+	vector<int16_t> restoreOutputRoutes;
 
 	
 	// members used for crossfading and uncrossfading the edges after an action

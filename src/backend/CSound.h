@@ -65,8 +65,6 @@ public:
 	// attempts to open a poolFile with the given name and if it succeeds then it populates the data-members with the format-info
 	bool createFromWorkingPoolFileIfExists(const string originalFilename,bool promptIfFound=true);
 
-	static const string getWorkingFilename(const string originalFilename);
-
 
 
 	void closeSound();
@@ -123,8 +121,27 @@ public:
 	 */
 	// ??? all of the space modifier methods should make sure that a resize lock has been obtained... if it hasn't do INTERNAL_ERROR
 
-	// Structure Manipulation Members
-	void deleteChannel(unsigned channel);
+
+
+	// Structure Manipulation Members (Most require a resize lock to have been obtained)
+	
+	void addChannel(); // adds a new channel at the end
+	void addChannels(unsigned where,unsigned count);
+
+	void removeChannel(); // removes the last channel
+	void removeChannels(unsigned where,unsigned count);
+
+	// moves each channel specified by whichChannels to a temp pool and returns a handle (tempAudioPoolKey) to those temp pools to be restored
+	int moveChannelsToTemp(const bool whichChannels[MAX_CHANNELS]);
+	
+	// moves channels back into position from a moveChannelsToTempPool()
+	// tempAudioPoolKey was returned by moveChannelsToTempPool()
+	// whichChannels MUST be the same as when moveChannelsToTempPool() was called
+	// the audio length MUST be the same as when moveChannelsToTempPool() was called
+	// the channel layout MUST be the same as after the moveChannelsToTempPool() was finished
+	void moveChannelsFromTemp(int tempAudioPoolKey,const bool whichChannels[MAX_CHANNELS]);
+
+
 
 	/* 
 	 * - Adds 'length' samples of space at position 'where' to all channels
@@ -209,6 +226,9 @@ public:
 	// rotates 'amount' samples of data in the specified channel to the left or right between the 'start' and 'stop' positions
 	void rotateLeft(const bool whichChannels[MAX_CHANNELS],const sample_pos_t start,const sample_pos_t stop,const sample_pos_t amount);
 	void rotateRight(const bool whichChannels[MAX_CHANNELS],const sample_pos_t start,const sample_pos_t stop,const sample_pos_t amount);
+
+	// swaps the audio between channel A and channel B within the given region
+	void swapChannels(unsigned channelA,unsigned channelB,const sample_pos_t where,const sample_pos_t length);
 
 
 	void silenceSound(unsigned channel,sample_pos_t where,sample_pos_t length,bool doInvalidatePeakData=true,bool showProgressBar=true);
@@ -321,6 +341,9 @@ public:
 		else
 			return(poolFile.PoolFile_t::createPool<T>("__GENERAL__ "+poolName));
 	}
+	
+	void removeGeneralDataPool(const string poolName) { poolFile.removePool("__GENERAL__ "+poolName,false); }
+
 
 	void flush();
 
@@ -328,7 +351,11 @@ public:
 	void printSAT(); // temporary for debugging ???
 	void verifySAT(); // temporary for debugging ???
 
-protected:
+private:
+	friend class ASoundTranslator; // so it can verify some things
+	friend class CrezSoundTranslator;
+	friend class ASoundRecorder; // so it can backupSAT() on the pool file when recording is done
+
 
 	typedef TPoolAccesser<sample_t,PoolFile_t > CInternalRezPoolAccesser;
 
@@ -345,19 +372,15 @@ protected:
 	// and pass NIL_SAMPLE_POS as the maxLength parameter to match to the longest channel
 	void matchUpChannelLengths(sample_pos_t maxLength);
 
-private:
-
-	friend class ASoundTranslator; // so it can verify some things
-	friend class CrezSoundTranslator;
-	friend class ASoundRecorder; // so it can backupSAT() on the pool file when recording is done
-
 	void addSpaceToChannel(unsigned channel,sample_pos_t where,sample_pos_t length,bool doZeroData);
 	void removeSpaceFromChannel(unsigned channel,sample_pos_t where,sample_pos_t length);
 	void copyDataFromChannel(unsigned tempAudioPoolKey,unsigned channel,sample_pos_t where,sample_pos_t length);
 	void moveDataOutOfChannel(unsigned tempAudioPoolKey,unsigned channel,sample_pos_t where,sample_pos_t length);
-	void moveDataIntoChannel(unsigned tempAudioPoolKey,unsigned channel,sample_pos_t where,sample_pos_t length,bool removeTempAudioPool);
+	void moveDataIntoChannel(unsigned tempAudioPoolKey,unsigned channelInTempPool,unsigned channelInAudio,sample_pos_t where,sample_pos_t length,bool removeTempAudioPool);
 
 	static void appendForFudgeFactor(CInternalRezPoolAccesser dest,const CInternalRezPoolAccesser src,sample_pos_t srcWhere,sample_pos_t fudgeFactor);
+
+	void prvAddChannel(bool addAudioSpaceForNewChannel);
 
 	struct RFormatInfo
 	{

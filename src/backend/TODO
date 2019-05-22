@@ -1,6 +1,8 @@
 
 --- THINGS TO DO FOR SURE ---
 
+	- change ASoundFileManager to cancel closing if the close asks to save an mp3 file.. then it asks for the save parameters, then they hit cancel on the mp3 parameters dialog... just return the bool value back up.. this should also top a close all on exit and stop the exit
+
 	- create separate CDSPLevelDetectorRMS and CDSPPeakLevelDetectorPeak dsp blocks
 
 	- create a template method in DSPBlocks which is a mean finder given an accessor and a range to find the mean for removing DC
@@ -14,22 +16,13 @@
 
 	- Add a feature to ASoundRecorder that tells it to start when a certain threshold is hit in percent or dBFS
 
-	- need to make 'add channel' and remove channel actions so I can test more than stereo number of channels... 
-		- DONE (but no frontend control yet): when I do implement the more than 2 channels, I need to have a way to route the multiple channels of a sound to the 2 (or more) channels of sound card output
-		- DONE the default (when a sound is loaded) should be just to assign each channel to the lesser number of sound card channels in a rotating fashion
-		- DONE the routing should be assigned per CSoundPlayerChannel object, but the routing information should also be saved in a pool in the sound object
-
 	- use progress bars when doing TPoolAccesser::copyData and TPoolAccesser::zeroData 
 		- acutally... break the call into 100 chunks and update a progress bar then
 
 	- rename MAX_CHANNELS and MAX_LENGTH in CSound_defs.h to something a little more ReZound specific like REZ_MAX_CHANNELS REZ_MAX_LENGTH
 
-	- change the ClipSample macro to an inline function so _SSS is no longer a static global... verify that the assembler for the inline is no less efficient than the macro
-
 	- I need to think thru and handle problems with the data becoming too large for whatever address space is currently active
 		- if CSound is about to change the space, if the total space is about to cross some threshhold, I shouldn't proceed to do the action
-
-	- use a registry setting for knowing where to put working files and the clipboard instead of always /tmp
 
 	- Need to handle duplicate named cues when loading a file.. I don't allow them, but a file format might
 
@@ -40,7 +33,6 @@
 		- I need to check that when I pass argv to fox's initialize function that it either does or does not remove the X arguments.
 		- --help should be detected by all processers of command line arguement and add to the stdout the arguments that they handle.
 		- I suppose I should use popt because it is packaged for most all rpm abd deb based distros.. I need to find URL of popt's homepage and refer to that on error in configure
-
 
 	- Eventually, I need to have the frontend make use of the backend's ability for some of the actions to use different LFO implementations
 
@@ -58,15 +50,9 @@
 
 	- could warn the user if they are saving a file that was loaded from a lossy format then saving again to a lossy format that the loss will start to build up and become quite audible rather quickly
 
+	- I could enhance moveDataIntoPool/moveDataOutOfPool to save peak chunk information too, so it wouldn't recalc all the peak chunks when undoing an action... I would still have to recalculate the 1 or 2 peak chunks for the edges, but be able to avoid doing all of the middle
+
 	- in order to implement a "Save Selection" under the editing menu, I should make the sound translator objects accept a start and stop paramater in the save methods (and even later, a vector of starts and stops for multiple selected regions or something)
-
-	- use TSoundStretcher in CSoundPlayerChannel
-		- the checks in the inner loop are not necessary... I should be able to determine before hand, how many loops to do and when the loop point will be.... just use TSoundStretcher in the mean time of each loop
-		- handling the amplitudes and envelopes is still a matter of scaling the result of TSoundStretcher::getSample()
-		- I'm not sure how I would handle reverse direction
-
-		- before  do this.. check the CPU usage when playing 5 sounds... after changing it, check 5 sounds again
-
 
 	- I could easily remember native clipboards between runs by not deleting removing the pool file's file
 
@@ -74,13 +60,10 @@
 		- it would need to let the user paste from a file, the whole file probably...
 		- when copying to this clipboard it should ask for a filename and save to that filename... possibly even having the option to turn around and open that file when the copy is done...
 			- if at all possible, avoid doing any extra read/write of all the audio when opening after copying/cuting
+		- don't let CFileClipboard act on a file that is already loaded
 
 	- To speed up initial work upon loading a large file (>100mb) I could have the loading functions calculate the peak chunk info instead of loading then calcing the peak chunk on the first draw which causes it to have to read and write the data twice instead of once
 		- or use the background fage as I'm leaning toward
-
-	- The only reason I don't prebuffer more data than I do is because the play position drawn in the front end is always a little ahead of the acutal playing sound... I could buffer a lot of data if I were to know the approximate delay time of processing to sound card I might be able to overcome the problem...
-		- One possibility is to be able to know which buffer is playing, then I could tag each buffer with a play position for the start of that buffer... then I would just render the play position on screen as the start position of the currently playing buffer
-		- Right now, if I play a bunch of sounds and run top, each time top updates it causes a break in the sound.  This shouldn't happen though if I were to prebuffer more data, I only need to over come the play position problem.  Perhaps there is a schedule that the play position could be on, each time a buffer is mixed it records a rather precise time-of-day and each time them method is called that asks for the play position it knows how much time has passed since then and returns where it should be playing... There would be a problem with positions after a loop point, but perhaps I could keep a list of times when the loop point should have been crossed and factor in those times
 
 	- This is partially complete... I could go further to do it to all actions possible (for the realtime value later)
 		- I could make the noise-gate/exciter(done) and compresser/limiter(doesn't exist yet) CDSPBlocks so their abilities would be easily used in other effects
@@ -110,6 +93,15 @@
 		- the parameters which are given to AAction's constructor and doAction are somewhat arbirary in which ones are where
 		- possibly I should just give all of them to the constructor or all to the doAction method, except maybe the channel
 		- or I could decide which ones logically go where and for what reason
+
+	- change the ClipSample macro to an inline function so _SSS is no longer a static global... verify that the assembler for the inline is no less efficient than the macro
+		- I did this, and the inlined function is just as good as the macro, but it won't get inlined unless -O1 is given
+		- -O1 does make ReZound run much faster but takes a LONG time to compile and I haven't tested it to know that it doesn't introduce bugs
+
+	- evenutually I should have a fage that runs in the back ground... or perhaps do it ever so often on frontend calls to AAction that it determines the fragmentation level and calls defrag about a certain level
+		- it's really not necessary unless I think that the fragmentation is really going to affect performance
+		- the fragmentation level should probably be calculated as a ratio of the number of logical blocks that a perfectly defragged pool would take to the number of logical blocks that it is taking.. and it might be good to take into accound how long it's going to take to defrag based on the amount of the data that will have to be copied
+		
 
 
 
@@ -244,4 +236,28 @@
 
 	- need to put some #if version_checks in ClibaudiofileSoundTranslator when the patch is in production
 		- and unstick the 1.9 revision number on ClibaudiofileSoundTranslator (cvs update -A)
+
+	- DONE BY REWRITING CSoundPlayerChannel
+		- use TSoundStretcher in CSoundPlayerChannel
+			- the checks in the inner loop are not necessary... I should be able to determine before hand, how many loops to do and when the loop point will be.... just use TSoundStretcher in the mean time of each loop
+			- handling the amplitudes and envelopes is still a matter of scaling the result of TSoundStretcher::getSample()
+			- I'm not sure how I would handle reverse direction
+			- before  do this.. check the CPU usage when playing 5 sounds... after changing it, check 5 sounds again
+
+		- The only reason I don't prebuffer more data than I do is because the play position drawn in the front end is always a little ahead of the acutal playing sound... I could buffer a lot of data if I were to know the approximate delay time of processing to sound card I might be able to overcome the problem...
+			- One possibility is to be able to know which buffer is playing, then I could tag each buffer with a play position for the start of that buffer... then I would just render the play position on screen as the start position of the currently playing buffer
+			- Right now, if I play a bunch of sounds and run top, each time top updates it causes a break in the sound.  This shouldn't happen though if I were to prebuffer more data, I only need to over come the play position problem.  Perhaps there is a schedule that the play position could be on, each time a buffer is mixed it records a rather precise time-of-day and each time them method is called that asks for the play position it knows how much time has passed since then and returns where it should be playing... There would be a problem with positions after a loop point, but perhaps I could keep a list of times when the loop point should have been crossed and factor in those times
+
+
+	- use a registry setting for knowing where to put the working file for a loaded file instead of always /tmp
+
+	- use a registry setting for knowing where to put the clipboard instead of always /tmp
+
+	- With the new way of doing audio output, I can enhance the output routing info where it can actually play a mono file in both speakers
+		- I will need to rename the pool "OutputRoutes" to "OutputRoutes_v2"
+
+	- need to make 'add channel' and remove channel actions so I can test more than stereo number of channels... 
+		- DONE (but no frontend control yet): when I do implement the more than 2 channels, I need to have a way to route the multiple channels of a sound to the 2 (or more) channels of sound card output
+		- DONE the default (when a sound is loaded) should be just to assign each channel to the lesser number of sound card channels in a rotating fashion
+		- DONE the routing should be assigned per CSoundPlayerChannel object, but the routing information should also be saved in a pool in the sound object
 

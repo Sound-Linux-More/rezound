@@ -483,7 +483,7 @@ void CNestedDataFile::writeFile(const string filename) const
 	if(f==NULL)
 		throw(runtime_error(string(__func__)+" -- error opening file for write: "+filename));
 
-	fprintf(f,"// ReZound program generated data; be careful if modifying\n\n");
+	fprintf(f,"// ReZound program generated data; be careful if modifying.  Consider making a backup before modifying!\n\n");
 
 	try
 	{
@@ -495,6 +495,21 @@ void CNestedDataFile::writeFile(const string filename) const
 		fclose(f);
 		throw;
 	}
+}
+
+/* translate \ to \\ and " to \" in the given filename */
+static const string fixEscapes(const string _s)
+{
+	string s=_s;
+	for(size_t t=0;t<s.size();t++)
+	{
+		if(s[t]=='\\' || s[t]=='"')
+		{
+			s.insert(t,"\\");
+			t++;
+		}
+	}
+	return(s);
 }
 
 void CNestedDataFile::prvWriteData(void *_f,int indent,const CVariant *variant) const
@@ -519,7 +534,7 @@ void CNestedDataFile::prvWriteData(void *_f,int indent,const CVariant *variant) 
 	switch(variant->type)
 	{
 	case ktString:
-		fprintf(f,"%s=\"%s\";\n",name.c_str(),variant->stringValue.c_str());
+		fprintf(f,"%s=\"%s\";\n",name.c_str(),fixEscapes(variant->stringValue).c_str());
 		break;
 
 	case ktFloat:

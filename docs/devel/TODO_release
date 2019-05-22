@@ -1,4 +1,4 @@
-$Id: TODO_release,v 1.10 2002/07/02 19:14:20 ddurham Exp $
+$Id: TODO_release,v 1.12 2002/08/06 20:22:58 ddurham Exp $
 
 This is a todo list for things we need to do for an official release. In
 other words, it's what we'll want to change between the cvs sources and a
@@ -9,15 +9,18 @@ distro tarball(eg: removing warning flags)
 
 2. Revise docs/AUTHORS to give proper credit, and only list files included in final release. Might want to save separate version to keep in CVS.
 
-3. Revise docs/NEWS use cvs2cl.pl to determine what significant things have changed since the previous release
+3. Revise docs/NEWS and docs/Features.txt (use cvs2cl.pl to determine what significant things have changed since the previous release)
 
-5. Update the version number in configure.in and docs/INSTALL
+4. Update the version number in configure.in and docs/INSTALL
 	- and then do a bootstrap ; configure
-	- check these two in
 
-5. 'make distcheck'
-6. rebuild FOX with all the --disable flags then 'make_standalone.sh'
+5. check any modified files in (docs/AUTHORS, docs/NEWS, docs/Features.txt, configure.in, docs/INSTALL, etc)
 
-7. Make a cvs release tag
+6. 'make distcheck'
+7. rebuild FOX with all the --disable flags then 'make_standalone.sh'
+
+8. Make a cvs release tag
 	- cvs tag rezound-1_2_3alpha
+
+9. make release on sourceforge.net, add a news blurb in the news section, and announce on freshmeat.net
 

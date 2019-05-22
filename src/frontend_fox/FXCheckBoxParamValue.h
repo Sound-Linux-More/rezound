@@ -18,53 +18,54 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __COggDialog_H__
-#define __COggDialog_H__
+#ifndef __FXCheckBoxParamValue_H__
+#define __FXCheckBoxParamValue_H__
 
 #include "../../config/common.h"
 #include "fox_compat.h"
 
-class COggDialog;
+#include <vector>
+#include <string>
 
-#include "FXModalDialogBox.h"
+#include <fox/fx.h>
 
-#include "../backend/AFrontendHooks.h"
+class CNestedDataFile;
 
-class COggDialog : public FXModalDialogBox
+class FXCheckBoxParamValue : public FXVerticalFrame
 {
-	FXDECLARE(COggDialog);
+	FXDECLARE(FXCheckBoxParamValue);
 public:
+	FXCheckBoxParamValue(FXComposite *p,int opts,const char *title,bool checked);
 
-	COggDialog(FXWindow *mainWindow);
+	const bool getValue();
+	void setValue(const bool checked);
 
-	bool show(AFrontendHooks::OggCompressionParameters &parameters);
+	const string getTitle() const;
 
-	long onRadioButton(FXObject *sender,FXSelector sel,void *ptr);
+	void setHelpText(const FXString &text);
+	FXString getHelpText() const;
 
-	enum 
+	void readFromFile(const string &prefix,CNestedDataFile *f);
+	void writeToFile(const string &prefix,CNestedDataFile *f);
+
+/*
+	enum
 	{
-		ID_WHICH_BUTTON=FXModalDialogBox::ID_LAST,
+		ID_SLIDER=FXPacker::ID_LAST,
+
+		ID_VALUE_TEXTBOX,
+		ID_VALUE_SPINNER,
+
 		ID_LAST
 	};
+*/
+
 
 protected:
-	COggDialog() {}
+	FXCheckBoxParamValue() {}
 
 private:
-
-	FXRadioButton *qualityButton;
-	FXComposite *qualityFrame;
-		FXTextField *qualityTextBox;
-
-	FXRadioButton *CBRButton;
-	FXComposite *CBRFrame;
-		FXComboBox *bitRateComboBox;
-
-	FXRadioButton *VBRButton;
-	FXComposite *VBRFrame;
-		FXComboBox *minRateComboBox;
-		FXComboBox *normRateComboBox;
-		FXComboBox *maxRateComboBox;
+	FXCheckButton *checkBox;
 };
 
 #endif

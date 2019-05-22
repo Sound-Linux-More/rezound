@@ -40,8 +40,7 @@ void ASoundPlayer::initialize()
 
 void ASoundPlayer::deinitialize()
 {
-	// wait for out standing sound player channels to go away???
-	killAll();
+	stopAll();
 }
 
 CSoundPlayerChannel *ASoundPlayer::newSoundPlayerChannel(CSound *sound)
@@ -51,15 +50,13 @@ CSoundPlayerChannel *ASoundPlayer::newSoundPlayerChannel(CSound *sound)
 
 void ASoundPlayer::addSoundPlayerChannel(CSoundPlayerChannel *soundPlayerChannel)
 {
-	//if(!soundPlayerChannels.add(soundPlayerChannel))
 	if(!soundPlayerChannels.insert(soundPlayerChannel).second)
 		throw(runtime_error(string(__func__)+" -- sound player channel already in list"));
 }
 
 void ASoundPlayer::removeSoundPlayerChannel(CSoundPlayerChannel *soundPlayerChannel)
 {
-	soundPlayerChannel->kill();
-	//soundPlayerChannels.removeValue(soundPlayerChannel);
+	soundPlayerChannel->stop();
 	
 	set<CSoundPlayerChannel *>::const_iterator i=soundPlayerChannels.find(soundPlayerChannel);
 	if(i!=soundPlayerChannels.end())
@@ -70,22 +67,17 @@ void ASoundPlayer::mixSoundPlayerChannels(const unsigned nChannels,sample_t * co
 {
 	memset(buffer,0,bufferSize*sizeof(*buffer)*nChannels);
 
-	/*
-	for(unsigned i=0;i<soundPlayerChannels.getSize();i++)
-		soundPlayerChannels[i]->mixOntoBuffer(nChannels,buffer,bufferSize);
-	*/
+	// ??? it might be nice that if no sound player channel object is playing that this method would not return
+	// so that the caller wouldn't eat any CPU time doing anything with the silence returned
+
 	for(set<CSoundPlayerChannel *>::iterator i=soundPlayerChannels.begin();i!=soundPlayerChannels.end();i++)
 		(*i)->mixOntoBuffer(nChannels,buffer,bufferSize);
 }
 
-void ASoundPlayer::killAll()
+void ASoundPlayer::stopAll()
 {
-	/*
-	for(unsigned t=0;t<soundPlayerChannels.getSize();t++)
-		soundPlayerChannels[t]->kill();
-	*/
 	for(set<CSoundPlayerChannel *>::iterator i=soundPlayerChannels.begin();i!=soundPlayerChannels.end();i++)
-		(*i)->kill();
+		(*i)->stop();
 }
 
 

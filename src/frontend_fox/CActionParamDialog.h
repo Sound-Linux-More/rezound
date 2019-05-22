@@ -35,6 +35,7 @@ class CActionParamDialog;
 #include "FXConstantParamValue.h"
 #include "FXTextParamValue.h"
 #include "FXComboTextParamValue.h"
+#include "FXCheckBoxParamValue.h"
 #include "FXGraphParamValue.h"
 
 #include "../backend/AActionDialog.h"
@@ -53,18 +54,20 @@ public:
 
 	void addSlider(const string name,const string units,FXConstantParamValue::f_at_xs interpretValue,FXConstantParamValue::f_at_xs uninterpretValue,f_at_x optRetValueConv,const double initialValue,const int minScalar,const int maxScalar,const int initScalar,bool showInverseButton);
 	void addTextEntry(const string name,const string units,const double initialValue,const double minValue,const double maxValue,const string unitsHelpText="");
-	void addComboTextEntry(const string name,const vector<string> &items,const string helpText="");
+	void addComboTextEntry(const string name,const vector<string> &items,const string helpText="",bool isEditable=false);
+		FXComboTextParamValue *getComboText(const string name); // so a derived class can set the values
+	void addCheckBoxEntry(const string name,const bool checked,const string helpText="");
 	void addGraph(const string name,const string units,FXGraphParamValue::f_at_xs interpretValue,FXGraphParamValue::f_at_xs uninterpretValue,f_at_x optRetValueConv,const int minScalar,const int maxScalar,const int initialScalar);
-
-	// don't like this, but it will do for now... someday I've got to come up with just how to specify placement of the added wigets
-	void setMargin(FXint margin); // will add a margin the left and right of all the controls
 
 	/* 
 	 * index corrisponds to the order that the add...() methods were called 
-	 * and this can only be called for sliders and text entries
+	 * and this can only be called for sliders, text entries, check boxes, and
+	 * to set the index of a combobox
 	 */
-
 	void setValue(size_t index,const double value);
+
+	// don't like this, but it will do for now... someday I've got to come up with just how to specify placement of the added wigets
+	void setMargin(FXint margin); // will add a margin the left and right of all the controls
 
 	bool show(CActionSound *actionSound,CActionParameters *actionParameters);
 
@@ -97,10 +100,11 @@ private:
 		ptConstant,
 		ptText,
 		ptComboText,
+		ptCheckBox,
 		ptGraph
 	};
 
-	// the void * points to either an FXConstantParamValue, FXTextParamValue, FXComboTextParamValue or an FXGraphParamValue
+	// the void * points to either an FXConstantParamValue, FXTextParamValue, FXComboTextParamValue, FXCheckBoxParamValue or an FXGraphParamValue
 	vector<pair<ParamTypes,void *> > parameters;
 	vector<f_at_x> retValueConvs;
 

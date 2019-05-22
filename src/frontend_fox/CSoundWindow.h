@@ -26,6 +26,8 @@
 
 #include <fox/fx.h>
 
+#include <string>
+
 #include "FXRezWaveView.h"
 
 class CLoadedSound;
@@ -144,7 +146,10 @@ public:
 	long onResize(FXObject *sender,FXSelector,void*);
 
 
+	string shuttleControlScalar;
+	bool shuttleControlSpringBack;
 	CLoadedSound * const loadedSound;
+
 
 protected:
 
@@ -226,6 +231,8 @@ private:
 	FXFont *statusFont;
 
 	FXCheckButton *muteButtons[MAX_CHANNELS];
+	unsigned muteButtonCount;
+	void recreateMuteButtons(bool callCreate);
 
 	CAddCueActionFactory * addCueActionFactory;
 	CRemoveCueActionFactory * removeCueActionFactory;

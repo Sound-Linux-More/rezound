@@ -26,6 +26,8 @@
 
 #undef HAVE_LIBVORBIS
 
+#undef LINKING_STATICALLY
+
 /* Define if you have the <dlfcn.h> header file.  */
 #undef HAVE_DLFCN_H
 

@@ -1,6 +1,12 @@
 
 --- THINGS TO DO FOR SURE ---
 
+	- add a quick (shortcut to) fading in or out the selection use x^2 for the algorithm
+
+	- put a dBFS scale indicator next to the record level meters
+
+	- put a scale indicator next to the wave form in the FXRezWaveView widget
+
 	- create some useful presets for the new filter actions
 
 	- perhaps a 'view' pull-down ... possible menu items...
@@ -52,6 +58,7 @@
 
 	- the frontend needs a way to tell COSSSoundPlayer and COSSSoundRecorder which device to use
 		- I should be able to test this at home since I have 2 sound cards installed
+		- I've already made a registry setting for it
 
 	- rename setHelpText in my FX...ParamValues to setTipText since that's what it's known as in FOX
 
@@ -59,6 +66,8 @@
 
 
 --- POSSIBLE THINGS TO DO ---
+
+	- If I did every want to get rid of using reswrap, then I could have CFOXIcons go out and manually load from disk the icon files by looking in the share directory.. this would allow the user to replace the icons if they wanted and it would still avoid loading a reused icon over and over since it's abstracted in the CFOXIcon class
 
 	- like a webbrowser... if the program is already running and they run it again with a filename... just open it in the existing process... 
 
@@ -85,6 +94,14 @@
 	
 	- if the frontend gets too slow about saving user presets, I could create a gUserPresetFile which stays allocated and doesn't have to reparse the file every time like it does now.
 
+
+--- PREFERENCES when I make a preferences dialog --
+	- "auto-play after load" feature 
+	- clipboard basename
+	- clipboard directory
+	- working directory space(s)
+		- maybe a checkmark that says never open where it was loaded from
+	- reopen history size
 
 
 
