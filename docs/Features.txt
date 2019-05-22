@@ -54,6 +54,7 @@
 		- Limited Overwrite
 		- Mix
 		- Limited Mix
+		- Fit Mix
 	- Insert Silence
 	- Mute
 	- Add Channels
@@ -71,13 +72,23 @@
 	- Flange
 	- Delay (Echo)
 	- Quantize
+	- Distortion (by a curve)
 	- Varied Repeat
+
+- Convolution
+	- For Various Effects Like Reverb and Applying Room Characteristics
+	- Custom Filters
 
 - IIR Single Pole Filters
 	- Lowpass
 	- Highpass
 	- Bandpass
 	- Notch
+
+- Biquad Resonant Filters
+	- Lowpass
+	- Highpass
+	- Bandpass
 
 - Looping Tools (much more to come)
 	- Make Selection Symetric
@@ -87,6 +98,7 @@
 	- Noise Gate
 	- Dynamic Range Compression
 	- Normalization
+	- Resample
 
 - Selectable LFO Shapes for Actions that Use an LFO (more to come)
 

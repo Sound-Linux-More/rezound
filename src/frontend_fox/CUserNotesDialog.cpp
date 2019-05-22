@@ -49,14 +49,17 @@ CUserNotesDialog::CUserNotesDialog(FXWindow *mainWindow) :
 {
 }
 
+CUserNotesDialog::~CUserNotesDialog()
+{
+}
 
 void CUserNotesDialog::show(CLoadedSound *loadedSound,FXint placement)
 {
-	notesTextBox->setText(loadedSound->getSound()->getUserNotes().c_str());
+	notesTextBox->setText(loadedSound->sound->getUserNotes().c_str());
 	if(execute(placement))
 	{
-		loadedSound->getSound()->setIsModified(true);
-		loadedSound->getSound()->setUserNotes(notesTextBox->getText().text());
+		loadedSound->sound->setIsModified(true);
+		loadedSound->sound->setUserNotes(notesTextBox->getText().text());
 	}
 }
 

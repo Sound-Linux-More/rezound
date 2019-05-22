@@ -99,10 +99,10 @@ LDFLAGS = @LDFLAGS@
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
 noinst_LTLIBRARIES = libEffects.la
-libEffects_la_SOURCES =  		CChangeAmplitudeEffect.cpp 		CChangeRateEffect.cpp 		CDelayEffect.cpp 		CFlangeEffect.cpp 		CReverseEffect.cpp 		CStaticReverbEffect.cpp 		CVariedRepeatEffect.cpp 		CQuantizeEffect.cpp 		CTestEffect.cpp
+libEffects_la_SOURCES =  		CChangeAmplitudeEffect.cpp 		CChangeRateEffect.cpp 		CDelayEffect.cpp 		CFlangeEffect.cpp 		CReverseEffect.cpp 		CVariedRepeatEffect.cpp 		CQuantizeEffect.cpp 		CDistortionEffect.cpp 		CTestEffect.cpp
 
 
-noinst_HEADERS =  		CChangeAmplitudeEffect.h 		CChangeRateEffect.h 		CDelayEffect.h 		CFlangeEffect.h 		CReverseEffect.h 		CStaticReverbEffect.h 		CVariedRepeatEffect.h 		CQuantizeEffect.h 		CTestEffect.h 		EffectActions.h
+noinst_HEADERS =  		CChangeAmplitudeEffect.h 		CChangeRateEffect.h 		CDelayEffect.h 		CFlangeEffect.h 		CReverseEffect.h 		CVariedRepeatEffect.h 		CQuantizeEffect.h 		CDistortionEffect.h 		CTestEffect.h 		EffectActions.h
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -117,7 +117,7 @@ libEffects_la_LDFLAGS =
 libEffects_la_LIBADD = 
 libEffects_la_OBJECTS =  CChangeAmplitudeEffect.lo CChangeRateEffect.lo \
 CDelayEffect.lo CFlangeEffect.lo CReverseEffect.lo \
-CStaticReverbEffect.lo CVariedRepeatEffect.lo CQuantizeEffect.lo \
+CVariedRepeatEffect.lo CQuantizeEffect.lo CDistortionEffect.lo \
 CTestEffect.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -287,6 +287,18 @@ CDelayEffect.lo CDelayEffect.o : CDelayEffect.cpp CDelayEffect.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
 	../ALFO.h ../CGraphParamValueNode.h ../DSP/DelayEffect.h \
 	../DSP/Delay.h ../unit_conv.h
+CDistortionEffect.lo CDistortionEffect.o : CDistortionEffect.cpp \
+	CDistortionEffect.h ../../../config/common.h \
+	../../../config/config.h ../AAction.h ../settings.h \
+	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
+	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
+	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp \
+	../CGraphParamValueNode.h ../DSP/Distorter.h ../unit_conv.h \
+	../CActionParameters.h ../ALFO.h
 CFlangeEffect.lo CFlangeEffect.o : CFlangeEffect.cpp CFlangeEffect.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \

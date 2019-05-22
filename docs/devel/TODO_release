@@ -1,4 +1,4 @@
-$Id: TODO_release,v 1.14 2002/09/06 16:03:41 ddurham Exp $
+$Id: TODO_release,v 1.15 2002/09/06 18:40:23 ddurham Exp $
 
 This is a todo list for things we need to do for an official release. In
 other words, it's what we'll want to change between the cvs sources and a
@@ -16,17 +16,21 @@ distro tarball(eg: removing warning flags)
 
 5. PROOF-READ ALL CHANGES YOU JUST MADE!
 
-6. checkin any modified files (docs/AUTHORS, docs/NEWS, docs/Features.txt, configure.in, docs/INSTALL, etc)
+6. 'make distcheck'
+7. rebuild FOX with all the --disable possible flags then 'make_standalone.sh'
+8. create .rpm from standalone
+	- update the rpm spec file
+	- copy the source tarball to /usr/src/RPM/SOURCES
+	- rpmbuild -ba rezound.spec
 
-7. 'make distcheck'
-8. rebuild FOX with all the --disable flags then 'make_standalone.sh'
-9. create .rpm from standalone
+9. checkin any modified files (docs/AUTHORS, docs/NEWS, docs/Features.txt, configure.in, docs/INSTALL, etc)
+
 10. get .deb from Anthony
 
-11. Make a cvs release tag
+12. Make a cvs release tag (but check in any files that may have been changed first)
 	- cvs tag rezound-1_2_3alpha
 
-12. announce:
+13. announce:
 	- make release on sourceforge.net
 	- add a news blurb in the news section at sourceforge
 	- freshmeat.net

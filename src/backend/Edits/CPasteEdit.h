@@ -32,12 +32,15 @@ public:
 	{
 		ptInsert,
 		ptReplace,
-		ptMix, // is overwrite with mixMethod of mmOverwrite
-		ptLimitedMix // is limited overwrite with mixMethod of mmOverwrite
+		ptOverwrite,
+		ptLimitedOverwrite,
+		ptMix,
+		ptLimitedMix,
+		ptFitMix // mix clipboard onto selection but make the clipboard fit into selection by changing its rate (or in the future, possible changing speed without pitch)
 	};
 
 	//                                        const bool pasteChannels[MAX_CHANNELS][MAX_CHANNELS]
-	CPasteEdit(const CActionSound actionSound,const vector<vector<bool> > &pasteChannels,PasteTypes pasteType,MixMethods mixMethod=mmOverwrite);
+	CPasteEdit(const CActionSound actionSound,const vector<vector<bool> > &pasteChannels,PasteTypes pasteType,MixMethods mixMethod);
 	virtual ~CPasteEdit();
 
 
@@ -56,7 +59,7 @@ private:
 
 
 	//                                              const bool pasteChannels[MAX_CHANNELS][MAX_CHANNELS]
-	void pasteData(const ASoundClipboard *clipboard,const vector<vector<bool> > &pasteChannels,const CActionSound &actionSound,const sample_pos_t srcLength,bool invalidatePeakData,MixMethods initialMixMethod,MixMethods nonInitialMixMethod);
+	void pasteData(const ASoundClipboard *clipboard,const vector<vector<bool> > &pasteChannels,const CActionSound &actionSound,const sample_pos_t srcLength,bool invalidatePeakData,MixMethods initialMixMethod,MixMethods nonInitialMixMethod,SourceFitTypes fitSrc);
 
 	// --- undo information --------
 	sample_pos_t undoRemoveLength;
@@ -68,6 +71,7 @@ class CInsertPasteEditFactory : public AActionFactory
 {
 public:
 	CInsertPasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~CInsertPasteEditFactory();
 
 	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 
@@ -78,6 +82,7 @@ class CReplacePasteEditFactory : public AActionFactory
 {
 public:
 	CReplacePasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~CReplacePasteEditFactory();
 
 	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 
@@ -88,6 +93,7 @@ class COverwritePasteEditFactory : public AActionFactory
 {
 public:
 	COverwritePasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~COverwritePasteEditFactory();
 
 	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 
@@ -98,6 +104,7 @@ class CLimitedOverwritePasteEditFactory : public AActionFactory
 {
 public:
 	CLimitedOverwritePasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~CLimitedOverwritePasteEditFactory();
 
 	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 
@@ -108,6 +115,7 @@ class CMixPasteEditFactory : public AActionFactory
 {
 public:
 	CMixPasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~CMixPasteEditFactory();
 
 	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 
@@ -118,6 +126,18 @@ class CLimitedMixPasteEditFactory : public AActionFactory
 {
 public:
 	CLimitedMixPasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~CLimitedMixPasteEditFactory();
+
+	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
+
+	bool doPreActionSetup(CLoadedSound *loadedSound);
+};
+
+class CFitMixPasteEditFactory : public AActionFactory
+{
+public:
+	CFitMixPasteEditFactory(AActionDialog *channelSelectDialog);
+	virtual ~CFitMixPasteEditFactory();
 
 	CPasteEdit *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 

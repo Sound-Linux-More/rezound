@@ -14,7 +14,7 @@
 /* #undef size_t */
 
 /* Define if you have the ANSI C header files.  */
-/* #undef STDC_HEADERS */
+#define STDC_HEADERS 1
 
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
@@ -28,8 +28,6 @@
 #define HAVE_LIBOGG 1
 
 #define HAVE_LIBVORBIS 1
-
-#define LINKING_STATICALLY 1
 
 /* Define if you have the <dlfcn.h> header file.  */
 #define HAVE_DLFCN_H 1
@@ -59,14 +57,14 @@
 #define PACKAGE "rezound"
 
 /* Version number of package */
-#define VERSION "0.4.0beta"
+#define VERSION "0.5.0beta"
 
 /*  This is the prefix passed to configure */
-#define INSTALL_PREFIX "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.4.0beta"
+#define INSTALL_PREFIX "/usr/local"
 
 /*  This is the top source directory for pre-installed testing */
-#define SOURCE_DIR "/home/ddurham/code/rezound"
+#define SOURCE_DIR "/home/ddurham/code/rezound_alt2"
 
 /*  This the --datadir (share) set by configure  */
-#define DATA_DIR "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.4.0beta/share"
+#define DATA_DIR "/usr/local/share"
 

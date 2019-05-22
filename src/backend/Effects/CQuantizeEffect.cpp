@@ -56,7 +56,7 @@ bool CQuantizeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Quantize -- Channel "+istring(i),start,stop); 
+			CStatusBar statusBar("Quantize -- Channel "+istring(i),start,stop,true); 
 
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -67,8 +67,19 @@ bool CQuantizeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 			for(sample_pos_t t=start;t<=stop;t++)
 			{
 				dest[t]=ClipSample(quantizer.processSample((mix_sample_t)(inputGain*src[srcP++]))*outputGain);
-				statusBar.update(t);
+				
+				if(statusBar.update(t))
+				{ // cancelled
+					if(prepareForUndo)
+						undoActionSizeSafe(actionSound);
+					else
+						actionSound.sound->invalidatePeakData(i,actionSound.start,t);
+					return false;
+				}
 			}
+
+			if(!prepareForUndo)
+				actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
 		}
 	}
 
@@ -91,6 +102,10 @@ void CQuantizeEffect::undoActionSizeSafe(const CActionSound &actionSound)
 
 CQuantizeEffectFactory::CQuantizeEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
 	AActionFactory("Quantize","Quantize the Number of Possible Sample Levels",false,channelSelectDialog,normalDialog,NULL)
+{
+}
+
+CQuantizeEffectFactory::~CQuantizeEffectFactory()
 {
 }
 

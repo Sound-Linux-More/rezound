@@ -53,7 +53,7 @@ class ASoundClipboard;
 class AActionFactory
 {
 public:
-	virtual ~AActionFactory() { }
+	virtual ~AActionFactory();
 
 	// Invoked on this factory action object, sets in motion what needs to be done to perform the associated action.
 	// The invoker of the action should provide the CLoadedSound object and a CActionParameters object to use to put
@@ -93,8 +93,6 @@ public:
 
 
 protected:
-
-
 
 	// - hasAdvancedMode can be passed as true if something is to be done when performAction's advancedMode parameter is true
 	// - Otherwise, it will say "this action has no advanced mode" so the user doesn't think something different than normal is
@@ -141,7 +139,7 @@ private:
  * doActionSizeSafe should just throw one of these.
  */
 #include <stdexcept>
-class EUserMessage : public runtime_error { public: EUserMessage(const char *msg) : runtime_error(msg) { } };
+class EUserMessage : public runtime_error { public: EUserMessage(const string msg) : runtime_error(msg) { } };
 
 /*
     This class is a base class for all effect and edit actions.  doActionSizeSafe
@@ -155,17 +153,17 @@ class EUserMessage : public runtime_error { public: EUserMessage(const char *msg
 class AAction
 {
 public:
-
 	virtual ~AAction();
 
 	// - undoes the action (if canUndo()==curYes && prepareForUndo was true)
 	// - if channel is passed, restores the selection positions from before the action executed if a channel was given to doAction
 	void undoAction(CSoundPlayerChannel *channel=NULL);
 
+	void setOrigIsModified() { origIsModified=true; }
+
 	static vector<ASoundClipboard *> clipboards;
 
 protected:
-
 	AAction(const CActionSound &actionSound);
 
 	enum CanUndoResults

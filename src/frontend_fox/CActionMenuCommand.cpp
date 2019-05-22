@@ -63,6 +63,10 @@ CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposit
 	prevEvent.click_button=0;
 }
 
+CActionMenuCommand::~CActionMenuCommand()
+{
+}
+
 long CActionMenuCommand::onMouseClick(FXObject *sender,FXSelector sel,void *ptr)
 {
 	prevEvent=*((FXEvent *)ptr);
@@ -80,9 +84,12 @@ long CActionMenuCommand::onCommand(FXObject *sender,FXSelector sel,void *ptr)
 	CLoadedSound *activeSound=gSoundFileManager->getActive();
 	if(activeSound)
 	{
+			// ??? let action parameters contain actionSound and the two bool parameters
+			// they should have some flag which says that they would not be streamed to disk (if that were ever something I do with action parameters)
 		CActionParameters actionParameters;
-		if(actionFactory->performAction(activeSound,&actionParameters,prevEvent.state&SHIFTMASK,prevEvent.click_button==RIGHTBUTTON))
-			gSoundFileManager->updateAfterEdit();
+		actionFactory->performAction(activeSound,&actionParameters,prevEvent.state&SHIFTMASK,prevEvent.click_button==RIGHTBUTTON);
+
+		gSoundFileManager->updateAfterEdit();
 
 		prevEvent.state=0;
 		prevEvent.click_button=0;

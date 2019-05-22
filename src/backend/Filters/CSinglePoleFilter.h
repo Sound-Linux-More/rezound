@@ -25,7 +25,10 @@
 
 
 class CSinglePoleFilter;
-class CSinglePoleFilterFactory;
+class CSinglePoleLowpassFilterFactory;
+class CSinglePoleHighpassFilterFactory;
+class CBandpassFilterFactory;
+class CNotchFilterFactory;
 
 #include "../AAction.h"
 
@@ -41,6 +44,7 @@ public:
 	};
 
 	CSinglePoleFilter(const CActionSound &actionSound,FilterTypes filterType,float gain,float frequency,float bandwidth=0.0);
+	virtual ~CSinglePoleFilter();
 
 protected:
 	bool doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo);
@@ -62,6 +66,7 @@ class CSinglePoleLowpassFilterFactory : public AActionFactory
 {
 public:
 	CSinglePoleLowpassFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog);
+	virtual ~CSinglePoleLowpassFilterFactory();
 
 	CSinglePoleFilter *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 };
@@ -70,6 +75,7 @@ class CSinglePoleHighpassFilterFactory : public AActionFactory
 {
 public:
 	CSinglePoleHighpassFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog);
+	virtual ~CSinglePoleHighpassFilterFactory();
 
 	CSinglePoleFilter *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 };
@@ -80,6 +86,7 @@ class CBandpassFilterFactory : public AActionFactory
 {
 public:
 	CBandpassFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog);
+	virtual ~CBandpassFilterFactory();
 
 	CSinglePoleFilter *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 };
@@ -88,6 +95,7 @@ class CNotchFilterFactory : public AActionFactory
 {
 public:
 	CNotchFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog);
+	virtual ~CNotchFilterFactory();
 
 	CSinglePoleFilter *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 };

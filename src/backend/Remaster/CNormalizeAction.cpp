@@ -35,6 +35,10 @@ CNormalizeAction::CNormalizeAction(const CActionSound &actionSound,float _normal
 {
 }
 
+CNormalizeAction::~CNormalizeAction()
+{
+}
+
 template <class type> const type my_abs(const type v) { return v<0 ? -v : v; }
 
 bool CNormalizeAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
@@ -64,7 +68,7 @@ bool CNormalizeAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 			sample_pos_t srcOffset=prepareForUndo ? 0 : start;
 			sample_pos_t posAdd=prepareForUndo ? start : 0; // add this to the positions incase src is a tempPool for undo purposes because it would start at 0 instead of start
 
-			CStatusBar statusBar("Analyzing -- Channel "+istring(i),srcOffset,srcOffset+selectionLength); 
+			CStatusBar statusBar("Analyzing -- Channel "+istring(i),srcOffset,srcOffset+selectionLength,true); 
 
 			for(unsigned t=0;t<regionCount;t++)
 			{
@@ -77,7 +81,13 @@ bool CNormalizeAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 						maxValues[i][t]=my_abs(src[srcOffset]);
 						maxValuePositions[i][t]=srcOffset+posAdd;
 					}
-					statusBar.update(srcOffset);
+
+					if(statusBar.update(srcOffset))
+					{ // cancelled
+						if(prepareForUndo)
+							undoActionSizeSafe(actionSound);
+						return false;
+					}
 			
 					srcOffset++;
 				}
@@ -130,13 +140,21 @@ bool CNormalizeAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 				sample_pos_t srcOffset=prepareForUndo ? 0 : start;
 				sample_pos_t destPos=start;
 
-				CStatusBar statusBar("Normalizing -- Channel "+istring(i),start,stop); 
+				CStatusBar statusBar("Normalizing -- Channel "+istring(i),start,stop,true); 
 
 				const float gain=(float)normalizationLevel/(float)maxValues[i][0];
 				for(sample_pos_t j=0;j<selectionLength;j++)
 				{
 					dest[destPos++]=ClipSample(src[srcOffset++]*gain);
-					statusBar.update(destPos);
+
+					if(statusBar.update(destPos))
+					{ // cancelled
+						if(prepareForUndo)
+							undoActionSizeSafe(actionSound);
+						else
+							actionSound.sound->invalidatePeakData(i,actionSound.start,destPos);
+						return false;
+					}
 				}
 			
 				if(!prepareForUndo)
@@ -175,7 +193,7 @@ bool CNormalizeAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 				sample_pos_t srcOffset=prepareForUndo ? 0 : start;
 				sample_pos_t destPos=start;
 
-				CStatusBar statusBar("Normalizing -- Channel "+istring(i),start,stop); 
+				CStatusBar statusBar("Normalizing -- Channel "+istring(i),start,stop,true); 
 
 				for(unsigned t=0;t<=regionCount;t++)
 				{
@@ -195,7 +213,15 @@ bool CNormalizeAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 						float gain=(float)(fNormalizationLevel/y);
 
 						dest[destPos++]=ClipSample(src[srcOffset++]*gain);
-						statusBar.update(destPos);
+
+						if(statusBar.update(destPos))
+						{ // cancelled
+							if(prepareForUndo)
+								undoActionSizeSafe(actionSound);
+							else
+								actionSound.sound->invalidatePeakData(i,actionSound.start,destPos);
+							return false;
+						}
 					}
 				}
 			
@@ -220,9 +246,13 @@ void CNormalizeAction::undoActionSizeSafe(const CActionSound &actionSound)
 
 
 // --------------------------------------------------
-//
+
 CNormalizeActionFactory::CNormalizeActionFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
 	AActionFactory("Normalize","Normalize Amplitude (Some of this technique is experimental, please let me know if you approve or disapprove of the result's quality)",false,channelSelectDialog,normalDialog,NULL)
+{
+}
+
+CNormalizeActionFactory::~CNormalizeActionFactory()
 {
 }
 

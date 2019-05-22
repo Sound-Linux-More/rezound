@@ -25,7 +25,8 @@
 
 #include <math.h>
 
-/* --- CDSPSinglePoleLowpassFilter ----------------------
+
+/* --- TDSPSinglePoleLowpassFilter ----------------------
  *	Based on designs in Chapter 19 of "The Scientist 
  *	and Engineer's Guide to Digital Signal Processing"
  *
@@ -33,7 +34,7 @@
  *
  *	Basically a simple RC lowpass filter
  *
- *	The frist template parameter specifies the type of the input samples (and is thus 
+ *	The first template parameter specifies the type of the input samples (and is thus 
  *	the type also of the output, the return value of processSample() ).  And The second
  *	template parameter specifies the type of the coefficients used in the calculations.
  */
@@ -57,7 +58,7 @@ public:
 	}
 
 private:
-	coefficient_t b1,a0;
+	const coefficient_t b1,a0;
 	sample_t prevSample; // 1 sample delay basically
 };
 
@@ -65,7 +66,7 @@ private:
 
 
 
-/* --- CDSPSinglePoleHighpassFilter ----------------------
+/* --- TDSPSinglePoleHighpassFilter ----------------------
  *	Based on designs in Chapter 19 of "The Scientist 
  *	and Engineer's Guide to Digital Signal Processing"
  *
@@ -73,7 +74,7 @@ private:
  *
  *	Basically a simple RC highpass filter
  *
- *	The frist template parameter specifies the type of the input samples (and is thus 
+ *	The first template parameter specifies the type of the input samples (and is thus 
  *	the type also of the output, the return value of processSample() ).  And The second
  *	template parameter specifies the type of the coefficients used in the calculations.
  */
@@ -100,7 +101,7 @@ public:
 	}
 
 private:
-	coefficient_t b1,a0,a1;
+	const coefficient_t b1,a0,a1;
 	sample_t prevInputSample; // 1 sample delay basically
 	sample_t prevOutputSample; // 1 sample delay basically
 };
@@ -109,13 +110,13 @@ private:
 
 
 
-/* --- CDSPBandpassFilter --------------------------------
+/* --- TDSPBandpassFilter --------------------------------
  *	Based on designs in Chapter 19 of "The Scientist 
  *	and Engineer's Guide to Digital Signal Processing"
  *
  *	http://www.dspguide.com/
  *
- *	The frist template parameter specifies the type of the input samples (and is thus 
+ *	The first template parameter specifies the type of the input samples (and is thus 
  *	the type also of the output, the return value of processSample() ).  And The second
  *	template parameter specifies the type of the coefficients used in the calculations.
  *
@@ -157,8 +158,8 @@ public:
 	}
 
 private:
-	coefficient_t R,K;
-	coefficient_t a0,a1,a2,b1,b2;
+	const coefficient_t R,K;
+	const coefficient_t a0,a1,a2,b1,b2;
 	sample_t prevInputSample1,prevInputSample2; // 2 sample delay basically
 	sample_t prevOutputSample1,prevOutputSample2; // 2 sample delay basically
 };
@@ -167,13 +168,13 @@ private:
 
 
 
-/* --- CDSPNotchFilter -----------------------------------
+/* --- TDSPNotchFilter -----------------------------------
  *	Based on designs in Chapter 19 of "The Scientist 
  *	and Engineer's Guide to Digital Signal Processing"
  *
  *	http://www.dspguide.com/
  *
- *	The frist template parameter specifies the type of the input samples (and is thus 
+ *	The first template parameter specifies the type of the input samples (and is thus 
  *	the type also of the output, the return value of processSample() ).  And The second
  *	template parameter specifies the type of the coefficients used in the calculations.
  *
@@ -215,8 +216,8 @@ public:
 	}
 
 private:
-	coefficient_t R,K;
-	coefficient_t a0,a1,a2,b1,b2;
+	const coefficient_t R,K;
+	const coefficient_t a0,a1,a2,b1,b2;
 	sample_t prevInputSample1,prevInputSample2; // 2 sample delay basically
 	sample_t prevOutputSample1,prevOutputSample2; // 2 sample delay basically
 };

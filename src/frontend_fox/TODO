@@ -1,13 +1,7 @@
 
 --- THINGS TO DO FOR SURE ---
 
-	- go ahead and implement a frontend for raw.. parameters should be:
-		- sample rate
-		- number of channels
-			- interleaved or non-interleaved channels
-		- several sample format choices.. use all of audiofile's abilities
-			- big or little endian
-		- bytes to skip at the beginning
+	- Add a button to the FXGraphParamValue which smoothes out angles by making it many nodes to approximate curve.. call it 'approximate'
 
 	- need to have a hot-key that centers the cue's by seeing the right or left most one on screen and centering the one after that.. might include the start and stop positions in that too
 
@@ -79,13 +73,15 @@
 
 --- POSSIBLE THINGS TO DO ---
 
+	- Add a popup menu to the frequency slider of the LFO widget and make it have items like.. 1/4, 1/2 1, 2, 3, 4 cyles time per selected area
+		- Could this could be a unit selection of the LFO slider widget.. units are in cycles per selected area
+	- could also add a popup to the phase slider for 0 90 180 270.. or could make notches
+
 	- A more musical friendly unit would be BPM instead of Hz for parameters like LFO frequency
 
 	- If I did every want to get rid of using reswrap, then I could have CFOXIcons go out and manually load from disk the icon files by looking in the share directory.. this would allow the user to replace the icons if they wanted and it would still avoid loading a reused icon over and over since it's abstracted in the CFOXIcon class
 
 	- like a webbrowser... if the program is already running and they run it again with a filename... just open it in the existing process... 
-
-	- in subsequent versions when a default width/height of a dialog changes, I should have stored the version in the registry, if that's older, then I should remove the WindowDimensions key from the registry
 
 	- in order to create multiple taps for an echo effect... I could have the dialog have tabs and each tap could be tap.. there would be buttons outside the tab bar to insert, remove, move left/right the tabs to rearrange the taps
 
@@ -107,6 +103,11 @@
 	- Put the name of each channel horizontally along the left of the channels so that if the sound is 5 channels you label the first 2 'left' and 'right' then the next ones 'center', 'rear left' and 'rear right' 
 	
 	- if the frontend gets too slow about saving user presets, I could create a gUserPresetFile which stays allocated and doesn't have to reparse the file every time like it does now.
+
+	- Need to remember openAsRaw when doing reopen's 
+		- this also affects the registered filenames history
+
+
 
 
 --- PREFERENCES when I make a preferences dialog --
@@ -278,4 +279,17 @@
 			- I'm not sure why it's not a problem and perhaps it will be in the future...
 				- But, while the pogress dialog is showing, the sound object being worked on is usually locked for resize so if a paint message tried to be processed for the sound window's waveform view it would cause the applicaiton to lock up
 				- Perhaps fox doesn't process paint messages in a sparate thread, which is fortunate at the moment, however if he changes this behavior, I would need to probably trylock and just paint the background color if it couldn't lock... Actions usually call refresh after the action is completed, so that should redraw any places where we couldn't update
+
+	- go ahead and implement a frontend for raw.. parameters should be:
+		- sample rate
+		- number of channels
+			- interleaved or non-interleaved channels
+		- several sample format choices.. use all of audiofile's abilities
+			- big or little endian
+		- bytes to skip at the beginning
+
+	- in subsequent versions when a default width/height of a dialog changes, I should have stored the version in the registry, if that's older, then I should remove the WindowDimensions key from the registry
+		- I just removed all splitter positions and window dimensions whenever the version changes
+
+	- need make sure there is a virtual destructor for all the classes
 

@@ -98,7 +98,7 @@ LDFLAGS = @LDFLAGS@
 # doc directory
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-noinst_HEADERS =  	Compressor.h 	Convolver.h 	DelayEffect.h 	Delay.h 	FlangeEffect.h 	LevelDetector.h 	NoiseGate.h 	Quantizer.h 	SinglePoleFilters.h 	TSoundStretcher.h
+noinst_HEADERS =  	Compressor.h 	Convolver.h 	DelayEffect.h 	Delay.h 	FlangeEffect.h 	LevelDetector.h 	NoiseGate.h 	Quantizer.h 	Distorter.h 	SinglePoleFilters.h 	BiquadResFilters.h 	TSoundStretcher.h
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h

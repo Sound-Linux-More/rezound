@@ -34,48 +34,40 @@
 
 #define NODE_RADIUS 4
 
-#define GET_SCALAR_VALUE(o) ( o->scalarSpinner==NULL ? 0 : o->scalarSpinner->getValue() )
-	
-
-
 /* TODO:
  *
  *	- I probably need to limit the minimum size as it could cause divide by zero errors, and really be unusable anyway
- *
- *	- be able to save or load a particular curve to disk
  *
  * 	- I would have liked to reuse code (without copy/pasting) from FXRezWaveView, but it's currently
  * 	  too much tied to CLoadedSound for start and stop positions and such...
  * 	  - At least I pulled draw portion out not to have to rewrite that
  * 	  - but it would be nice if all the scrolling and zooming capabilities where also there....
  *
- * 	- I would like to put a horz ruler at the top of the rendered wave
- * 		- I should also onMouseMove print the time that the cursor is over
- * 			- clear it onExit
+ * 	- I should also onMouseMove print the time that the cursor is over
+ * 		- clear it onExit
  *
  * 	- draw a vertical to the time and a horizontal line to the ruler while dragging the nodes 
  *
  * 	- still a glitch with the drawing of the bottom tick in the ruler.. I might draw more values in the ticks
+ * 		I think I've fixed this now
  *
  *   	- I might ought to draw the play position in there if I can get the event
  *
  *	- I might want to avoid redrawing everything.  Alternatively I could:
  *         - blit only the sections between the nodes involving the change
+ *         	I think I do now ???
  *
- *	- Create some predefined patterns
- *	   
  */
 
 
-// --- declaration of FXValueRuler -----------------------------------------------
+// --- declaration of CHorzRuler -----------------------------------------------
 
-
-class FXValueRuler : public FXHorizontalFrame
+class CHorzRuler : public FXHorizontalFrame
 {
-	FXDECLARE(FXValueRuler)
+	FXDECLARE(CHorzRuler)
 public:
-	FXValueRuler(FXComposite *p,FXGraphParamValue *_parent) :
-		FXHorizontalFrame(p,FRAME_RAISED | LAYOUT_FILL_Y | LAYOUT_FIX_WIDTH | LAYOUT_SIDE_LEFT, 0,0,30),
+	CHorzRuler(FXComposite *p,FXGraphParamValue *_parent) :
+		FXHorizontalFrame(p,FRAME_RAISED | LAYOUT_FILL_X | LAYOUT_FIX_HEIGHT | LAYOUT_SIDE_TOP, 0,0,0,17),
 
 		parent(_parent),
 
@@ -91,7 +83,7 @@ public:
 		font=new FXFont(getApp(),d);
 	}
 
-	virtual ~FXValueRuler()
+	virtual ~CHorzRuler()
 	{
 		delete font;
 	}
@@ -115,10 +107,116 @@ public:
 		dc.setForeground(FXRGB(20,20,20));
 		dc.setTextFont(font);
 
-		#define TICK_FREQ 20
+		#define H_TICK_FREQ 50
 
 		// N is the number of ticks to label
-		int N=(parent->getGraphPanelHeight()/TICK_FREQ); // we lable always an odd number of ticks so there is always a middle tick
+		int N=(parent->getGraphPanelWidth()/H_TICK_FREQ); // we lable always an odd number of ticks so there is always a middle tick
+		if(N%2==0)
+			N++;
+
+		// make sure there's at least 3
+		if(N<3)
+			N=3;
+
+		const int s=0;
+		const int e=parent->getGraphPanelWidth()-1;
+
+		// y actually goes from the event's min-10 to max+10 incase part of some text needs be be redrawn (and we limit it to 0..height)
+		const int maxX=min(parent->getGraphPanelWidth(),(ev->rect.w+ev->rect.x)+10);
+		for(int x=max(0,(ev->rect.x)-10);x<=maxX;x++)
+		{
+			// this is, y=s+(((e-s)*t)/(N-1)) [0..N interpolated across s..e] solved for t, and then we get the remainder of the resulting division instead of the actual quotient)
+			const double t=fmod((double)((x-s)*(N-1)),(double)(e-s));
+			const int renderX=x+parent->vertRuler->getWidth();
+
+			if(t<(N-1))
+			{ // draw and label this tick
+				dc.drawLine(renderX,getHeight()-2,renderX,getHeight()-10);
+				//dc.drawLine(renderX+H_TICK_FREQ/2,getHeight()-2,renderX+H_TICK_FREQ/2,getHeight()-4);
+
+				const string sValue=parent->getHorzValueString(parent->screenToNodeHorzValue(x));
+
+				int offset=font->getTextWidth(sValue.c_str(),sValue.length()); // put text left of the tick mark
+
+				dc.drawText(renderX-offset-1,font->getFontHeight()+2,sValue.c_str(),sValue.length());
+			}
+			// else, every 2 ticks (i.e. in between labled ticks)
+				//dc.drawLine(getWidth()-2,renderY,getWidth()-5,renderY); // half way tick between labled ticks
+		}
+
+		return(0);
+	}
+
+protected:
+	CHorzRuler() {}
+
+private:
+	FXGraphParamValue *parent;
+
+	FXFont *font;
+
+};
+
+FXDEFMAP(CHorzRuler) CHorzRulerMap[]=
+{
+	//Message_Type				ID				Message_Handler
+	FXMAPFUNC(SEL_PAINT,			0,				CHorzRuler::onPaint),
+};
+
+FXIMPLEMENT(CHorzRuler,FXHorizontalFrame,CHorzRulerMap,ARRAYNUMBER(CHorzRulerMap))
+
+
+
+// --- declaration of CVertRuler -----------------------------------------------
+
+class CVertRuler : public FXHorizontalFrame
+{
+	FXDECLARE(CVertRuler)
+public:
+	CVertRuler(FXComposite *p,FXGraphParamValue *_parent) :
+		FXHorizontalFrame(p,FRAME_RAISED | LAYOUT_FILL_Y | LAYOUT_FIX_WIDTH | LAYOUT_SIDE_LEFT, 0,0,42),
+
+		parent(_parent),
+
+		font(getApp()->getNormalFont())
+	{
+		enable();
+		flags|=FLAG_SHOWN; // I have to do this, or it will not show up.. like height is 0 or something
+
+		FXFontDesc d;
+		font->getFontDesc(d);
+		d.weight=FONTWEIGHT_LIGHT;
+		d.size=65;
+		font=new FXFont(getApp(),d);
+	}
+
+	virtual ~CVertRuler()
+	{
+		delete font;
+	}
+
+	virtual void create()
+	{
+		FXHorizontalFrame::create();
+		font->create();
+	}
+
+	// events I get by message
+
+	long onPaint(FXObject *object,FXSelector sel,void *ptr)
+	{
+		FXHorizontalFrame::onPaint(object,sel,ptr);
+
+		FXEvent *ev=(FXEvent*)ptr;
+
+		FXDCWindow dc(this,ev);
+		dc.setForeground(FXRGB(20,20,20));
+		dc.setTextFont(font);
+
+		#define V_TICK_FREQ 20
+
+		// N is the number of ticks to label
+		int N=(parent->getGraphPanelHeight()/V_TICK_FREQ); // we lable always an odd number of ticks so there is always a middle tick
 		if(N%2==0)
 			N++;
 
@@ -141,15 +239,13 @@ public:
 			{ // draw and label this tick
 				dc.drawLine(getWidth()-2,renderY,getWidth()-10,renderY);
 
-				double value=parent->interpretValue(parent->screenToNodeValue(y),GET_SCALAR_VALUE(parent));
-
-				const string sValue=istring(value,5,3);
-
-				int offset=font->getFontHeight(); // put text below the tick mark
-
-				dc.drawText(3,renderY+offset,sValue.c_str(),sValue.length());
+				const string s=parent->getVertValueString(parent->screenToNodeVertValue(y));
+		
+				int yoffset=font->getFontHeight(); // put text below the tick mark
+				int xoffset=font->getTextWidth(s.c_str(),s.length());
+				dc.drawText(getWidth()-xoffset-7,renderY+yoffset,s.c_str(),s.length());
 			}
-			// else, ever 2 ticks (i.e. in between labled ticks)
+			// else, every 2 ticks (i.e. in between labled ticks)
 				//dc.drawLine(getWidth()-2,renderY,getWidth()-5,renderY); // half way tick between labled ticks
 		}
 
@@ -157,7 +253,7 @@ public:
 	}
 
 protected:
-	FXValueRuler() {}
+	CVertRuler() {}
 
 private:
 	FXGraphParamValue *parent;
@@ -166,13 +262,13 @@ private:
 
 };
 
-FXDEFMAP(FXValueRuler) FXValueRulerMap[]=
+FXDEFMAP(CVertRuler) CVertRulerMap[]=
 {
 	//Message_Type				ID				Message_Handler
-	FXMAPFUNC(SEL_PAINT,			0,				FXValueRuler::onPaint),
+	FXMAPFUNC(SEL_PAINT,			0,				CVertRuler::onPaint),
 };
 
-FXIMPLEMENT(FXValueRuler,FXHorizontalFrame,FXValueRulerMap,ARRAYNUMBER(FXValueRulerMap))
+FXIMPLEMENT(CVertRuler,FXHorizontalFrame,CVertRulerMap,ARRAYNUMBER(CVertRulerMap))
 
 
 
@@ -197,33 +293,40 @@ FXDEFMAP(FXGraphParamValue) FXGraphParamValueMap[]=
 
 FXIMPLEMENT(FXGraphParamValue,FXPacker,FXGraphParamValueMap,ARRAYNUMBER(FXGraphParamValueMap))
 
-FXGraphParamValue::FXGraphParamValue(const string _title,f_at_xs _interpretValue,f_at_xs _uninterpretValue,const int minScalar,const int maxScalar,const int _initScalar,FXComposite *p,int opts,int x,int y,int w,int h) :
+FXGraphParamValue::FXGraphParamValue(const string _title,const int minScalar,const int maxScalar,const int _initScalar,FXComposite *p,int opts,int x,int y,int w,int h) :
 	FXPacker(p,opts|FRAME_RIDGE,x,y,w,h, 2,2,2,2, 0,0),
 
 	title(_title),
 
 	initScalar(_initScalar),
 
-	sound(NULL),
-	start(0),
-	stop(0),
-
-	buttonPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X)),
+	buttonPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 0,0,2,0)),
 		scalarLabel(NULL),
 		scalarSpinner(NULL),
-	vRuler(new FXValueRuler(this,this)),
+	horzRuler(new CHorzRuler(this,this)),
+	vertRuler(new CVertRuler(this,this)),
 	statusPanel(new FXHorizontalFrame(this,FRAME_RAISED | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 4,0)),
-		positionLabel(new FXLabel(statusPanel,"Time: ",NULL,LAYOUT_LEFT)),
-		valueLabel(new FXLabel(statusPanel,"Value: ",NULL)),
-		unitsLabel(new FXLabel(statusPanel,"x",NULL)),
-	graphPanelParent(new FXPacker(this,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,2,2)),
-	graphPanel(new FXCanvas(graphPanelParent,this,ID_GRAPH_PANEL,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
+		horzValueLabel(new FXLabel(statusPanel,": ",NULL,LAYOUT_LEFT)),
+		vertValueLabel(new FXLabel(statusPanel,": ",NULL)),
+	graphPanelParent(new FXPacker(this,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0)),
+		graphPanel(new FXCanvas(graphPanelParent,this,ID_GRAPH_PANEL,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
 
 	draggingNode(-1),
 	dragOffsetX(0),dragOffsetY(0),
 
-	interpretValue(_interpretValue),
-	uninterpretValue(_uninterpretValue),
+	sound(NULL),
+	start(0),
+	stop(0),
+
+	horzAxisLabel(""),
+	horzUnits(""),
+	horzInterpretValue(NULL),
+	horzUninterpretValue(NULL),
+
+	vertAxisLabel(""),
+	vertUnits(""),
+	vertInterpretValue(NULL),
+	vertUninterpretValue(NULL),
 
 	backBuffer(new FXImage(getApp()))
 {
@@ -233,8 +336,8 @@ FXGraphParamValue::FXGraphParamValue(const string _title,f_at_xs _interpretValue
 
 	if(minScalar!=maxScalar)
 	{
-		scalarLabel=new FXLabel(buttonPanel,"Scalar",NULL);
-		scalarSpinner=new FXSpinner(buttonPanel,5,this,ID_SCALAR_SPINNER);
+		scalarLabel=new FXLabel(buttonPanel,"Scalar",NULL,LABEL_NORMAL|LAYOUT_CENTER_Y);
+		scalarSpinner=new FXSpinner(buttonPanel,5,this,ID_SCALAR_SPINNER,SPIN_NORMAL|FRAME_SUNKEN|FRAME_THICK);
 		scalarSpinner->setRange(minScalar,maxScalar);
 		scalarSpinner->setValue(initScalar);
 	}
@@ -248,14 +351,45 @@ FXGraphParamValue::FXGraphParamValue(const string _title,f_at_xs _interpretValue
 	clearNodes();
 }
 
+FXGraphParamValue::~FXGraphParamValue()
+{
+}
+
 void FXGraphParamValue::setSound(CSound *_sound,sample_pos_t _start,sample_pos_t _stop)
 {
 	sound=_sound;
 	start=_start;
 	stop=_stop;
 
+	horzAxisLabel="Time";
+	horzUnits="s";
+	horzInterpretValue=NULL;
+	horzUninterpretValue=NULL;
+
 	// make sure that the back buffer re-renders
 	onGraphPanelResize(NULL,0,NULL);
+
+	clearStatus();
+}
+
+void FXGraphParamValue::setHorzParameters(const string horzAxisLabel,const string horzUnits,f_at_xs interpretValue,f_at_xs uninterpretValue)
+{
+	this->horzAxisLabel=horzAxisLabel;
+	this->horzUnits=horzUnits;
+	horzInterpretValue=interpretValue;
+	horzUninterpretValue=uninterpretValue;
+
+	clearStatus();
+}
+
+void FXGraphParamValue::setVertParameters(const string vertAxisLabel,const string vertUnits,f_at_xs interpretValue,f_at_xs uninterpretValue)
+{
+	this->vertAxisLabel=vertAxisLabel;
+	this->vertUnits=vertUnits;
+	vertInterpretValue=interpretValue;
+	vertUninterpretValue=uninterpretValue;
+
+	clearStatus();
 }
 
 void FXGraphParamValue::clearNodes()
@@ -294,20 +428,99 @@ long FXGraphParamValue::onGraphPanelPaint(FXObject *sender,FXSelector sel,void *
 	// draw the whole background
 	dc.drawImage(backBuffer,0,0);
 
-	// draw the lines connecting the nodes
+	// draw the connection between the nodes
 	dc.setForeground(FXRGB(255,64,64));
-	for(size_t t=1;t<nodes.size();t++)
-	{
-		CGraphParamValueNode &n1=nodes[t-1];
-		CGraphParamValueNode &n2=nodes[t];
-		
-		const int x1=nodeToScreenX(n1);
-		const int y1=nodeToScreenY(n1);
-		const int x2=nodeToScreenX(n2);
-		const int y2=nodeToScreenY(n2);
-		
-		dc.drawLine(x1,y1,x2,y2);
+	//if(0)
+	{ // draw lines
+		for(size_t t=1;t<nodes.size();t++)
+		{
+			const CGraphParamValueNode &n1=nodes[t-1];
+			const CGraphParamValueNode &n2=nodes[t];
+			
+			const int x1=nodeToScreenX(n1);
+			const int y1=nodeToScreenY(n1);
+			const int x2=nodeToScreenX(n2);
+			const int y2=nodeToScreenY(n2);
+			
+			dc.drawLine(x1,y1,x2,y2);
+		}
 	}
+/*
+Okay, here i have coded cubic and cosine based curves to connect the dots instead of or in addition to
+the straight line segments.  However, after playing around with with them a few issues arise.
+1) Cosine always has a horizontal tangent at each node
+2) Cubic curves have a couple of problems.
+	- The top or bottom of a local maximum can extend above or below the screen
+	- It's hard to control the concavity of each direction change by adding nodes without affecting the shape
+A better overall solution may be to have a 'smooth' button for the line segments or to use bezier curves (except they
+don't pass thru the control points
+
+	else
+	{ // draw a cubic curve (http://astronomy.swin.edu.au/~pbourke/curves/interpolation/)
+		int prevX=nodeToScreenX(nodes[0]);
+		int prevY=nodeToScreenY(nodes[0]);
+		for(int t=1;t<(int)nodes.size();t++)
+		{
+			const CGraphParamValueNode &n0=nodes[max(0,t-2)];
+			const CGraphParamValueNode &n1=nodes[max(0,t-1)];
+			const CGraphParamValueNode &n2=nodes[t];
+			const CGraphParamValueNode &n3=nodes[min((int)nodes.size()-1,t+1)];
+			
+			//const int x0=nodeToScreenX(n0);
+			const int y0=nodeToScreenY(n0);
+			const int x1=nodeToScreenX(n1);
+			const int y1=nodeToScreenY(n1);
+			const int x2=nodeToScreenX(n2);
+			const int y2=nodeToScreenY(n2);
+			//const int x3=nodeToScreenX(n3);
+			const int y3=nodeToScreenY(n3);
+
+			for(int x=x1;x<x2;x++)
+			{
+				const float mu=(float)(x-x1)/(float)(x2-x1);
+				const float mu2=mu*mu;
+				const float a0=y3-y2-y0+y1;
+				const float a1=y0-y1-a0;
+				const float a2=y2-y0;
+				const float a3=y1;
+
+				const float y=a0*mu*mu2+a1*mu2+a2*mu+a3;
+
+				dc.drawLine(prevX,prevY,x,(int)y);
+				prevX=x;
+				prevY=(int)y;
+			}
+			
+		}
+	}
+	else
+	{ // draw a cosine interpolated curve (http://astronomy.swin.edu.au/~pbourke/curves/interpolation/)
+		int prevX=nodeToScreenX(nodes[0]);
+		int prevY=nodeToScreenY(nodes[0]);
+		for(size_t t=1;t<nodes.size();t++)
+		{
+			const CGraphParamValueNode &n1=nodes[t-1];
+			const CGraphParamValueNode &n2=nodes[t];
+			
+			const int x1=nodeToScreenX(n1);
+			const int y1=nodeToScreenY(n1);
+			const int x2=nodeToScreenX(n2);
+			const int y2=nodeToScreenY(n2);
+			
+			for(int x=x1;x<x2;x++)
+			{
+				const float mu=(float)(x-x1)/(float)(x2-x1);
+				const float mu2=(1.0-cos(mu*M_PI))/2.0;
+
+				const float y=y1*(1.0-mu2)+y2*mu2;
+
+				dc.drawLine(prevX,prevY,x,(int)y);
+				prevX=x;
+				prevY=(int)y;
+			}
+		}
+	}
+*/
 
 	// draw the nodes
 	for(size_t t=0;t<nodes.size();t++)
@@ -333,10 +546,9 @@ long FXGraphParamValue::onGraphPanelResize(FXObject *sender,FXSelector sel,void 
 {
 	// render waveform to the backbuffer
 	backBuffer->resize(graphPanel->getWidth(),graphPanel->getHeight());
+	FXDCWindow dc(backBuffer);
 	if(sound!=NULL)
 	{
-		FXDCWindow dc(backBuffer);
-
 		const int canvasWidth=graphPanel->getWidth();
 		const int canvasHeight=graphPanel->getHeight();
 		const sample_pos_t length=stop-start+1;
@@ -346,7 +558,23 @@ long FXGraphParamValue::onGraphPanelResize(FXObject *sender,FXSelector sel,void 
 
 		drawPortion(0,canvasWidth,&dc,sound,canvasWidth,canvasHeight,-1,-1,hScalar,hOffset,vScalar,0,true);
 	}
-	return(1);
+	else
+	{
+		dc.setForeground(FXRGB(0,0,0));
+		dc.setFillStyle(FILL_SOLID);
+		dc.fillRectangle(0,0,graphPanel->getWidth(),graphPanel->getHeight());
+	}
+
+	return 1;
+}
+
+// always returns an odd value >=1
+int FXGraphParamValue::getGraphPanelWidth() const
+{
+	int w=graphPanel->getWidth();
+	if(w%2==0)
+		w--;
+	return(max(w,1));
 }
 
 // always returns an odd value >=1
@@ -363,8 +591,8 @@ int FXGraphParamValue::insertIntoNodes(const CGraphParamValueNode &node)
 	// sanity checks
 	if(nodes.size()<2)
 		throw(runtime_error(string(__func__)+" -- nodes doesn't already contain at least 2 items"));
-	if(node.position<0.0 || node.position>1.0)
-		throw(runtime_error(string(__func__)+" -- node's position is out of range: "+istring(node.position)));
+	if(node.x<0.0 || node.x>1.0)
+		throw(runtime_error(string(__func__)+" -- node's x is out of range: "+istring(node.x)));
 
 	int insertedIndex=-1;
 
@@ -374,7 +602,7 @@ int FXGraphParamValue::insertIntoNodes(const CGraphParamValueNode &node)
 	for(size_t t1=1;t1<nodes.size();t1++)
 	{
 		CGraphParamValueNode &temp=nodes[t1];
-		if(temp.position>=node.position)
+		if(temp.x>=node.x)
 		{
 			nodes.insert(nodes.begin()+t1,node);
 			insertedIndex=t1;
@@ -392,7 +620,7 @@ long FXGraphParamValue::onCreateOrStartDragNode(FXObject *sender,FXSelector sel,
 	int nodeIndex=findNodeAt(ev->win_x,ev->win_y);
 	if(nodeIndex==-1)
 	{ // create a new node
-		CGraphParamValueNode node(screenToNodePosition(ev->win_x),screenToNodeValue(ev->win_y));
+		CGraphParamValueNode node(screenToNodeHorzValue(ev->win_x),screenToNodeVertValue(ev->win_y));
 		draggingNode=insertIntoNodes(node);
 
 		dragOffsetX=0;
@@ -429,8 +657,8 @@ long FXGraphParamValue::onDragNode(FXObject *sender,FXSelector sel,void *ptr)
 		CGraphParamValueNode node=nodes[draggingNode];
 
 		// calculate the new positions
-		node.position=	lockX ? node.position : screenToNodePosition(ev->win_x-dragOffsetX);
-		node.value=	lockY ? node.value : screenToNodeValue(ev->win_y-dragOffsetY);
+		node.x=	lockX ? node.x : screenToNodeHorzValue(ev->win_x-dragOffsetX);
+		node.y=	lockY ? node.y : screenToNodeVertValue(ev->win_y-dragOffsetY);
 
 		// update the node within the vector
 		if(draggingNode!=0 && draggingNode!=(int)nodes.size()-1)
@@ -486,7 +714,7 @@ int FXGraphParamValue::findNodeAt(int x,int y)
 	return(-1);
 }
 
-double FXGraphParamValue::screenToNodePosition(int x)
+double FXGraphParamValue::screenToNodeHorzValue(int x)
 {
 	double v=((double)x/(double)(graphPanel->getWidth()-1));
 	if(v<0.0)
@@ -496,7 +724,7 @@ double FXGraphParamValue::screenToNodePosition(int x)
 	return(v);
 }
 
-double FXGraphParamValue::screenToNodeValue(int y)
+double FXGraphParamValue::screenToNodeVertValue(int y)
 {
 	double v=(1.0-((double)y/(double)(getGraphPanelHeight()-1)));
 	if(v<0.0)
@@ -508,36 +736,47 @@ double FXGraphParamValue::screenToNodeValue(int y)
 
 int FXGraphParamValue::nodeToScreenX(const CGraphParamValueNode &node)
 {
-	return((int)(node.position*(graphPanel->getWidth()-1)));
+	return((int)(node.x*(graphPanel->getWidth()-1)));
 }
 
 int FXGraphParamValue::nodeToScreenY(const CGraphParamValueNode &node)
 {
-	return((int)((1.0-node.value)*(getGraphPanelHeight())));
+	return((int)((1.0-node.y)*(getGraphPanelHeight())));
 }
 
 void FXGraphParamValue::updateNumbers()
 {
-	vRuler->update();
-}
-
-void FXGraphParamValue::setUnits(FXString _units)
-{
-	units=_units;
-
-	unitsLabel->setText(units);
-	updateNumbers();
+	horzRuler->update();
+	vertRuler->update();
 }
 
 const CGraphParamValueNodeList &FXGraphParamValue::getNodes() const
 {
 	retNodes=nodes;
-	// adjust the value by the given function
 	for(size_t t=0;t<retNodes.size();t++)
-		retNodes[t].value=interpretValue(nodes[t].value,GET_SCALAR_VALUE(this));
+	{
+		if(horzInterpretValue!=NULL)
+			retNodes[t].x=horzInterpretValue(nodes[t].x,0);
+		if(vertInterpretValue!=NULL)
+			retNodes[t].y=vertInterpretValue(nodes[t].y,getScalar());
+	}
 
 	return(retNodes);
 }
+
+const string FXGraphParamValue::getVertValueString(double vertValue) const
+{
+	return istring(vertInterpretValue(vertValue,getScalar()),5,3);
+}
+
+const string FXGraphParamValue::getHorzValueString(double horzValue) const
+{
+	if(sound==NULL)
+		return istring(horzInterpretValue(horzValue,0),5,3);
+	else
+		return sound->getTimePosition((sample_pos_t)((sample_fpos_t)(stop-start+1)*horzValue+start),3,false);
+}
+
 
 void FXGraphParamValue::updateStatus()
 {
@@ -547,21 +786,20 @@ void FXGraphParamValue::updateStatus()
 	const CGraphParamValueNode &n=nodes[draggingNode];
 
 	// draw status
-	const string time=sound->getTimePosition((sample_pos_t)((sample_fpos_t)(stop-start+1)*n.position+start));
-	positionLabel->setText(("Time: "+time).c_str());
-	valueLabel->setText(("Value: "+istring(interpretValue(n.value,GET_SCALAR_VALUE(this)),6,3)).c_str());
+	horzValueLabel->setText((horzAxisLabel+": "+getHorzValueString(n.x)+horzUnits).c_str());
+	vertValueLabel->setText((vertAxisLabel+": "+getVertValueString(n.y)+vertUnits).c_str());
 }
 
 void FXGraphParamValue::clearStatus()
 {
-	positionLabel->setText("Time: ");
-	valueLabel->setText("Value: ");
+	horzValueLabel->setText((horzAxisLabel+": #"+horzUnits).c_str());
+	vertValueLabel->setText((vertAxisLabel+": #"+vertUnits).c_str());
 }
 	
 
 const int FXGraphParamValue::getScalar() const
 {
-	return(GET_SCALAR_VALUE(this));
+	return scalarSpinner==NULL ? 0 : scalarSpinner->getValue();
 }
 
 void FXGraphParamValue::setScalar(const int scalar)
@@ -603,7 +841,6 @@ void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 	else	
 		setScalar(initScalar);
 
-
 	nodes.clear();
 
 	const string k1=key+"node_positions";
@@ -611,7 +848,7 @@ void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 	{
 		const string k2=key+"node_values";
 		const size_t count=f->getArraySize(k1.c_str());
-		// ??? I could either save the node positions and values as [0,1], or I could use save the actual values ( <-- currently)
+		// ??? I could either save the node x and values as [0,1], or I could use save the actual values ( <-- currently)
 		for(size_t t=0;t<count;t++)
 			nodes.push_back(CGraphParamValueNode(atof(f->getArrayValue(k1.c_str(),t).c_str()),atof(f->getArrayValue(k2.c_str(),t).c_str())));
 	}
@@ -630,19 +867,16 @@ void FXGraphParamValue::writeToFile(const string &prefix,CNestedDataFile *f) con
 	if(getMinScalar()!=getMaxScalar())
 		f->createKey((key+"scalar").c_str(),istring(getScalar()));
 
-	//const CGraphParamValueNodeList nodes=getNodes();
-
-
 	const string k1=key+"node_positions";
 		// ??? I could implement a createArrayKey which takes a double so I wouldn't have to convert to string here
 	f->removeKey(k1.c_str());
 	for(size_t t=0;t<nodes.size();t++)
-		f->createArrayKey(k1.c_str(),t,istring(nodes[t].position).c_str());
+		f->createArrayKey(k1.c_str(),t,istring(nodes[t].x).c_str());
 
 	const string k2=key+"node_values";
 	f->removeKey(k2.c_str());
 	for(size_t t=0;t<nodes.size();t++)
-		f->createArrayKey(k2.c_str(),t,istring(nodes[t].value).c_str());
+		f->createArrayKey(k2.c_str(),t,istring(nodes[t].y).c_str());
 
 	if(getMinScalar()!=getMaxScalar())
 		f->createKey((key+"scalar").c_str(),istring(getScalar()));

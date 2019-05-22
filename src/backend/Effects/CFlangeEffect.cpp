@@ -50,6 +50,10 @@ CFlangeEffect::CFlangeEffect(const CActionSound &actionSound,float _delayTime,fl
 		throw(runtime_error(string(__func__)+" -- flangeLFO.amp is negative"));
 }
 
+CFlangeEffect::~CFlangeEffect()
+{
+}
+
 bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
 	const sample_pos_t start=actionSound.start;
@@ -62,7 +66,7 @@ bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUn
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Flange -- Channel "+istring(i),start,stop); 
+			CStatusBar statusBar("Flange -- Channel "+istring(i),start,stop,true);
 
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -82,7 +86,15 @@ bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUn
 			for(sample_pos_t t=start;t<=stop;t++)
 			{
 				dest[t]=ClipSample(flangeEffect.processSample(src[srcP++]));
-				statusBar.update(t);
+
+				if(statusBar.update(t))
+				{ // cancelled
+					if(prepareForUndo)
+						undoActionSizeSafe(actionSound);
+					else
+						actionSound.sound->invalidatePeakData(i,actionSound.start,t);
+					return false;
+				}
 			}
 			
 /* This code can be used to test what the LFOs actually look like
@@ -92,6 +104,8 @@ bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUn
 				UPDATE_PROGRESS_BAR(t);
 			}
 */
+			if(!prepareForUndo)
+				actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
 		}
 	}
 
@@ -113,6 +127,10 @@ void CFlangeEffect::undoActionSizeSafe(const CActionSound &actionSound)
 
 CFlangeEffectFactory::CFlangeEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
 	AActionFactory("Flange","Flange Effect",false,channelSelectDialog,normalDialog,NULL)
+{
+}
+
+CFlangeEffectFactory::~CFlangeEffectFactory()
 {
 }
 

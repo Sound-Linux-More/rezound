@@ -21,6 +21,10 @@ CCompressorAction::CCompressorAction(const CActionSound &actionSound,float _wind
 {
 }
 
+CCompressorAction::~CCompressorAction()
+{
+}
+
 bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
 	const sample_pos_t start=actionSound.start;
@@ -39,7 +43,7 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 		{
 			if(actionSound.doChannel[i])
 			{
-				CStatusBar statusBar("Compressor -- Channel "+istring(i),start,stop); 
+				CStatusBar statusBar("Compressor -- Channel "+istring(i),start,stop,true);
 
 				sample_pos_t srcPos=prepareForUndo ? 0 : start;
 				const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -64,7 +68,16 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 					
 					const mix_sample_t s=(mix_sample_t)(src[srcPos++]*inputGain);
 					dest[destPos]=ClipSample(compressor.processSample(s,s)*outputGain);
-					statusBar.update(destPos);
+
+					if(statusBar.update(destPos))
+					{ // cancelled
+						if(prepareForUndo)
+							undoActionSizeSafe(actionSound);
+						else
+							actionSound.sound->invalidatePeakData(i,actionSound.start,destPos);
+						return false;
+					}
+
 					destPos++;
 				}
 
@@ -102,7 +115,7 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 
 		try
 		{
-			CStatusBar statusBar("Compressor ",start,stop); 
+			CStatusBar statusBar("Compressor ",start,stop,true);
 
 			// initialize the compressor's level detector
 			//while((destPos++)<min(stop,4000))
@@ -120,7 +133,22 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 				for(unsigned t=0;t<channelCount;t++)
 					(*(dests[t]))[destPos]=ClipSample(inputFrame[t]*outputGain);
 		
-				statusBar.update(destPos);
+				if(statusBar.update(destPos))
+				{ // cancelled
+					if(prepareForUndo)
+						undoActionSizeSafe(actionSound);
+					// cleanup
+					for(size_t t=0;t<channelCount;t++)
+					{
+						if(!prepareForUndo)
+							actionSound.sound->invalidatePeakData(t,actionSound.start,destPos);
+
+						delete srces[t];
+						delete dests[t];
+					}
+					return false;
+				}
+
 				destPos++;
 			}
 
@@ -162,9 +190,13 @@ void CCompressorAction::undoActionSizeSafe(const CActionSound &actionSound)
 
 
 // --------------------------------------------------
-//
+
 CCompressorActionFactory::CCompressorActionFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
 	AActionFactory("Dynamic Range Compressor","Dynamic Range Compressor",false,channelSelectDialog,normalDialog,NULL)
+{
+}
+
+CCompressorActionFactory::~CCompressorActionFactory()
 {
 }
 
@@ -179,7 +211,7 @@ CCompressorAction *CCompressorActionFactory::manufactureAction(const CActionSoun
 		actionParameters->getDoubleParameter("Release Time"),
 		actionParameters->getDoubleParameter("Input Gain"),
 		actionParameters->getDoubleParameter("Output Gain"),
-		true//actionParameters->getBoolParameter("Lock Channels") ??? need to implement a checkbox parameter on the frontend --> I've done this now.. now I need to use it!
+		actionParameters->getBoolParameter("Lock Channels")
 	));
 }
 

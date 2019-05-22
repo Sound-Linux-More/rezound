@@ -313,7 +313,7 @@ bool handleMoreBackendArgs(ASoundFileManager *fileManager,int argc,char *argv[])
 			const string filename=argv[t];
 			try
 			{
-				fileManager->open(filename,true);
+				fileManager->open(filename);
 			}
 			catch(exception &e)
 			{
@@ -387,6 +387,7 @@ void deinitializeBackend()
 #include "ClibvorbisSoundTranslator.h"
 #include "ClibaudiofileSoundTranslator.h"
 #include "ClameSoundTranslator.h"
+#include "CvoxSoundTranslator.h"
 #include "CrawSoundTranslator.h"
 #include "Cold_rezSoundTranslator.h"
 static void setupSoundTranslators()
@@ -409,10 +410,16 @@ static void setupSoundTranslators()
 	ASoundTranslator::registeredTranslators.push_back(&rawSoundTranslator);
 #endif
 
-	if(ClameSoundTranslator::checkForLame())
+	if(ClameSoundTranslator::checkForApp())
 	{
 		static const ClameSoundTranslator lameSoundTranslator;
 		ASoundTranslator::registeredTranslators.push_back(&lameSoundTranslator);
+	}
+
+	if(CvoxSoundTranslator::checkForApp())
+	{
+		static const CvoxSoundTranslator voxSoundTranslator;
+		ASoundTranslator::registeredTranslators.push_back(&voxSoundTranslator);
 	}
 
 	static const Cold_rezSoundTranslator old_rezSoundTranslator;

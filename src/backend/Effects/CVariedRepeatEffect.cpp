@@ -21,6 +21,10 @@ CVariedRepeatEffect::CVariedRepeatEffect(const CActionSound &actionSound,const C
 		throw(runtime_error(string(__func__)+" -- _time is negative"));
 }
 
+CVariedRepeatEffect::~CVariedRepeatEffect()
+{
+}
+
 // and have options for mixing on top of what's already there
 
 bool CVariedRepeatEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
@@ -36,7 +40,7 @@ bool CVariedRepeatEffect::doActionSizeSafe(CActionSound &actionSound,bool prepar
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Varied Repeat -- Channel "+istring(i),0,lTime); 
+			CStatusBar statusBar("Varied Repeat -- Channel "+istring(i),0,lTime,true); 
 
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempAudioPoolKey,i);
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
@@ -49,8 +53,15 @@ bool CVariedRepeatEffect::doActionSizeSafe(CActionSound &actionSound,bool prepar
 				for(sample_pos_t p=0;p<repeat && t<lTime;p++,t++)
 					dest[start+t]=src[p];
 
-				statusBar.update(t);
+				if(statusBar.update(t))
+				{ // cancelled
+					restoreSelectionFromTempPools(actionSound,actionSound.start,lTime);
+					return false;
+				}
 			}
+
+			if(!prepareForUndo)
+				actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
 		}
 	}
 
@@ -78,6 +89,10 @@ void CVariedRepeatEffect::undoActionSizeSafe(const CActionSound &actionSound)
 
 CVariedRepeatEffectFactory::CVariedRepeatEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
 	AActionFactory("Varied Repeat","Varied Repeat",false,channelSelectDialog,normalDialog,NULL)
+{
+}
+
+CVariedRepeatEffectFactory::~CVariedRepeatEffectFactory()
 {
 }
 

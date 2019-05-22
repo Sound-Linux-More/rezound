@@ -29,6 +29,12 @@
 
 #include <fox/fx.h>
 
+/*
+ * If isEditable is true, then getValue and setValue are interpreted as the 
+ * actual value to put in the combo box field.. if isEditable is false, then 
+ * getValue and setValue pertain to the index of the items
+ */
+
 class CNestedDataFile;
 
 class FXComboTextParamValue : public FXVerticalFrame
@@ -36,6 +42,7 @@ class FXComboTextParamValue : public FXVerticalFrame
 	FXDECLARE(FXComboTextParamValue);
 public:
 	FXComboTextParamValue(FXComposite *p,int opts,const char *title,const vector<string> &items,bool isEditable);
+	virtual ~FXComboTextParamValue();
 
 	const FXint getValue(); // returns the index into the items given at construction of the selected item
 	void setValue(const FXint value);
@@ -54,6 +61,7 @@ protected:
 	FXComboTextParamValue() {}
 
 private:
+	bool isEditable;
 
 	FXLabel *titleLabel;
 	FXComboBox *valueComboBox;

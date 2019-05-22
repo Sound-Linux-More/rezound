@@ -247,6 +247,10 @@ void CMainWindow::showAbout()
 	{ // different version
 		gSettingsRegistry->createKey("SeenAboutDialogVersion",REZOUND_VERSION);
 		gSettingsRegistry->createKey("SeenAboutDialogCount","1");
+
+		// if the version has changed from the previous run, then forget all window positions/sizes and splitter positions
+		gSettingsRegistry->removeKey("SplitterPositions");
+		gSettingsRegistry->removeKey("WindowDimensions");
 	}
 	else
 	{ // same version, now check count or increment count
@@ -378,6 +382,7 @@ void CMainWindow::createMenus()
 		new CActionMenuCommand(new CLimitedOverwritePasteEditFactory(gPasteChannelsDialog),menu,"",FOXIcons->edit_paste);
 		new CActionMenuCommand(new CMixPasteEditFactory(gPasteChannelsDialog),menu,"",FOXIcons->edit_paste);
 		new CActionMenuCommand(new CLimitedMixPasteEditFactory(gPasteChannelsDialog),menu,"",FOXIcons->edit_paste);
+		new CActionMenuCommand(new CFitMixPasteEditFactory(gPasteChannelsDialog),menu,"",FOXIcons->edit_paste);
 
 		new FXMenuSeparator(menu);
 		new CActionMenuCommand(new CInsertSilenceEditFactory(gChannelSelectDialog,new CInsertSilenceDialog(this)),menu,"");
@@ -411,17 +416,25 @@ void CMainWindow::createMenus()
 		new CActionMenuCommand(new CFlangeEffectFactory(gChannelSelectDialog,new CFlangeDialog(this)),menu,"");
 		new CActionMenuCommand(new CSimpleDelayEffectFactory(gChannelSelectDialog,new CSimpleDelayDialog(this)),menu,"");
 		new CActionMenuCommand(new CQuantizeEffectFactory(gChannelSelectDialog,new CQuantizeDialog(this)),menu,"");
-		new CActionMenuCommand(new CStaticReverbEffectFactory(gChannelSelectDialog),menu,"");
+		new CActionMenuCommand(new CDistortionEffectFactory(gChannelSelectDialog,new CDistortionDialog(this)),menu,"");
 		new CActionMenuCommand(new CVariedRepeatEffectFactory(gChannelSelectDialog,new CVariedRepeatDialog(this)),menu,"");
 
 		new CActionMenuCommand(new CTestEffectFactory(gChannelSelectDialog),menu,"");
 
 	menu=new FXMenuPane(this);
 	new FXMenuTitle(menubar,"&F&ilters",NULL,menu);
+		new CActionMenuCommand(new CConvolutionFilterFactory(gChannelSelectDialog,new CConvolutionFilterDialog(this)),menu,"");
+
+		new FXMenuSeparator(menu);
 		new CActionMenuCommand(new CSinglePoleLowpassFilterFactory(gChannelSelectDialog,new CSinglePoleLowpassFilterDialog(this)),menu,"");
 		new CActionMenuCommand(new CSinglePoleHighpassFilterFactory(gChannelSelectDialog,new CSinglePoleHighpassFilterDialog(this)),menu,"");
 		new CActionMenuCommand(new CBandpassFilterFactory(gChannelSelectDialog,new CBandpassFilterDialog(this)),menu,"");
 		new CActionMenuCommand(new CNotchFilterFactory(gChannelSelectDialog,new CNotchFilterDialog(this)),menu,"");
+
+		new FXMenuSeparator(menu);
+		new CActionMenuCommand(new CBiquadResLowpassFilterFactory(gChannelSelectDialog,new CBiquadResLowpassFilterDialog(this)),menu,"");
+		new CActionMenuCommand(new CBiquadResHighpassFilterFactory(gChannelSelectDialog,new CBiquadResHighpassFilterDialog(this)),menu,"");
+		new CActionMenuCommand(new CBiquadResBandpassFilterFactory(gChannelSelectDialog,new CBiquadResBandpassFilterDialog(this)),menu,"");
 
 	menu=new FXMenuPane(this);
 	new FXMenuTitle(menubar,"&Looping",NULL,menu);
@@ -429,11 +442,13 @@ void CMainWindow::createMenus()
 
 	menu=new FXMenuPane(this);
 	new FXMenuTitle(menubar,"&Remaster",NULL,menu);
-		new CActionMenuCommand(new CUnclipActionFactory(gChannelSelectDialog),menu,"");
 		new CActionMenuCommand(new CRemoveDCActionFactory(gChannelSelectDialog),menu,"");
 		new CActionMenuCommand(new CNoiseGateActionFactory(gChannelSelectDialog,new CNoiseGateDialog(this)),menu,"");
 		new CActionMenuCommand(new CCompressorActionFactory(gChannelSelectDialog,new CCompressorDialog(this)),menu,"");
 		new CActionMenuCommand(new CNormalizeActionFactory(gChannelSelectDialog,new CNormalizeDialog(this)),menu,"");
+		new CActionMenuCommand(new CResampleActionFactory(gChannelSelectDialog,new CResampleDialog(this)),menu,"");
+
+		new CActionMenuCommand(new CUnclipActionFactory(gChannelSelectDialog),menu,"");
 
 
 	create(); // re-call create for this window which will call it for all new child windows
@@ -809,13 +824,13 @@ long CMainWindow::onDebugButton(FXObject *sender,FXSelector sel,void *ptr)
 	{
 		if(SELID(sel)==ID_DEFRAG_MENUITEM)
 		{
-			s->getSound()->defragPoolFile();
+			s->sound->defragPoolFile();
 			gSoundFileManager->updateAfterEdit();
 		}
 		else if(SELID(sel)==ID_PRINT_SAT_MENUITEM)
-			s->getSound()->printSAT();
+			s->sound->printSAT();
 		else if(SELID(sel)==ID_VERIFY_SAT_MENUITEM)
-			s->getSound()->verifySAT();
+			s->sound->verifySAT();
 	}
 	else
 		getApp()->beep();

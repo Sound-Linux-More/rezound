@@ -105,13 +105,22 @@ static mix_sample_t _SSS;
 #define ClipSample(s) ((sample_t)(_SSS=((mix_sample_t)(s)), _SSS>MAX_SAMPLE ? MAX_SAMPLE : ( _SSS<MIN_SAMPLE ? MIN_SAMPLE : _SSS ) ) )
 
 
+// used in CSound::mixSound()
 enum MixMethods
 {
     mmOverwrite,
     mmAdd,
+    mmSubtract,
     mmMultiply,
     mmAverage 
 };
 
+// used in CSound::mixSound()
+enum SourceFitTypes
+{
+	sftNone,
+	sftChangeRate,
+	//sftChangeSpeed // without changing pitch (??? future)
+};
 
 #endif

@@ -98,11 +98,11 @@ LDFLAGS = @LDFLAGS@
 # doc directory
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-noinst_HEADERS =  		CNoiseGateAction.h 		CRemoveDCAction.h 		CUnclipAction.h 		CCompressorAction.h 		CNormalizeAction.h 		RemasterActions.h
+noinst_HEADERS =  		CNoiseGateAction.h 		CRemoveDCAction.h 		CUnclipAction.h 		CCompressorAction.h 		CNormalizeAction.h 		CResampleAction.h 		RemasterActions.h
 
 
 noinst_LTLIBRARIES = libRemaster.la
-libRemaster_la_SOURCES =  			CNoiseGateAction.cpp 			CRemoveDCAction.cpp 			CUnclipAction.cpp 			CCompressorAction.cpp 			CNormalizeAction.cpp 
+libRemaster_la_SOURCES =  			CNoiseGateAction.cpp 			CRemoveDCAction.cpp 			CUnclipAction.cpp 			CCompressorAction.cpp 			CNormalizeAction.cpp 			CResampleAction.cpp 
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -116,7 +116,8 @@ LIBS = @LIBS@
 libRemaster_la_LDFLAGS = 
 libRemaster_la_LIBADD = 
 libRemaster_la_OBJECTS =  CNoiseGateAction.lo CRemoveDCAction.lo \
-CUnclipAction.lo CCompressorAction.lo CNormalizeAction.lo
+CUnclipAction.lo CCompressorAction.lo CNormalizeAction.lo \
+CResampleAction.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -295,6 +296,17 @@ CRemoveDCAction.lo CRemoveDCAction.o : CRemoveDCAction.cpp \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../../src/PoolFile/TPoolAccesser.cpp
+CResampleAction.lo CResampleAction.o : CResampleAction.cpp \
+	CResampleAction.h ../../../config/common.h \
+	../../../config/config.h ../AAction.h ../settings.h \
+	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
+	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
+	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
+	../ALFO.h ../CGraphParamValueNode.h ../DSP/TSoundStretcher.h
 CUnclipAction.lo CUnclipAction.o : CUnclipAction.cpp CUnclipAction.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \

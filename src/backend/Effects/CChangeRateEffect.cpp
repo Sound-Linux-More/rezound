@@ -46,9 +46,13 @@ CChangeRateEffect::CChangeRateEffect(const CActionSound &actionSound,const CGrap
 	// truncate <0.01 to 0.01
 	for(unsigned t=0;t<rateCurve.size();t++)
 	{
-		if(rateCurve[t].value<0.01)
-			rateCurve[t].value=0.01;
+		if(rateCurve[t].y<0.01)
+			rateCurve[t].y=0.01;
 	}
+}
+
+CChangeRateEffect::~CChangeRateEffect()
+{
 }
 
 #include <stdio.h> // ??? just for the printf below
@@ -70,7 +74,7 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Changing Rate -- Channel "+istring(i),actionSound.start,actionSound.start+newLength); 
+			CStatusBar statusBar("Changing Rate -- Channel "+istring(i),actionSound.start,actionSound.start+newLength,true); 
 	
 			// here, we're using the undo data as a source from which to calculate the new data
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempAudioPoolKey,i);
@@ -88,18 +92,21 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 				const CGraphParamValueNode &rateNode1=rateCurve[x];
 				const CGraphParamValueNode &rateNode2=rateCurve[x+1];
 
-				const sample_fpos_t readStart=(rateNode1.position*oldLength);
-				const sample_fpos_t readStop=(rateNode2.position*oldLength);
+				const sample_fpos_t readStart=(rateNode1.x*oldLength);
+				const sample_fpos_t readStop=(rateNode2.x*oldLength);
 
 				if(readStart==readStop)
 					continue; // vertical rate change
 
-				const double s1=rateNode1.value;
-				const double s2=rateNode2.value;
+				const double s1=rateNode1.y;
+				const double s2=rateNode2.y;
 
 				const sample_fpos_t m=(s2-s1)/(readStop-readStart);
 
-				const sample_pos_t subWriteLength=(sample_pos_t)sample_fpos_round(getWriteLength(oldLength,rateNode1,rateNode2));
+				sample_pos_t _subWriteLength=(sample_pos_t)sample_fpos_round(getWriteLength(oldLength,rateNode1,rateNode2));
+				if(_subWriteLength>0 && writePos+_subWriteLength>=(dest.getSize()+1)) // fudge fix for the above rounding creating one too many samples
+					_subWriteLength--;
+				const sample_pos_t subWriteLength=_subWriteLength;
 
 				if(m!=0)
 				{ // rate is going up or down
@@ -116,7 +123,11 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 						// here the fudgeFactor is used with iReadPos+1 when we made the undo backup
 						dest[writePos++]=(sample_t)(p1*src[iReadPos]+p2*src[iReadPos+1]);
 		
-						statusBar.update(writePos);
+						if(statusBar.update(writePos))
+						{ // cancelled 
+							restoreSelectionFromTempPools(actionSound,actionSound.start,undoRemoveLength);
+							return false;
+						}
 					}
 				}
 				else
@@ -134,16 +145,22 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 							// here the fudgeFactor is used with iReadPos+1 when we made the undo backup
 							dest[writePos++]=(sample_t)(p1*src[iReadPos]+p2*src[iReadPos+1]);
 
-							statusBar.update(writePos);
+							if(statusBar.update(writePos))
+							{ // cancelled 
+								restoreSelectionFromTempPools(actionSound,actionSound.start,undoRemoveLength);
+								return false;
+							}
 						}
 					}
 					else
 					{ // just copy the data
 						sample_pos_t copyLength=(sample_pos_t)((readStop-readStart)+1);
+						if(copyLength>0 && writePos+copyLength>=(dest.getSize()+1)) // fudge fix
+							copyLength--;
+						// whup, can't do status bar ??? unless I were to call copyData in 100 chunks perhaps
+						// 	 ??? need to do
 						dest.copyData((sample_pos_t)writePos,src,(sample_pos_t)readStart,copyLength);
 						writePos+=copyLength;
-
-						// whup, can't do status bar ??? unless I were to call copyData in 100 chunks perhaps
 					}
 				}
 			}
@@ -170,10 +187,10 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 
 sample_fpos_t CChangeRateEffect::getWriteLength(sample_pos_t oldLength,const CGraphParamValueNode &rateNode1,const CGraphParamValueNode &rateNode2) const
 {
-	double s1=rateNode1.value;
-	double s2=rateNode2.value;
-	sample_fpos_t readStart=rateNode1.position*oldLength;
-	sample_fpos_t readStop=rateNode2.position*oldLength;
+	double s1=rateNode1.y;
+	double s2=rateNode2.y;
+	sample_fpos_t readStart=rateNode1.x*oldLength;
+	sample_fpos_t readStop=rateNode2.x*oldLength;
 	if(readStart==readStop) // vertical rate change
 		return(0.0);
 
@@ -218,6 +235,10 @@ void CChangeRateEffect::undoActionSizeSafe(const CActionSound &actionSound)
 
 CChangeRateEffectFactory::CChangeRateEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog,AActionDialog *advancedDialog) :
 	AActionFactory("Change Rate","Change Rate",true,channelSelectDialog,normalDialog,advancedDialog)
+{
+}
+
+CChangeRateEffectFactory::~CChangeRateEffectFactory()
 {
 }
 

@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.11 2002/06/26 01:51:16 lergnom Exp $
+/* $Id: common.h,v 1.12 2002/10/18 16:24:23 ddurham Exp $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -79,5 +79,10 @@ static const char *REZOUND_VERSION=VERSION;
 #define round rintf
 #endif
 
+/*
+ * It is not good to simply use bool==bool because anything non-zero is seen as true
+ * which wouldn't equate.  This returns true iff both are non-zero or both are zero
+ */
+static bool compareBool(int a,int b) { return (a && b) || (!a && !b); }
 
 #endif /* COMMON_H */

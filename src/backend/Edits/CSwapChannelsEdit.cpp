@@ -67,6 +67,10 @@ CSwapChannelsEditFactory::CSwapChannelsEditFactory(AActionDialog *normalDialog) 
 {
 }
 
+CSwapChannelsEditFactory::~CSwapChannelsEditFactory()
+{
+}
+
 CSwapChannelsEdit *CSwapChannelsEditFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
 	return(new CSwapChannelsEdit(
@@ -79,6 +83,6 @@ CSwapChannelsEdit *CSwapChannelsEditFactory::manufactureAction(const CActionSoun
 bool CSwapChannelsEditFactory::doPreActionSetup(CLoadedSound *loadedSound)
 {
 	// don't bother doing this action if there is not more than 1 channel
-	return(loadedSound->getSound()->getChannelCount()>1);
+	return(loadedSound->sound->getChannelCount()>1);
 }
 

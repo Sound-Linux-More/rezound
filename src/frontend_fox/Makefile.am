@@ -46,6 +46,8 @@ libfrontend_la_SOURCES= \
 			CSoundWindow.cpp \
 			CStatusComm.cpp \
 			CUserNotesDialog.cpp \
+			CRawDialog.cpp \
+			CVoxDialog.cpp \
 			COggDialog.cpp \
 			CMp3Dialog.cpp \
 			drawPortion.cpp \
@@ -56,6 +58,7 @@ libfrontend_la_SOURCES= \
 			CAboutDialog.cpp \
 			FXConstantParamValue.cpp \
 			FXTextParamValue.cpp \
+			FXFilenameParamValue.cpp \
 			FXComboTextParamValue.cpp \
 			FXCheckBoxParamValue.cpp \
 			FXGraphParamValue.cpp \
@@ -114,6 +117,8 @@ noinst_HEADERS=\
 	CSoundWindow.h \
 	CStatusComm.h \
 	CUserNotesDialog.h \
+	CRawDialog.h \
+	CVoxDialog.h \
 	COggDialog.h \
 	CMp3Dialog.h \
 	EditActionDialogs.h \
@@ -123,6 +128,7 @@ noinst_HEADERS=\
 	CAboutDialog.h \
 	FXConstantParamValue.h \
 	FXTextParamValue.h \
+	FXFilenameParamValue.h \
 	FXComboTextParamValue.h \
 	FXCheckBoxParamValue.h \
 	FXGraphParamValue.h \

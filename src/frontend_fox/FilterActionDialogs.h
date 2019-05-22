@@ -27,12 +27,23 @@
 #include "CActionParamDialog.h"
 
 
+// --- convolution -----------------------
+
+class CConvolutionFilterDialog : public CActionParamDialog
+{
+public:
+	CConvolutionFilterDialog(FXWindow *mainWindow);
+	virtual ~CConvolutionFilterDialog(){}
+};
+
+
 // --- single pole lowpass ---------------
 
 class CSinglePoleLowpassFilterDialog : public CActionParamDialog
 {
 public:
 	CSinglePoleLowpassFilterDialog(FXWindow *mainWindow);
+	virtual ~CSinglePoleLowpassFilterDialog(){}
 };
 
 
@@ -42,6 +53,7 @@ class CSinglePoleHighpassFilterDialog : public CActionParamDialog
 {
 public:
 	CSinglePoleHighpassFilterDialog(FXWindow *mainWindow);
+	virtual ~CSinglePoleHighpassFilterDialog(){}
 };
 
 
@@ -51,6 +63,7 @@ class CBandpassFilterDialog : public CActionParamDialog
 {
 public:
 	CBandpassFilterDialog(FXWindow *mainWindow);
+	virtual ~CBandpassFilterDialog(){}
 };
 
 
@@ -60,9 +73,36 @@ class CNotchFilterDialog : public CActionParamDialog
 {
 public:
 	CNotchFilterDialog(FXWindow *mainWindow);
+	virtual ~CNotchFilterDialog(){}
 };
 
 
+// --- biquad resonant lowpass -----------
+
+class CBiquadResLowpassFilterDialog : public CActionParamDialog
+{
+public:
+	CBiquadResLowpassFilterDialog(FXWindow *mainWindow);
+	virtual ~CBiquadResLowpassFilterDialog(){}
+};
+
+// --- biquad resonant highpass ----------
+
+class CBiquadResHighpassFilterDialog : public CActionParamDialog
+{
+public:
+	CBiquadResHighpassFilterDialog(FXWindow *mainWindow);
+	virtual ~CBiquadResHighpassFilterDialog(){}
+};
+
+// --- biquad resonant bandpass ----------
+
+class CBiquadResBandpassFilterDialog : public CActionParamDialog
+{
+public:
+	CBiquadResBandpassFilterDialog(FXWindow *mainWindow);
+	virtual ~CBiquadResBandpassFilterDialog(){}
+};
 
 
 

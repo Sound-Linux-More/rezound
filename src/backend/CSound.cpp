@@ -1053,8 +1053,9 @@ void CSound::silenceSound(unsigned channel,sample_pos_t where,sample_pos_t lengt
 }
 
 #include "DSP/TSoundStretcher.h"
+#include <stdio.h> // ??? just for test printfs
 
-void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser src,sample_pos_t srcWhere,unsigned srcSampleRate,sample_pos_t length,MixMethods mixMethod,bool doInvalidatePeakData,bool showProgressBar)
+void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser src,sample_pos_t srcWhere,unsigned srcSampleRate,sample_pos_t length,MixMethods mixMethod,SourceFitTypes fitSrc,bool doInvalidatePeakData,bool showProgressBar)
 {
 	ASSERT_SIZE_LOCK
 
@@ -1068,21 +1069,23 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 	const sample_pos_t destOffset=where;
 	const unsigned destSampleRate=getSampleRate();
 
+	const sample_pos_t srcLength=(fitSrc==sftNone) ? length : (src.getSize()-srcWhere) ;
+
 	switch(mixMethod)
 	{
 	case mmOverwrite:
-		if(srcSampleRate==destSampleRate)
+		if(srcSampleRate==destSampleRate && fitSrc==sftNone)
 		{
 			// ??? need a progress bar
 			dest.copyData(destOffset,src,srcWhere,length);
 		}
 		else
 		{ // do sample rate conversion
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)srcLength/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Copying Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=srcStretcher.getSample();
@@ -1099,12 +1102,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		break;
 
 	case mmAdd:
-		if(srcSampleRate==destSampleRate)
+		if(srcSampleRate==destSampleRate && fitSrc==sftNone)
 		{
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data (add) -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=ClipSample((mix_sample_t)dest[t]+(mix_sample_t)src[srcWhere++]);
@@ -1120,11 +1123,11 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		} 
 		else 
 		{ // do sample rate conversion
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)srcLength/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data (add) -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=ClipSample((mix_sample_t)dest[t]+(mix_sample_t)srcStretcher.getSample());
@@ -1135,59 +1138,101 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			{
 				for(sample_pos_t t=where;t<last;t++)
 					dest[t]=ClipSample((mix_sample_t)dest[t]+(mix_sample_t)srcStretcher.getSample());
+			}
+		}
+
+		break;
+
+	case mmSubtract:
+		if(srcSampleRate==destSampleRate && fitSrc==sftNone)
+		{
+			const sample_pos_t last=where+length;
+			if(showProgressBar)
+			{
+				CStatusBar statusBar("Mixing Data (subtract) -- Channel "+istring(channel),where,last);
+				for(sample_pos_t t=where;t<last;t++)
+				{
+					dest[t]=ClipSample((mix_sample_t)dest[t]-(mix_sample_t)src[srcWhere++]);
+
+					statusBar.update(t);
+				}
+			}
+			else
+			{
+				for(sample_pos_t t=where;t<last;t++)
+					dest[t]=ClipSample((mix_sample_t)dest[t]-(mix_sample_t)src[srcWhere++]);
+			}
+		} 
+		else 
+		{ // do sample rate conversion
+			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)srcLength/destSampleRate*srcSampleRate),length);
+			const sample_pos_t last=where+length;
+			if(showProgressBar)
+			{
+				CStatusBar statusBar("Mixing Data (subtract) -- Channel "+istring(channel),where,last);
+				for(sample_pos_t t=where;t<last;t++)
+				{
+					dest[t]=ClipSample((mix_sample_t)dest[t]-(mix_sample_t)srcStretcher.getSample());
+					statusBar.update(t);
+				}
+			}
+			else
+			{
+				for(sample_pos_t t=where;t<last;t++)
+					dest[t]=ClipSample((mix_sample_t)dest[t]-(mix_sample_t)srcStretcher.getSample());
 			}
 		}
 
 		break;
 
 	case mmMultiply:
-		if(srcSampleRate==destSampleRate)
+		if(srcSampleRate==destSampleRate && fitSrc==sftNone)
 		{
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data (multiply) -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
-					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)src[srcWhere++]);
+					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)src[srcWhere++]/MAX_SAMPLE);
 					statusBar.update(t);
 				}
 			}
 			else
 			{	
 				for(sample_pos_t t=where;t<last;t++)
-					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)src[srcWhere++]);
+					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)src[srcWhere++]/MAX_SAMPLE);
 			}
 		}
 		else
 		{ // do sample rate conversion
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)srcLength/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data (multiply) -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
-					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)srcStretcher.getSample());
+					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)srcStretcher.getSample()/MAX_SAMPLE);
 					statusBar.update(t);
 				}
 			}
 			else
 			{
 				for(sample_pos_t t=where;t<last;t++)
-					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)srcStretcher.getSample());
+					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)srcStretcher.getSample()/MAX_SAMPLE);
 			}
 		}
 
 		break;
 
 	case mmAverage:
-		if(srcSampleRate==destSampleRate)
+		if(srcSampleRate==destSampleRate && fitSrc==sftNone)
 		{
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data (average) -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=((mix_sample_t)dest[t]+(mix_sample_t)src[srcWhere++])/2;
@@ -1202,11 +1247,11 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 		}
 		else
 		{ // do sample rate conversion
-			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)length/destSampleRate*srcSampleRate),length);
+			TSoundStretcher<CRezPoolAccesser> srcStretcher(src,srcWhere,(sample_pos_t)((sample_fpos_t)srcLength/destSampleRate*srcSampleRate),length);
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data (average) -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=((mix_sample_t)dest[t]+(mix_sample_t)srcStretcher.getSample())/2;
@@ -1585,6 +1630,12 @@ bool CSound::createFromWorkingPoolFileIfExists(const string originalFilename,boo
 		poolFile.closeFile(false,true);
 		return(false);
 	}
+}
+
+void CSound::setSampleRate(unsigned newSampleRate)
+{
+	sampleRate=newSampleRate;
+	saveMetaInfo();
 }
 
 void CSound::saveMetaInfo()

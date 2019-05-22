@@ -18,35 +18,32 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __CStaticReverbEffect_H__
-#define __CStaticReverbEffect_H__
+#ifndef __CvoxSoundTranslator_H__
+#define __CvoxSoundTranslator_H__
 
-#include "../../../config/common.h"
+#include "../../config/common.h"
 
+#include "ApipedSoundTranslator.h"
 
-class CStaticReverbEffect;
-class CStaticReverbEffectFactory;
-
-#include "../AAction.h"
-
-class CStaticReverbEffect : public AAction
+class CvoxSoundTranslator : public ApipedSoundTranslator
 {
 public:
-	CStaticReverbEffect(const CActionSound &actionSound);
+	CvoxSoundTranslator();
+	virtual ~CvoxSoundTranslator();
+
+	static bool checkForApp();
+
+	bool handlesExtension(const string extension) const;
+	bool supportsFormat(const string filename) const;
+
+	const vector<string> getFormatNames() const;
+	const vector<vector<string> > getFormatExtensions() const;
 
 protected:
-	bool doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo);
-	void undoActionSizeSafe(const CActionSound &actionSound);
-	CanUndoResults canUndo(const CActionSound &actionSound) const;
 
-};
+	bool onLoadSound(const string filename,CSound *sound) const;
+	bool onSaveSound(const string filename,CSound *sound) const;
 
-class CStaticReverbEffectFactory : public AActionFactory
-{
-public:
-	CStaticReverbEffectFactory(AActionDialog *channelSelectDialog);
-
-	CStaticReverbEffect *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
 };
 
 #endif

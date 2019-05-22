@@ -56,6 +56,10 @@ AActionFactory::AActionFactory(const string _actionName,const string _actionDesc
 {
 }
 
+AActionFactory::~AActionFactory()
+{
+}
+
 // ??? need to pass a flag for 'allowUndo'
 bool AActionFactory::performAction(CLoadedSound *loadedSound,CActionParameters *actionParameters,bool showChannelSelectDialog,bool advancedMode)
 {
@@ -264,6 +268,10 @@ bool AAction::doAction(CSoundPlayerChannel *channel,bool prepareForUndo,bool _wi
 	
 		bool ret=doActionSizeSafe(_actionSound,prepareForUndo && canUndo()==curYes);
 
+		// restore the original value for isModified unless we didn't prepare for undo
+		if(!ret)
+			actionSound.sound->setIsModified(origIsModified || !prepareForUndo);
+
 		// make sure that the start and stop positions are in range after the action
 		if(_actionSound.start<0)
 			_actionSound.start=0;
@@ -275,20 +283,23 @@ bool AAction::doAction(CSoundPlayerChannel *channel,bool prepareForUndo,bool _wi
 		else if(_actionSound.stop>=_actionSound.sound->getLength())
 			_actionSound.stop=_actionSound.sound->getLength()-1;
 	
-		if(crossfadeEdgesIsApplicable)
+		if(ret)
 		{
-			crossfadeEdges(_actionSound);
-	
-			// again, make sure that the start and stop positions are in range after the crossfade
-			if(_actionSound.start<0)
-				_actionSound.start=0;
-			else if(_actionSound.start>=_actionSound.sound->getLength())
-				_actionSound.start=_actionSound.sound->getLength()-1;
+			if(crossfadeEdgesIsApplicable)
+			{
+				crossfadeEdges(_actionSound);
 		
-			if(_actionSound.stop<0)
-				_actionSound.stop=0;
-			else if(_actionSound.stop>=_actionSound.sound->getLength())
-				_actionSound.stop=_actionSound.sound->getLength()-1;
+				// again, make sure that the start and stop positions are in range after the crossfade
+				if(_actionSound.start<0)
+					_actionSound.start=0;
+				else if(_actionSound.start>=_actionSound.sound->getLength())
+					_actionSound.start=_actionSound.sound->getLength()-1;
+			
+				if(_actionSound.stop<0)
+					_actionSound.stop=0;
+				else if(_actionSound.stop>=_actionSound.sound->getLength())
+					_actionSound.stop=_actionSound.sound->getLength()-1;
+			}
 		}
 	
 		if(channel!=NULL)

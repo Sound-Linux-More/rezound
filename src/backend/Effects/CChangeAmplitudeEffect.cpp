@@ -31,6 +31,10 @@ CChangeAmplitudeEffect::CChangeAmplitudeEffect(const CActionSound &actionSound,c
 {
 }
 
+CChangeAmplitudeEffect::~CChangeAmplitudeEffect()
+{
+}
+
 bool CChangeAmplitudeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
 	if(prepareForUndo)
@@ -43,7 +47,7 @@ bool CChangeAmplitudeEffect::doActionSizeSafe(CActionSound &actionSound,bool pre
 	{
 		if(actionSound.doChannel[i])
 		{
-			CStatusBar statusBar("Changing Amplitude -- Channel "+istring(i),0,selectionLength); 
+			CStatusBar statusBar("Changing Amplitude -- Channel "+istring(i),0,selectionLength,true);
 
 			sample_pos_t srcp=0;
 			for(unsigned x=0;x<volumeCurve.size()-1;x++)
@@ -71,7 +75,11 @@ bool CChangeAmplitudeEffect::doActionSizeSafe(CActionSound &actionSound,bool pre
 						float scalar=(float)(segmentStartValue+(((segmentStopValue-segmentStartValue)*(double)(t))/(segmentLength)));
 						dest[t+segmentStartPosition]=ClipSample((mix_sample_t)(src[srcp++]*scalar));
 
-						statusBar.update(srcp);
+						if(statusBar.update(srcp))
+						{ // cancelled
+							undoActionSizeSafe(actionSound);
+							return false;
+						}
 					}
 				}
 				else
@@ -82,7 +90,11 @@ bool CChangeAmplitudeEffect::doActionSizeSafe(CActionSound &actionSound,bool pre
 						float scalar=(float)(segmentStartValue+(((segmentStopValue-segmentStartValue)*(double)(t-segmentStartPosition))/(segmentLength)));
 						a[t]=ClipSample((mix_sample_t)(a[t]*scalar));
 
-						statusBar.update(t-start);
+						if(statusBar.update(t-start))
+						{
+							actionSound.sound->invalidatePeakData(i,actionSound.start,t);
+							return false;
+						}
 					}
 					actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
 				}
@@ -114,6 +126,10 @@ CChangeVolumeEffectFactory::CChangeVolumeEffectFactory(AActionDialog *channelSel
 {
 }
 
+CChangeVolumeEffectFactory::~CChangeVolumeEffectFactory()
+{
+}
+
 CChangeAmplitudeEffect *CChangeVolumeEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
 	if(actionParameters->getGraphParameter("Volume Change").size()<2)
@@ -130,6 +146,10 @@ CGainEffectFactory::CGainEffectFactory(AActionDialog *channelSelectDialog,AActio
 {
 }
 
+CGainEffectFactory::~CGainEffectFactory()
+{
+}
+
 CChangeAmplitudeEffect *CGainEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
 	string parameterName;
@@ -141,7 +161,7 @@ CChangeAmplitudeEffect *CGainEffectFactory::manufactureAction(const CActionSound
 	if(actionParameters->getGraphParameter(parameterName).size()<2)
 		throw(runtime_error(string(__func__)+" -- graph parameter 0 contains less than 2 nodes"));
 
-		return(new CChangeAmplitudeEffect(actionSound,actionParameters->getGraphParameter(parameterName)));
+	return(new CChangeAmplitudeEffect(actionSound,actionParameters->getGraphParameter(parameterName)));
 }
 
 

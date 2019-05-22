@@ -35,9 +35,9 @@ libEffects_la_SOURCES=\
 		CDelayEffect.cpp \
 		CFlangeEffect.cpp \
 		CReverseEffect.cpp \
-		CStaticReverbEffect.cpp \
 		CVariedRepeatEffect.cpp \
 		CQuantizeEffect.cpp \
+		CDistortionEffect.cpp \
 		CTestEffect.cpp
 
 
@@ -47,9 +47,9 @@ noinst_HEADERS= \
 		CDelayEffect.h \
 		CFlangeEffect.h \
 		CReverseEffect.h \
-		CStaticReverbEffect.h \
 		CVariedRepeatEffect.h \
 		CQuantizeEffect.h \
+		CDistortionEffect.h \
 		CTestEffect.h \
 		EffectActions.h
 

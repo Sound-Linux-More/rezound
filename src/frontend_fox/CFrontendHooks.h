@@ -30,15 +30,18 @@
 	class FXWindow;
 	class FXFileDialog;
 	class FXDirDialog;
+	class FXCheckButton;
 #else
-	namespace FX { class FXWindow; class FXFileDialog; class FXDirDialog; }
+	namespace FX { class FXWindow; class FXFileDialog; class FXDirDialog; class FXCheckButton; }
 	using namespace FX;
 #endif
 
 class CNewSoundDialog;
 class CRecordDialog;
+class CRawDialog;
 class COggDialog;
 class CMp3Dialog;
+class CVoxDialog;
 
 class CFrontendHooks : public AFrontendHooks
 {
@@ -50,32 +53,38 @@ public:
 
 	const string getFOXFileTypes() const; // returns a string to pass as the file types drop-down in FOX file dialogs
 
-	bool promptForOpenSoundFilename(string &filename,bool &readOnly);
-	bool promptForOpenSoundFilenames(vector<string> &filenames,bool &readOnly);
-	bool promptForSaveSoundFilename(string &filename);
+	bool promptForOpenSoundFilename(string &filename,bool &readOnly,bool &openAsRaw);
+	bool promptForOpenSoundFilenames(vector<string> &filenames,bool &readOnly,bool &openAsRaw);
+	bool promptForSaveSoundFilename(string &filename,bool &saveAsRaw);
 
-	bool promptForNewSoundParameters(string &filename,unsigned &channelCount,unsigned &sampleRate,sample_pos_t &length);
-	bool promptForNewSoundParameters(string &filename,unsigned &channelCount,unsigned &sampleRate);
+	bool promptForNewSoundParameters(string &filename,bool &rawFormat,unsigned &channelCount,unsigned &sampleRate,sample_pos_t &length);
+	bool promptForNewSoundParameters(string &filename,bool &rawFormat,unsigned &channelCount,unsigned &sampleRate);
 	bool promptForNewSoundParameters(unsigned &channelCount,unsigned &sampleRate);
 
 	bool promptForDirectory(string &dirname,const string title);
 
 	bool promptForRecord(ASoundRecorder *recorder);
 
+	bool promptForRawParameters(RawParameters &parameters,bool showOffsetAndLengthParameters);
 	bool promptForOggCompressionParameters(OggCompressionParameters &parameters);
 	bool promptForMp3CompressionParameters(Mp3CompressionParameters &parameters);
+	bool promptForVoxParameters(VoxParameters &parameters);
 
 private:
 	FXWindow *mainWindow;
 
 	FXFileDialog *openDialog;
+		FXCheckButton *openAsRawCheckButton;
 	FXFileDialog *saveDialog;
+		FXCheckButton *saveAsRawCheckButton;
 	FXDirDialog *dirDialog;
 
 	CNewSoundDialog *newSoundDialog;
 	CRecordDialog *recordDialog;
+	CRawDialog *rawDialog;
 	COggDialog *oggDialog;
 	CMp3Dialog *mp3Dialog;
+	CVoxDialog *voxDialog;
 };
 
 #endif

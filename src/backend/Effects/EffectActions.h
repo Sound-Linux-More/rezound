@@ -29,9 +29,9 @@
 #include "CDelayEffect.h"
 #include "CFlangeEffect.h"
 #include "CReverseEffect.h"
-#include "CStaticReverbEffect.h"
 #include "CVariedRepeatEffect.h"
 #include "CQuantizeEffect.h"
+#include "CDistortionEffect.h"
 
 #include "CTestEffect.h"
 

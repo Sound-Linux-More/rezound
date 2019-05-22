@@ -27,7 +27,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT(config/common.h)
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER(config/config.h)
-AM_INIT_AUTOMAKE(rezound, 0.4.0beta)
+AM_INIT_AUTOMAKE(rezound, 0.5.0beta)
 AC_DISABLE_SHARED   dnl This only builds static libs 
 
 dnl --------------------|
@@ -50,8 +50,43 @@ ajv_CXX_FLAG(-Wno-unused-function)
 ajv_CXX_FLAG(-Wno-unused-variable)
 ajv_CXX_FLAG(-Wno-unused)
 AC_PROG_CXXCPP
+
+
+dnl ------------------------|
+dnl Checks for header files.|
+dnl ------------------------|
+AC_HEADER_STDC
+dnl This is defined in config/sstream.m4 it checks for a native sstream 
+dnl header and makes arrangements for missing/sstream-missing to be used 
+dnl if it's not found. see config sstream.m4 for definition
+ajv_CHECK_HEADER_SSTREAM
+dnl This is defined in config/stdint.m4 it checks for a native stdint.h 
+dnl header and makes arrangements for missing/stdint.h-missing to be used 
+dnl if it's not found. see config stdint.m4 for definition
+ajv_CHECK_HEADER_STDINT
+
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+
+dnl Checks for library functions.
+dnl These tests aren't working at all, so until we have a complaint 
+dnl from someone who can't build due to a missing function, I won't worry
+dnl about it
+dnl AC_CHECK_FUNCS(strerror strdup strtol)
+
+
+dnl check for flex
 AM_PROG_LEX
+expr z"$LEX" : z".*flex.*" >/dev/null || AC_MSG_ERROR([flex not found (and I have not tested if lex will work)])
+
+dnl check for bison
 AC_PROG_YACC
+expr z"$YACC" : z".*bison.*" >/dev/null || AC_MSG_ERROR([bison not found (and yacc will not work)])
+
 
 dnl define WORDS_BIGENDIAN if this is a big endian platform
 dnl NOTE: autoconf 2.5 supports passing what to do if it is a big endian 
@@ -71,16 +106,16 @@ AC_TRY_RUN([
 dnl ---------------------|
 dnl Checks for libraries.|
 dnl ---------------------|
-AC_CHECK_LIB(m, sqrt)
+AC_CHECK_LIB(m, sqrt,,AC_MSG_ERROR([compatible libc math library not found]))
 
 
 dnl  ??? on FreeBSD pthread isn't the right lib name... it should be 
 dnl libc_r ("-lc_r").. so I think on the action-if-not-found parameter 
 dnl to call AC_CHECK_LIB(c_r,pthread_create)  and same for the other 2
 dnl I need to ask Anthony about it
-AC_CHECK_LIB(pthread, pthread_create)
-AC_CHECK_LIB(pthread, pthread_mutex_init)
-AC_CHECK_LIB(pthread, pthread_rwlock_init)
+AC_CHECK_LIB(pthread, pthread_create,,AC_MSG_ERROR([compatible posix thread library not found]))
+AC_CHECK_LIB(pthread, pthread_mutex_init,,AC_MSG_ERROR([compatible posix thread library not found]))
+AC_CHECK_LIB(pthread, pthread_rwlock_init,,AC_MSG_ERROR([compatible posix thread library not found]))
 
 
 dnl check for the rfftw library installed.  Eventually this macro call
@@ -92,13 +127,13 @@ dnl AC_CHECK_LIB(rfftw, rfftw_create_plan)
 AC_CHECK_HEADER(
 	fftw.h,
 	AC_CHECK_LIB(fftw, fftw_create_plan, , AC_MSG_WARN([***** libfftw.a not found -- any FFT based actions will be disabled (http://www.fftw.org) *****]),-lfftw),
-	AC_MSG_WARN([***** fftw.h header file not found -- and FFT based actions will be disabled (http://www.fftw.org) *****])
+	AC_MSG_WARN([***** fftw.h header file not found -- any FFT based actions will be disabled (http://www.fftw.org) *****])
 	)
 
 AC_CHECK_HEADER(
 	rfftw.h,
 	AC_CHECK_LIB(rfftw, rfftw_create_plan, , AC_MSG_WARN([***** librfftw.a not found -- any FFT based actions will be disabled (http://www.fftw.org) *****]),-lrfftw),
-	AC_MSG_WARN([***** rfftw.h header file not found -- and FFT based actions will be disabled (http://www.fftw.org) *****])
+	AC_MSG_WARN([***** rfftw.h header file not found -- any FFT based actions will be disabled (http://www.fftw.org) *****])
 	)
 
 
@@ -234,7 +269,7 @@ dnl AC_CHECK_LIB(FOX,fxfindfox)
 dnl Check for FOX's reswrap program. 
 AC_PATH_PROG(RESWRAP, reswrap)
 	if test -z "$RESWRAP"; then
-		AC_MSG_ERROR([reswrap not found (it comes with fox)])
+		AC_MSG_ERROR([reswrap not found (it comes with fox) -- perhaps you need to add reswrap's location to your PATH])
 	fi
 
 
@@ -249,36 +284,9 @@ AC_ARG_ENABLE(
 		dnl the 3rd arg would not be necessary if this section didn't have to come after ajv_CXX_CHECK_LIB's
 		AC_CHECK_LIB(dl, dlopen,[LIBS="$LIBS -ldl"])
 		LDFLAGS="-all-static $LDFLAGS"
-		AC_DEFINE(LINKING_STATICALLY) dnl have to know this to use mypopen instead of popen because of bug in glibc
 	]
 	)
 
-
-dnl ------------------------|
-dnl Checks for header files.|
-dnl ------------------------|
-AC_HEADER_STDC
-dnl This is defined in config/sstream.m4 it checks for a native sstream 
-dnl header and makes arrangements for missing/sstream-missing to be used 
-dnl if it's not found. see config sstream.m4 for definition
-ajv_CHECK_HEADER_SSTREAM
-dnl This is defined in config/stdint.m4 it checks for a native stdint.h 
-dnl header and makes arrangements for missing/stdint.h-missing to be used 
-dnl if it's not found. see config stdint.m4 for definition
-ajv_CHECK_HEADER_STDINT
-
-
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_C_INLINE
-AC_TYPE_OFF_T
-AC_TYPE_SIZE_T
-
-dnl Checks for library functions.
-dnl These tests aren't working at all, so until we have a complaint 
-dnl from someone who can't build due to a missing function, I won't worry
-dnl about it
-dnl AC_CHECK_FUNCS(strerror strdup strtol)
 
 dnl AC_DEFINE_UNQUOTED Passes values through to config.h
 if test x"$prefix" = x"NONE"; then
@@ -338,4 +346,5 @@ dnl since this script isn't terribly big and it can be confusing when things
 dnl are cached and you're re-running configure after installing some library I 
 dnl will just always remove the cache file after running
 rm -f config.cache
+rm -f a.out #autoconf  is leaving this around for some reason
 

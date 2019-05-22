@@ -57,19 +57,20 @@ CLoadedSound *ASoundFileManager::prvCreateNew(bool askForLength)
 	CLoadedSound *loaded=NULL;
 
 	string filename=getUntitledFilename(gPromptDialogDirectory,"rez");
+	bool rawFormat=false;
 	unsigned channelCount;
 	unsigned sampleRate;
 	sample_pos_t length=1;  // 1 if askForLength is false
 	if(
-		(askForLength && gFrontendHooks->promptForNewSoundParameters(filename,channelCount,sampleRate,length)) ||
-		(!askForLength && gFrontendHooks->promptForNewSoundParameters(filename,channelCount,sampleRate))
+		(askForLength && gFrontendHooks->promptForNewSoundParameters(filename,rawFormat,channelCount,sampleRate,length)) ||
+		(!askForLength && gFrontendHooks->promptForNewSoundParameters(filename,rawFormat,channelCount,sampleRate))
 	)
 	{
 		if(isFilenameRegistered(filename))
 			throw(runtime_error(string(__func__)+" -- a file named '"+filename+"' is already opened"));
 
 		// should get based on extension
-		const ASoundTranslator *translator=getTranslator(filename,false/*isRaw*/);
+		const ASoundTranslator *translator=getTranslator(filename,rawFormat);
 
 		try
 		{
@@ -97,14 +98,14 @@ CLoadedSound *ASoundFileManager::prvCreateNew(bool askForLength)
 	return(NULL);
 }
 
-void ASoundFileManager::open(const string _filename,bool asRaw)
+void ASoundFileManager::open(const string _filename,bool openAsRaw)
 {
 	vector<string> filenames;
 	string filename=_filename;
 	bool readOnly=false;
 	if(filename=="")
 	{
-		if(!gFrontendHooks->promptForOpenSoundFilenames(filenames,readOnly))
+		if(!gFrontendHooks->promptForOpenSoundFilenames(filenames,readOnly,openAsRaw))
 			return;
 	}
 	else
@@ -114,7 +115,7 @@ void ASoundFileManager::open(const string _filename,bool asRaw)
 	{
 		try
 		{
-			prvOpen(filenames[t],readOnly,true,asRaw);
+			prvOpen(filenames[t],readOnly,true,openAsRaw);
 			updateReopenHistory(filenames[t]);
 		}
 		catch(runtime_error &e)
@@ -173,6 +174,30 @@ void ASoundFileManager::prvOpen(const string &filename,bool readOnly,bool doRegi
 
 }
 
+/*
+ * This needs to be called after saving a file.. it sets false the saved state 
+ * on all previous actions on the undo stack which might because the current 
+ * state if the user undoes.
+ */
+#include "AAction.h"
+static void iterateUndoStackAndUnsetSavedState(CLoadedSound *loaded)
+{
+	stack<AAction *> temp;
+	
+	while(loaded->actions.empty())
+	{
+		loaded->actions.top()->setOrigIsModified();
+		temp.push(loaded->actions.top());
+		loaded->actions.pop();
+	}
+
+	while(temp.empty())
+	{
+		loaded->actions.push(temp.top());
+		temp.pop();
+	}
+}
+
 void ASoundFileManager::save()
 {
 	// get active sound
@@ -186,14 +211,15 @@ void ASoundFileManager::save()
 		if(filename=="" || loaded->translator==NULL)
 			throw(runtime_error(string(__func__)+" -- filename is not set or translator is NULL -- how did this happen? -- I shouldn't have this problem since even a new sound has to be given a filename"));
 		
-		if(loaded->translator->saveSound(filename,loaded->getSound()))
+		if(loaded->translator->saveSound(filename,loaded->sound))
 		{
-			loaded->getSound()->setIsModified(false);
+			loaded->sound->setIsModified(false);
 			updateAfterEdit();
 			updateReopenHistory(filename);
 		}
 	}
 }
+
 
 void ASoundFileManager::saveAs()
 {
@@ -202,37 +228,57 @@ void ASoundFileManager::saveAs()
 	{
 		string filename=loaded->getFilename();
 askAgain:
-		if(!gFrontendHooks->promptForSaveSoundFilename(filename))
+		bool saveAsRaw=false;
+		if(!gFrontendHooks->promptForSaveSoundFilename(filename,saveAsRaw))
 			return;
 
-		if(loaded->getFilename()==filename)
-		{ // the user chose the same name
+		bool reregisterFilenameOnError=false;
+		if(loaded->getFilename()==filename && compareBool(loaded->translator->handlesRaw(),saveAsRaw))
+		{ // the user chose the same name (and didn't change whether to save as raw or not)
 			save();
 			return;
+		}
+		else if(loaded->getFilename()==filename && !compareBool(loaded->translator->handlesRaw(),saveAsRaw))
+		{ // same name, but now saving as raw
+			unregisterFilename(loaded->getFilename());
+			reregisterFilenameOnError=true;
 		}
 
 		if(isFilenameRegistered(filename))
 			throw(runtime_error(string(__func__)+" -- file is currently opened: '"+filename+"'"));
 
-		if(CPath(filename).exists())
+		try
 		{
-			if(Question("Overwrite Existing File:\n"+filename,yesnoQues)!=yesAns)
-				goto askAgain;
+			if(CPath(filename).exists())
+			{
+				if(Question("Overwrite Existing File:\n"+filename,yesnoQues)!=yesAns)
+				{
+					if(reregisterFilenameOnError)
+						registerFilename(filename);
+					goto askAgain;
+				}
+			}
+
+			const ASoundTranslator *translator=getTranslator(filename,saveAsRaw);
+
+			if(translator->saveSound(filename,loaded->sound))
+			{
+				loaded->translator=translator; // make save use this translator next time
+
+				unregisterFilename(loaded->getFilename());
+				loaded->changeFilename(filename);
+				registerFilename(filename);
+
+				loaded->sound->setIsModified(false);
+				updateAfterEdit();
+				updateReopenHistory(filename);
+			}
 		}
-
-		const ASoundTranslator *translator=getTranslator(filename,/*isRaw*/false);
-
-		if(translator->saveSound(filename,loaded->getSound()))
+		catch(...)
 		{
-			loaded->translator=translator; // make save use this translator next time
-
-			unregisterFilename(loaded->getFilename());
-			loaded->changeFilename(filename);
-			registerFilename(filename);
-
-			loaded->getSound()->setIsModified(false);
-			updateAfterEdit();
-			updateReopenHistory(filename);
+			if(reregisterFilenameOnError)
+				registerFilename(filename);
+			throw;
 		}
 	}
 }
@@ -243,7 +289,7 @@ void ASoundFileManager::close(CloseTypes closeType,CLoadedSound *closeWhichSound
 	if(loaded)
 	{
 		bool doSave=false;
-		if(loaded->getSound()->isModified())
+		if(loaded->sound->isModified())
 		{
 			if(closeType==ctSaveYesNoStop)
 			{
@@ -262,15 +308,15 @@ void ASoundFileManager::close(CloseTypes closeType,CLoadedSound *closeWhichSound
 			// else closeType==ctSaveNone  (no question to ask; just don't save)
 		}
 
-		loaded->getSound()->lockForResize();
+		loaded->sound->lockForResize();
 		try
 		{
 			loaded->channel->stop();
-			loaded->getSound()->unlockForResize();
+			loaded->sound->unlockForResize();
 		}
 		catch(...)
 		{
-			loaded->getSound()->unlockForResize();
+			loaded->sound->unlockForResize();
 			// perhaps don't worry about it???
 		}
 
@@ -283,7 +329,7 @@ void ASoundFileManager::close(CloseTypes closeType,CLoadedSound *closeWhichSound
 
 		destroyWindow(loaded);
 
-		loaded->getSound()->closeSound();
+		loaded->sound->closeSound();
 		delete loaded; // also deletes channel
 	}
 }
@@ -336,7 +382,7 @@ void ASoundFileManager::recordToNew()
 #endif
 		try
 		{
-			recorder.initialize(loaded->getSound());
+			recorder.initialize(loaded->sound);
 		}
 		catch(...)
 		{
@@ -362,11 +408,11 @@ void ASoundFileManager::recordToNew()
 		else
 		{
 			// ??? temporary until CSound can have zero length
-			loaded->getSound()->lockForResize(); try { loaded->getSound()->removeSpace(0,1); loaded->getSound()->unlockForResize(); } catch(...) { loaded->getSound()->unlockForResize(); throw; }
+			loaded->sound->lockForResize(); try { loaded->sound->removeSpace(0,1); loaded->sound->unlockForResize(); } catch(...) { loaded->sound->unlockForResize(); throw; }
 
 			// set some kind of initial selection
-			loaded->channel->setStopPosition(loaded->getSound()->getLength()/2+loaded->getSound()->getLength()/4);
-			loaded->channel->setStartPosition(loaded->getSound()->getLength()/2-loaded->getSound()->getLength()/4);
+			loaded->channel->setStopPosition(loaded->sound->getLength()/2+loaded->sound->getLength()/4);
+			loaded->channel->setStartPosition(loaded->sound->getLength()/2-loaded->sound->getLength()/4);
 
 			updateAfterEdit();
 		}
@@ -546,6 +592,17 @@ const ASoundTranslator *ASoundFileManager::getTranslator(const string filename,b
 		}
 	}
 
+	// find the raw translator and ask the user if they want to use it
+	for(size_t t=0;t<ASoundTranslator::registeredTranslators.size();t++)
+	{
+		if(ASoundTranslator::registeredTranslators[t]->handlesRaw())
+		{
+			if(Question("No handler found to support the format for "+filename+"\nWould you like to use a raw format?",yesnoQues)==yesAns)
+				return(ASoundTranslator::registeredTranslators[t]);
+			else
+				break;
+		}
+	}
 	throw(runtime_error(string(__func__)+" -- unhandled format/extension for the filename '"+filename+"'"));
 }
 
