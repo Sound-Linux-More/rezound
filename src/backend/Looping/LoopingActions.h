@@ -25,5 +25,6 @@
 
 
 #include "CMakeSymetricAction.h"
+#include "CAddCuesAction.h"
 
 #endif

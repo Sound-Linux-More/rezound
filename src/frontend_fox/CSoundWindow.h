@@ -43,11 +43,11 @@ class CReplaceCueActionFactory;
  * This is the window created for each opened sound file
  */
 
-class CSoundWindow : public FXTopWindow
+class CSoundWindow : public FXPacker
 {
 	FXDECLARE(CSoundWindow)
 public:
-	CSoundWindow(FXWindow *mainWindow,CLoadedSound *_loadedSound);
+	CSoundWindow(FXComposite *parent,CLoadedSound *_loadedSound);
 	virtual ~CSoundWindow();
 
 	void setActiveState(bool isActive);
@@ -65,6 +65,7 @@ public:
 		ID_HORZ_ZOOM_DIAL=FXTopWindow::ID_LAST,
 		ID_HORZ_ZOOM_DIAL_PLUS,
 		ID_HORZ_ZOOM_DIAL_MINUS,
+		ID_HORZ_ZOOM_FIT,
 
 		ID_VERT_ZOOM_DIAL,
 		ID_VERT_ZOOM_DIAL_PLUS,
@@ -81,8 +82,6 @@ public:
 
 		ID_MUTE_BUTTON,
 		ID_INVERT_MUTE_BUTTON,
-
-		ID_ACTIVE_TOGGLE_BUTTON,
 
 		ID_REDRAW_BUTTON,
 
@@ -103,12 +102,19 @@ public:
 	// mute button
 	long onMuteButton(FXObject *sender,FXSelector sel,void *ptr);
 	long onInvertMuteButton(FXObject *sender,FXSelector sel,void *ptr);
+	long onResize(FXObject *sender,FXSelector sel,void *ptr);
 
 	// horz zoom handlers
 	long onHorzZoomDialChange(FXObject *sender,FXSelector,void*);
 	long onHorzZoomDialPlusIndClick(FXObject *sender,FXSelector sel,void *ptr);
 	long onHorzZoomDialMinusIndClick(FXObject *sender,FXSelector sel,void *ptr);
+	long onHorzZoomFitClick(FXObject *sender,FXSelector sel,void *ptr);
 
+	void horzZoomInSome();
+	void horzZoomOutSome();
+	void horzZoomInFull();
+	void horzZoomOutFull();
+	void horzZoomSelectionFit();
 
 
 	// vert zoom handlers
@@ -136,9 +142,6 @@ public:
 	long onEditCue(FXObject *sender,FXSelector sel,void *ptr);
 	long onShowCueList(FXObject *sender,FXSelector sel,void *ptr);
 
-	// focusing handlers
-	long onActiveToggleButton(FXObject *sender,FXSelector sel,void *ptr);
-
 	long onCloseWindow(FXObject *sender,FXSelector sel,void *ptr);
 
 	string shuttleControlScalar;
@@ -158,10 +161,7 @@ private:
 	bool firstTimeShowing;
 	bool closing;
 
-	FXint prevW,prevH;
-
 	/* 
-	                  ======================================= <--- activeToggleButton
 	                  +-------------------------------------+
 	                  | -  -----------------------------  - |
 	                  || ||                             || || <---- waveViewPanel
@@ -180,8 +180,6 @@ private:
 	                  |                                     |
 	                   -------------------------------------
 	*/
-
-	FXToggleButton *activeToggleButton;
 
 	FXHorizontalFrame *statusPanel;
 		FXPacker *playingLED; // there are actually two FXLabels in this packer occupying the same positions that I just use raise() on them to turn the LED on or off
@@ -208,6 +206,7 @@ private:
 
 	FXPacker *waveViewPanel;
 		FXPacker *horzZoomPanel;
+			FXButton *horzZoomFitButton;
 			FXButton *horzZoomMinusInd;
 			FXDial *horzZoomDial;
 			FXButton *horzZoomPlusInd;
@@ -241,6 +240,8 @@ private:
 	void updateAllStatusInfo();
 	void updateSelectionStatusInfo();
 	void updatePlayPositionStatusInfo();
+
+	void changeHorzZoom(double horzZoom,FXWaveCanvas::HorzRecenterTypes horzRecenterType=FXWaveCanvas::hrtNone); // 0 -> 1
 };
 
 

@@ -76,6 +76,9 @@ string gClipboardFilenamePrefix="rezclip";
 size_t gWhichClipboard=0;
 
 
+size_t gMaxReopenHistory=16;
+
+
 bool gSnapToCues=true;
 unsigned gSnapToCueDistance=5;
 
@@ -83,7 +86,19 @@ unsigned gSnapToCueDistance=5;
 bool gFollowPlayPosition=true;
 
 
-double gInitialLengthToShow=10.0; // default 10 seconds
+bool gLevelMetersEnabled=true;
+bool gFrequencyAnalyzerEnabled=true;
+
+
+double gInitialLengthToShow=120.0; // default 120 seconds
+
+
+unsigned gMeterUpdateTime=50;
+unsigned gMeterRMSWindowTime=200;
+unsigned gMaxPeakFallDelayTime=500;
+double gMaxPeakFallRate=0.02;
+unsigned gAnalyzerPeakFallDelayTime=400;
+double gAnalyzerPeakFallRate=0.025;
 
 
 CrossfadeEdgesTypes gCrossfadeEdges=cetInner;

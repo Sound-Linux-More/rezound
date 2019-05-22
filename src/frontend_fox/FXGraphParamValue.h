@@ -43,7 +43,7 @@ class CNestedDataFile;
  * The vertical units are specified through setVertParameters
  */
 
-class FXGraphParamValue : public FXPacker
+class FXGraphParamValue : public FXVerticalFrame
 {
 	FXDECLARE(FXGraphParamValue);
 public:
@@ -53,6 +53,8 @@ public:
 	FXGraphParamValue(const string title,const int minScalar,const int maxScalar,const int initScalar,FXComposite *p,int opts,int x=0,int y=0,int w=0,int h=0);
 	virtual ~FXGraphParamValue();
 
+	FXint getDefaultWidth();
+	FXint getDefaultHeight();
 
 	void setSound(CSound *sound,sample_pos_t start,sample_pos_t stop);
 	void setHorzParameters(const string horzAxisLabel,const string horzUnits,f_at_xs interpretValue,f_at_xs uninterpretValue);
@@ -72,6 +74,12 @@ public:
 
 	long onPatternButton(FXObject *sender,FXSelector sel,void *ptr);
 
+	long onHorzDeformSliderChange(FXObject *sender,FXSelector sel,void *ptr);
+	long onVertDeformSliderChange(FXObject *sender,FXSelector sel,void *ptr);
+
+	long onHorzDeformSliderReset(FXObject *sender,FXSelector sel,void *ptr);
+	long onVertDeformSliderReset(FXObject *sender,FXSelector sel,void *ptr);
+
 	void updateNumbers();
 
 	const CGraphParamValueNodeList &getNodes() const;
@@ -90,10 +98,13 @@ public:
 
 	enum
 	{
-		ID_GRAPH_PANEL=FXPacker::ID_LAST,
+		ID_GRAPH_CANVAS=FXVerticalFrame::ID_LAST,
 
 		ID_SCALAR_SPINNER,
 		ID_CLEAR_BUTTON,
+
+		ID_HORZ_DEFORM_SLIDER,
+		ID_VERT_DEFORM_SLIDER,
 
 		ID_LAST
 	};
@@ -112,17 +123,24 @@ private:
 
 	int initScalar;
 
+	FXPacker *graphPanel;
+		FXVerticalFrame *vertDeformPanel;
+			FXSlider *vertDeformSlider;
+		CHorzRuler *horzRuler;
+		FXComposite *vertRuler;
+		FXHorizontalFrame *horzDeformPanel;
+			FXSlider *horzDeformSlider;
+		FXCanvas *graphCanvas;
+		
 
-	FXComposite *buttonPanel;
-		FXLabel *scalarLabel;
-		FXSpinner *scalarSpinner;
-	FXComposite *horzRuler;
-	FXComposite *vertRuler;
-	FXComposite *statusPanel;
+	FXHorizontalFrame *statusPanel;
 		FXLabel *horzValueLabel;
 		FXLabel *vertValueLabel;
-	FXComposite *graphPanelParent;
-	FXCanvas *graphPanel;
+
+	FXHorizontalFrame *buttonPanel;
+		FXLabel *scalarLabel;
+		FXSpinner *scalarSpinner;
+	
 
 	int draggingNode;
 	int dragOffsetX,dragOffsetY;
@@ -138,8 +156,8 @@ private:
 
 	int findNodeAt(int x,int y);
 
-	double screenToNodeHorzValue(int x);
-	double screenToNodeVertValue(int y);
+	double screenToNodeHorzValue(int x,bool undeform=true);
+	double screenToNodeVertValue(int y,bool undeform=true);
 
 	int nodeToScreenX(const CGraphParamValueNode &node);
 	int nodeToScreenY(const CGraphParamValueNode &node);
@@ -149,6 +167,9 @@ private:
 
 	const string getHorzValueString(double horzValue) const; /* horzValue is [0..1] */
 	const string getVertValueString(double vertValue) const; /* vertValue is [0..1] */
+
+	double deformNodeX(double x,FXint sliderValue) const;
+	double undeformNodeX(double x,FXint sliderValue) const;
 
 	CSound *sound;
 	sample_pos_t start,stop;
@@ -166,6 +187,7 @@ private:
 	// we draw on this one time and blit from it anytime we need to update the canvas
 	FXImage *backBuffer;
 
+	FXFont *textFont;
 };
 
 #endif

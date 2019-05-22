@@ -159,9 +159,9 @@ void FXRezWaveView::centerStopPos()
 	rulerPanel->update();
 }
 
-void FXRezWaveView::showAmount(double seconds,sample_pos_t pos)
+void FXRezWaveView::showAmount(double seconds,sample_pos_t pos,int marginPixels)
 {
-	waveScrollArea->showAmount(seconds,pos);
+	waveScrollArea->showAmount(seconds,pos,marginPixels);
 }
 
 void FXRezWaveView::updateFromSelectionChange(FXWaveCanvas::LastChangedPositions lastChangedPosition)
@@ -289,7 +289,11 @@ long FXWaveRuler::onPaint(FXObject *object,FXSelector sel,void *ptr)
 		e=lastX;
 
 	dc.setForeground(FXRGB(20,20,20));
+#if REZ_FOX_VERSION<10117
 	dc.setTextFont(font);
+#else
+	dc.setFont(font);
+#endif
 	for(FXint x=s;x<=e;x++)
 	{
 		if((x%LABEL_TICK_FREQ)==0)
@@ -438,7 +442,7 @@ long FXWaveRuler::onFindStopPosition(FXObject *object,FXSelector sel,void *ptr)
 
 long FXWaveRuler::onSetPositionToCue(FXObject *object,FXSelector sel,void *ptr)
 {
-	switch(SELID(sel))
+	switch(FXSELID(sel))
 	{
 	case ID_SET_START_POSITION:
 		loadedSound->channel->setStartPosition((sample_pos_t)sound->getCueTime(cueClicked));
@@ -456,7 +460,7 @@ long FXWaveRuler::onSetPositionToCue(FXObject *object,FXSelector sel,void *ptr)
 
 long FXWaveRuler::onAddCue(FXObject *object,FXSelector sel,void *ptr)
 {
-	switch(SELID(sel))
+	switch(FXSELID(sel))
 	{
 	case ID_ADD_CUE:
 		if(parent->target)

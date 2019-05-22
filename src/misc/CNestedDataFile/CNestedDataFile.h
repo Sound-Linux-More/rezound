@@ -87,13 +87,6 @@ public:
 
 private:
 
-	class CVariant;
-	friend class CVariant;
-
-	string filename;
-	CVariant *root;
-	bool saveOnEachEdit;
-
 	class CVariant
 	{
 	public:	
@@ -117,6 +110,13 @@ private:
 		double floatValue;
 		vector<CVariant> arrayValue;
 	};
+
+	class CVariant;
+	friend class CVariant;
+
+	string filename;
+	CVariant *root;
+	bool saveOnEachEdit;
 
 	// I would have to implement this if I were to allow qualified idents in the input file which aren't always fully qualified... I would also need to have a parent * in CVariant to be able to implement this (unless I suppose I wanted to search more than I had to.. which I would do.. okay.. ya)
 	//CVariant *upwardsScopeLookup(const char *key) const;

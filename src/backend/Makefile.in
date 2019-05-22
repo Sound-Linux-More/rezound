@@ -355,13 +355,13 @@ ALFO.lo ALFO.o : ALFO.cpp ALFO.h ../../config/common.h \
 ApipedSoundTranslator.lo ApipedSoundTranslator.o : \
 	ApipedSoundTranslator.cpp ApipedSoundTranslator.h \
 	../../config/common.h ../../config/config.h ASoundTranslator.h \
-	mypopen.h ../../src/misc/CPath.h
+	CSound_defs.h mypopen.h ../../src/misc/CPath.h
 ASoundClipboard.lo ASoundClipboard.o : ASoundClipboard.cpp \
 	ASoundClipboard.h ../../config/common.h ../../config/config.h \
 	CSound_defs.h
 ASoundFileManager.lo ASoundFileManager.o : ASoundFileManager.cpp \
 	ASoundFileManager.h ../../config/common.h ../../config/config.h \
-	CSound.h CSound_defs.h ../../src/PoolFile/TPoolFile.h \
+	CSound_defs.h CSound.h ../../src/PoolFile/TPoolFile.h \
 	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
 	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
 	../../src/PoolFile/TPoolAccesser.h \
@@ -370,23 +370,26 @@ ASoundFileManager.lo ASoundFileManager.o : ASoundFileManager.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp AStatusComm.h settings.h \
 	../../src/misc/CPath.h \
 	../../src/misc/CNestedDataFile/CNestedDataFile.h CLoadedSound.h \
-	ASoundPlayer.h CSoundPlayerChannel.h \
+	ASoundPlayer.h ../../src/misc/TAutoBuffer.h DSP/LevelDetector.h \
+	DSP/Delay.h CSoundPlayerChannel.h \
 	../../src/misc/CConditionVariable.h ../../src/misc/AThread.h \
 	../../src/misc/TMemoryPipe.h ../../src/misc/TMemoryPipe.cpp \
 	CTrigger.h ASoundTranslator.h AFrontendHooks.h AAction.h \
 	CActionSound.h CPortAudioSoundRecorder.h COSSSoundRecorder.h \
 	ASoundRecorder.h
 ASoundPlayer.lo ASoundPlayer.o : ASoundPlayer.cpp ASoundPlayer.h \
-	../../config/common.h ../../config/config.h CSound_defs.h \
-	CSound.h ../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
-	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
-	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
+	../../config/common.h ../../config/config.h \
+	../../src/misc/CMutex.h ../../src/misc/TAutoBuffer.h \
+	CSound_defs.h DSP/LevelDetector.h DSP/Delay.h CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
+	../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp CSoundPlayerChannel.h \
 	../../src/misc/CConditionVariable.h ../../src/misc/AThread.h \
 	../../src/misc/TMemoryPipe.h ../../src/misc/TMemoryPipe.cpp \
-	CTrigger.h
+	CTrigger.h settings.h unit_conv.h
 ASoundRecorder.lo ASoundRecorder.o : ASoundRecorder.cpp ASoundRecorder.h \
 	../../config/common.h ../../config/config.h CSound.h \
 	CSound_defs.h ../../src/PoolFile/TPoolFile.h \
@@ -395,10 +398,11 @@ ASoundRecorder.lo ASoundRecorder.o : ASoundRecorder.cpp ASoundRecorder.h \
 	../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../src/PoolFile/TPoolAccesser.cpp CTrigger.h AStatusComm.h
+	../../src/PoolFile/TPoolAccesser.cpp CTrigger.h AStatusComm.h \
+	unit_conv.h
 ASoundTranslator.lo ASoundTranslator.o : ASoundTranslator.cpp \
 	ASoundTranslator.h ../../config/common.h ../../config/config.h \
-	CSound.h CSound_defs.h ../../src/PoolFile/TPoolFile.h \
+	CSound_defs.h CSound.h ../../src/PoolFile/TPoolFile.h \
 	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
 	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
 	../../src/PoolFile/TPoolAccesser.h \
@@ -430,12 +434,11 @@ CGraphParamValueNode.lo CGraphParamValueNode.o : \
 ClameSoundTranslator.lo ClameSoundTranslator.o : \
 	ClameSoundTranslator.cpp ClameSoundTranslator.h \
 	../../config/common.h ../../config/config.h \
-	ApipedSoundTranslator.h ASoundTranslator.h \
+	ApipedSoundTranslator.h ASoundTranslator.h CSound_defs.h \
 	../../src/misc/CPath.h ../../src/misc/TAutoBuffer.h CSound.h \
-	CSound_defs.h ../../src/PoolFile/TPoolFile.h \
-	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
-	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
-	../../src/PoolFile/TPoolAccesser.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp AFrontendHooks.h \
@@ -443,8 +446,8 @@ ClameSoundTranslator.lo ClameSoundTranslator.o : \
 ClibaudiofileSoundTranslator.lo ClibaudiofileSoundTranslator.o : \
 	ClibaudiofileSoundTranslator.cpp ClibaudiofileSoundTranslator.h \
 	../../config/common.h ../../config/config.h ASoundTranslator.h \
-	../../src/misc/istring ../../src/misc/TAutoBuffer.h \
-	../../src/misc/CPath.h CSound.h CSound_defs.h \
+	CSound_defs.h ../../src/misc/istring \
+	../../src/misc/TAutoBuffer.h ../../src/misc/CPath.h CSound.h \
 	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
 	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
 	../../src/PoolFile/TPoolAccesser.h \
@@ -454,8 +457,8 @@ ClibaudiofileSoundTranslator.lo ClibaudiofileSoundTranslator.o : \
 ClibvorbisSoundTranslator.lo ClibvorbisSoundTranslator.o : \
 	ClibvorbisSoundTranslator.cpp ClibvorbisSoundTranslator.h \
 	../../config/common.h ../../config/config.h ASoundTranslator.h \
-	../../src/misc/istring ../../src/misc/TAutoBuffer.h \
-	../../src/misc/CPath.h CSound.h CSound_defs.h \
+	CSound_defs.h ../../src/misc/istring \
+	../../src/misc/TAutoBuffer.h ../../src/misc/CPath.h CSound.h \
 	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
 	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
 	../../src/PoolFile/TPoolAccesser.h \
@@ -488,7 +491,7 @@ CNativeSoundClipboard.lo CNativeSoundClipboard.o : \
 Cold_rezSoundTranslator.lo Cold_rezSoundTranslator.o : \
 	Cold_rezSoundTranslator.cpp Cold_rezSoundTranslator.h \
 	../../config/common.h ../../config/config.h ASoundTranslator.h \
-	CSound.h CSound_defs.h ../../src/PoolFile/TPoolFile.h \
+	CSound_defs.h CSound.h ../../src/PoolFile/TPoolFile.h \
 	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
 	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
 	../../src/PoolFile/TPoolAccesser.h \
@@ -497,8 +500,10 @@ Cold_rezSoundTranslator.lo Cold_rezSoundTranslator.o : \
 	../../src/PoolFile/TPoolAccesser.cpp ../../src/misc/CPath.h
 COSSSoundPlayer.lo COSSSoundPlayer.o : COSSSoundPlayer.cpp \
 	COSSSoundPlayer.h ../../config/common.h ../../config/config.h \
-	ASoundPlayer.h CSound_defs.h ../../src/misc/AThread.h \
-	../../src/misc/istring ../../src/misc/TAutoBuffer.h settings.h
+	ASoundPlayer.h ../../src/misc/CMutex.h \
+	../../src/misc/TAutoBuffer.h CSound_defs.h DSP/LevelDetector.h \
+	DSP/Delay.h ../../src/misc/AThread.h ../../src/misc/istring \
+	settings.h
 COSSSoundRecorder.lo COSSSoundRecorder.o : COSSSoundRecorder.cpp \
 	COSSSoundRecorder.h ../../config/common.h ../../config/config.h \
 	ASoundRecorder.h CSound.h CSound_defs.h \
@@ -518,7 +523,7 @@ CPortAudioSoundRecorder.lo CPortAudioSoundRecorder.o : \
 CrawSoundTranslator.lo CrawSoundTranslator.o : CrawSoundTranslator.cpp \
 	CrawSoundTranslator.h ../../config/common.h \
 	../../config/config.h ClibaudiofileSoundTranslator.h \
-	ASoundTranslator.h CSound.h CSound_defs.h \
+	ASoundTranslator.h CSound_defs.h CSound.h \
 	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
 	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
 	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
@@ -540,7 +545,7 @@ CRecordSoundClipboard.lo CRecordSoundClipboard.o : \
 	ASoundRecorder.h CTrigger.h ../../src/misc/AThread.h
 CrezSoundTranslator.lo CrezSoundTranslator.o : CrezSoundTranslator.cpp \
 	CrezSoundTranslator.h ../../config/common.h \
-	../../config/config.h ASoundTranslator.h CSound.h CSound_defs.h \
+	../../config/config.h ASoundTranslator.h CSound_defs.h CSound.h \
 	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
 	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
 	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
@@ -570,14 +575,15 @@ CSoundPlayerChannel.lo CSoundPlayerChannel.o : CSoundPlayerChannel.cpp \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp ASoundPlayer.h \
+	../../src/misc/TAutoBuffer.h DSP/LevelDetector.h DSP/Delay.h \
 	DSP/TSoundStretcher.h
 CTrigger.lo CTrigger.o : CTrigger.cpp CTrigger.h ../../config/common.h \
 	../../config/config.h ../../src/misc/CMutex.h
 CvoxSoundTranslator.lo CvoxSoundTranslator.o : CvoxSoundTranslator.cpp \
 	CvoxSoundTranslator.h ../../config/common.h \
 	../../config/config.h ApipedSoundTranslator.h \
-	ASoundTranslator.h ../../src/misc/CPath.h \
-	../../src/misc/TAutoBuffer.h CSound.h CSound_defs.h \
+	ASoundTranslator.h CSound_defs.h ../../src/misc/CPath.h \
+	../../src/misc/TAutoBuffer.h CSound.h \
 	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
 	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
 	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
@@ -590,10 +596,12 @@ initialize.lo initialize.o : initialize.cpp AStatusComm.h \
 	AFrontendHooks.h initialize.h settings.h \
 	../../src/misc/CNestedDataFile/CNestedDataFile.h \
 	CPortAudioSoundPlayer.h COSSSoundPlayer.h ASoundPlayer.h \
-	../../src/misc/AThread.h AAction.h CActionSound.h CSound.h \
-	../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
-	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
-	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
+	../../src/misc/CMutex.h ../../src/misc/TAutoBuffer.h \
+	DSP/LevelDetector.h DSP/Delay.h ../../src/misc/AThread.h \
+	AAction.h CActionSound.h CSound.h \
+	../../src/PoolFile/TPoolFile.h ../../src/misc/CRWLock.h \
+	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
+	../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp CNativeSoundClipboard.h \
@@ -605,11 +613,10 @@ initialize.lo initialize.o : initialize.cpp AStatusComm.h \
 	CvoxSoundTranslator.h CrawSoundTranslator.h \
 	Cold_rezSoundTranslator.h
 main_controls.lo main_controls.o : main_controls.cpp main_controls.h \
-	../../config/common.h ../../config/config.h CSound.h \
-	CSound_defs.h ../../src/PoolFile/TPoolFile.h \
-	../../src/misc/CMutex.h ../../src/misc/CRWLock.h \
-	../../src/PoolFile/CMultiFile.h ../../src/misc/istring \
-	../../src/PoolFile/TPoolAccesser.h \
+	../../config/common.h ../../config/config.h CSound_defs.h \
+	CSound.h ../../src/PoolFile/TPoolFile.h ../../src/misc/CMutex.h \
+	../../src/misc/CRWLock.h ../../src/PoolFile/CMultiFile.h \
+	../../src/misc/istring ../../src/PoolFile/TPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.h \
 	../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../src/PoolFile/TPoolAccesser.cpp AStatusComm.h \

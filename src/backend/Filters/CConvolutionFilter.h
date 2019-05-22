@@ -32,7 +32,7 @@ class CConvolutionFilterFactory;
 class CConvolutionFilter : public AAction
 {
 public:
-	CConvolutionFilter(const CActionSound &actionSound,const float wetdryMix,const float inputGain,const float outputGain,const float inputLowpassFreq,const float predelay,const string filterKernelFilename,const bool openFilterKernelAsRaw,const float filterKernelGain,const float filterKernelLowpassFreq,const float filterKernelRate,const bool reverseFilterKernel,const bool warpDecay);
+	CConvolutionFilter(const CActionSound &actionSound,const float wetdryMix,const float inputGain,const float outputGain,const float inputLowpassFreq,const float predelay,const string filterKernelFilename,const bool openFilterKernelAsRaw,const float filterKernelGain,const float filterKernelLowpassFreq,const float filterKernelRate,const bool reverseFilterKernel,const bool wrapDecay);
 	virtual ~CConvolutionFilter();
 
 protected:
@@ -60,10 +60,10 @@ private:
 class CConvolutionFilterFactory : public AActionFactory
 {
 public:
-	CConvolutionFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog);
+	CConvolutionFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog);
 	virtual ~CConvolutionFilterFactory();
 
-	CConvolutionFilter *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const;
+	CConvolutionFilter *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const;
 };
 
 #endif

@@ -1,0 +1,69 @@
+/* config/config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define to empty if the keyword does not work.  */
+#undef const
+
+/* Define as __inline if that's what the C compiler calls it.  */
+#undef inline
+
+/* Define to `long' if <sys/types.h> doesn't define.  */
+#undef off_t
+
+/* Define to `unsigned' if <sys/types.h> doesn't define.  */
+#undef size_t
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if your processor stores words with the most significant
+   byte first (like Motorola and SPARC, unlike Intel and VAX).  */
+#undef WORDS_BIGENDIAN
+
+/* Define if lex declares yytext as a char * by default, not a char[].  */
+#undef YYTEXT_POINTER
+
+#undef HAVE_LIBPORTAUDIO
+
+#undef HAVE_LIBOGG
+
+#undef HAVE_LIBVORBIS
+
+/* Define if you have the <dlfcn.h> header file.  */
+#undef HAVE_DLFCN_H
+
+/* Define if you have the audiofile library (-laudiofile).  */
+#undef HAVE_LIBAUDIOFILE
+
+/* Define if you have the fftw library (-lfftw).  */
+#undef HAVE_LIBFFTW
+
+/* Define if you have the m library (-lm).  */
+#undef HAVE_LIBM
+
+/* Define if you have the pthread library (-lpthread).  */
+#undef HAVE_LIBPTHREAD
+
+/* Define if you have the rfftw library (-lrfftw).  */
+#undef HAVE_LIBRFFTW
+
+/* Define if you have the vorbisenc library (-lvorbisenc).  */
+#undef HAVE_LIBVORBISENC
+
+/* Define if you have the vorbisfile library (-lvorbisfile).  */
+#undef HAVE_LIBVORBISFILE
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/*  This is the prefix passed to configure */
+#undef INSTALL_PREFIX
+
+/*  This is the top source directory for pre-installed testing */
+#undef SOURCE_DIR
+
+/*  This the --datadir (share) set by configure  */
+#undef DATA_DIR
+

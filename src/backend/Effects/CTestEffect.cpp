@@ -114,7 +114,7 @@ bool CTestEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo
 #endif
 
 #ifdef HAVE_LIBRFFTW
-	TFFTConvolver<sample_t,float> c(filter_kernel,M);
+	TFFTConvolverTimeDomainKernel<sample_t,float> c(filter_kernel,M);
 
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
@@ -200,7 +200,7 @@ void CTestEffect::undoActionSizeSafe(const CActionSound &actionSound)
 // --------------------------------------------------
 
 CTestEffectFactory::CTestEffectFactory(AActionDialog *channelSelectDialog) :
-	AActionFactory("Test","Test",false,channelSelectDialog,NULL,NULL)
+	AActionFactory("Test","Test",channelSelectDialog,NULL)
 {
 }
 
@@ -208,7 +208,7 @@ CTestEffectFactory::~CTestEffectFactory()
 {
 }
 
-CTestEffect *CTestEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
+CTestEffect *CTestEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
 {
 	return(new CTestEffect(actionSound));
 }

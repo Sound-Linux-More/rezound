@@ -37,7 +37,7 @@
 
 class CNestedDataFile;
 
-class FXComboTextParamValue : public FXVerticalFrame
+class FXComboTextParamValue : public FXHorizontalFrame
 {
 	FXDECLARE(FXComboTextParamValue);
 public:
@@ -65,6 +65,8 @@ private:
 
 	FXLabel *titleLabel;
 	FXComboBox *valueComboBox;
+
+	FXFont *textFont;
 };
 
 #endif

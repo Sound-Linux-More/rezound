@@ -28,6 +28,7 @@
 DECLARE_STATIC_CPATH // to declare CPath::dirDelim
 
 #include "CMainWindow.h"
+#include "CMetersWindow.h"
 #include "CStatusComm.h"
 
 #include "CSoundFileManager.h"
@@ -89,6 +90,8 @@ int main(int argc,char *argv[])
 
 
 		gSoundFileManager=new CSoundFileManager(mainWindow,soundPlayer,gSettingsRegistry);
+
+		mainWindow->getMetersWindow()->setSoundPlayer(soundPlayer);
 
 		// create all the dialogs 
 		setupWindows(mainWindow);
@@ -155,7 +158,6 @@ int main(int argc,char *argv[])
 #include "CCueListDialog.h"
 #include "CUserNotesDialog.h"
 #include "CCrossfadeEdgesDialog.h"
-#include "CSoundListWindow.h"
 
 void setupWindows(CMainWindow *mainWindow)
 {
@@ -179,12 +181,6 @@ void setupWindows(CMainWindow *mainWindow)
 		// create the dialog used to set the length of the crossfade on the edges
 		gCrossfadeEdgesDialog=new CCrossfadeEdgesDialog(mainWindow);
 
-		if(gFocusMethod==fmSoundWindowList)
-		{
-			gSoundListWindow=new CSoundListWindow(mainWindow);
-			gSoundListWindow->create();
-		}
-
 		// create the tool bars in CMainWindow
 		mainWindow->createMenus();
 }
@@ -195,17 +191,34 @@ void setupAccels(CMainWindow *mainWindow)
 	FXAccelTable *at=mainWindow->getAccelTable();
 
 
+/* these are not necessary since they are hot-keys on the 'Control' menu
 	// play controls
-	at->addAccel(KEY_a ,mainWindow,MKUINT(CMainWindow::ID_PLAY_SELECTION_ONCE_BUTTON,SEL_COMMAND));
-	at->addAccel(KEY_s ,mainWindow,MKUINT(CMainWindow::ID_STOP_BUTTON,SEL_COMMAND));
-
-	at->addAccel(KEY_1 ,mainWindow,MKUINT(CMainWindow::ID_SEEK_LEFT,SEL_COMMAND),MKUINT(CMainWindow::ID_SEEK_NORMAL,SEL_COMMAND));
-	at->addAccel(KEY_2 ,mainWindow,MKUINT(CMainWindow::ID_SEEK_MODIFY,SEL_COMMAND));
-	at->addAccel(KEY_3 ,mainWindow,MKUINT(CMainWindow::ID_SEEK_RIGHT,SEL_COMMAND),MKUINT(CMainWindow::ID_SEEK_NORMAL,SEL_COMMAND));
-
+	at->addAccel(KEY_a ,mainWindow,MKUINT(CMainWindow::ID_PLAY_SELECTION_ONCE,SEL_COMMAND));
+	at->addAccel(KEY_s ,mainWindow,MKUINT(CMainWindow::ID_STOP,SEL_COMMAND));
 
 	// view
-	at->addAccel(KEY_z ,mainWindow,MKUINT(CMainWindow::ID_CENTER_START_POS,SEL_COMMAND));
-	at->addAccel(KEY_x ,mainWindow,MKUINT(CMainWindow::ID_CENTER_STOP_POS,SEL_COMMAND));
+	at->addAccel(KEY_z ,mainWindow,MKUINT(CMainWindow::ID_FIND_SELECTION_START,SEL_COMMAND));
+	at->addAccel(KEY_x ,mainWindow,MKUINT(CMainWindow::ID_FIND_SELECTION_STOP,SEL_COMMAND));
+*/
+
+	// shuttle (is on the 'Control' menu, but I need a key-up event handler as well)
+	at->addAccel(KEY_1 ,mainWindow,MKUINT(CMainWindow::ID_SHUTTLE_BACKWARD,SEL_COMMAND),MKUINT(CMainWindow::ID_SHUTTLE_RETURN,SEL_COMMAND));
+	//on the 'Control' menu:  at->addAccel(KEY_2 ,mainWindow,MKUINT(CMainWindow::ID_SHUTTLE_INCREASE_RATE,SEL_COMMAND));
+	at->addAccel(KEY_3 ,mainWindow,MKUINT(CMainWindow::ID_SHUTTLE_FORWARD,SEL_COMMAND),MKUINT(CMainWindow::ID_SHUTTLE_RETURN,SEL_COMMAND));
+
+
+	// sound switching
+	at->addAccel(MKUINT(KEY_1,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_2,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_3,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_4,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_5,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_6,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_7,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_8,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_9,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_0,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
+	at->addAccel(MKUINT(KEY_quoteleft,ALTMASK),mainWindow,MKUINT(CMainWindow::ID_SOUND_LIST_HOTKEY,SEL_COMMAND));
 }
+
 

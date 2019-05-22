@@ -22,16 +22,9 @@ static void playTrigger(void *Pthis);
 
 /*
  * TODO
- * 	- figure out why I can't get all the decorations to show when the window pops up
- *		- well, all window managers EXCEPT enlightenment and blackbox to have a resizable border for CSoundWindow
- *
  * 	- change the clicking on the + and - signs go between 0, 25, 50, 100 
  *
  * 	- maybe replace the +/- signs with little magnifying glass icons
- *
- * 	- I may need to delete the FXIcon objects I'm creating
- *
- * 	- create a better way of placing the newly created sound window, below the mainWindow and right of the edit tool bar
  */
 
 #include "CSoundWindow.h"
@@ -56,7 +49,17 @@ static void playTrigger(void *Pthis);
 
 #define DRAW_PLAY_POSITION_TIME 75	// 75 ms
 
-#define ZOOM_MUL 3
+#define ZOOM_MUL 7
+
+static double zoomDialToZoomFactor(FXint zoomDial)
+{
+	return pow(zoomDial/(100.0*ZOOM_MUL),1.0/4.0);
+}
+
+static FXint zoomFactorToZoomDial(double zoomFactor)
+{
+	return (FXint)(pow(zoomFactor,4.0)*(100.0*ZOOM_MUL));
+}
 
 
 FXDEFMAP(CSoundWindow) CSoundWindowMap[]=
@@ -67,12 +70,14 @@ FXDEFMAP(CSoundWindow) CSoundWindowMap[]=
 	FXMAPFUNC(SEL_COMMAND,			CSoundWindow::ID_MUTE_BUTTON,			CSoundWindow::onMuteButton),
 	FXMAPFUNC(SEL_COMMAND,			CSoundWindow::ID_INVERT_MUTE_BUTTON,		CSoundWindow::onInvertMuteButton),
 	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	CSoundWindow::ID_INVERT_MUTE_BUTTON,		CSoundWindow::onInvertMuteButton),
+	FXMAPFUNC(SEL_CONFIGURE,		0,						CSoundWindow::onResize),
 
 		// invoked when horz zoom dial is changed
 	FXMAPFUNC(SEL_CHANGED,			CSoundWindow::ID_HORZ_ZOOM_DIAL,		CSoundWindow::onHorzZoomDialChange),
 		// events to quickly zoom all the way in or out
 	FXMAPFUNC(SEL_COMMAND,			CSoundWindow::ID_HORZ_ZOOM_DIAL_PLUS,		CSoundWindow::onHorzZoomDialPlusIndClick),
 	FXMAPFUNC(SEL_COMMAND,			CSoundWindow::ID_HORZ_ZOOM_DIAL_MINUS,		CSoundWindow::onHorzZoomDialMinusIndClick),
+	FXMAPFUNC(SEL_COMMAND,			CSoundWindow::ID_HORZ_ZOOM_FIT,			CSoundWindow::onHorzZoomFitClick),
 
 		// invoked when vert zoom dial is changed
 	FXMAPFUNC(SEL_CHANGED,			CSoundWindow::ID_VERT_ZOOM_DIAL,		CSoundWindow::onVertZoomDialChange),
@@ -102,12 +107,10 @@ FXDEFMAP(CSoundWindow) CSoundWindowMap[]=
 	FXMAPFUNC(FXRezWaveView::SEL_EDIT_CUE,CSoundWindow::ID_WAVEVIEW,			CSoundWindow::onEditCue),
 	FXMAPFUNC(FXRezWaveView::SEL_SHOW_CUE_LIST,CSoundWindow::ID_WAVEVIEW,			CSoundWindow::onShowCueList),
 
-	FXMAPFUNC(SEL_COMMAND,			CSoundWindow::ID_ACTIVE_TOGGLE_BUTTON,		CSoundWindow::onActiveToggleButton),
-
 	FXMAPFUNC(SEL_CLOSE,			0,						CSoundWindow::onCloseWindow),
 };
 
-FXIMPLEMENT(CSoundWindow,FXTopWindow,CSoundWindowMap,ARRAYNUMBER(CSoundWindowMap))
+FXIMPLEMENT(CSoundWindow,FXPacker,CSoundWindowMap,ARRAYNUMBER(CSoundWindowMap))
 
 
 void playTrigger(void *Pthis)
@@ -120,8 +123,8 @@ void playTrigger(void *Pthis)
 
 // ----------------------------------------------------------
 
-CSoundWindow::CSoundWindow(FXWindow *mainWindow,CLoadedSound *_loadedSound) :
-	FXTopWindow(mainWindow,_loadedSound->getFilename().c_str(),FOXIcons->icon_logo_32,FOXIcons->icon_logo_16,DECOR_ALL, 10,mainWindow->getY()+mainWindow->getDefaultHeight()+40,750,400, 0,0,0,0, 0,0),
+CSoundWindow::CSoundWindow(FXComposite *parent,CLoadedSound *_loadedSound) :
+	FXPacker(parent,FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0, 0,0,0,0, 0,0),
 
 	shuttleControlScalar("100x"),
 	shuttleControlSpringBack(true),
@@ -132,17 +135,13 @@ CSoundWindow::CSoundWindow(FXWindow *mainWindow,CLoadedSound *_loadedSound) :
 	firstTimeShowing(true),
 	closing(false),
 
-	prevW(-1),
-	prevH(-1),
+	statusPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 4,4,2,2, 2,0)),
 
-	activeToggleButton(gFocusMethod==fmFocusButton ? new FXToggleButton(this,"Not Active","Active",NULL,NULL,this,ID_ACTIVE_TOGGLE_BUTTON,TOGGLEBUTTON_NORMAL | LAYOUT_FILL_X|LAYOUT_SIDE_TOP, 0,0,0,0, 1,1,1,1) : NULL),
-
-	statusPanel(new FXHorizontalFrame(this,FRAME_RIDGE | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 2,2,3,3, 1,0)),
-
-	waveViewPanel(new FXPacker(this,FRAME_RIDGE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
-		horzZoomPanel(new FXPacker(waveViewPanel,LAYOUT_SIDE_BOTTOM | FRAME_NONE | LAYOUT_FILL_X | LAYOUT_FIX_HEIGHT, 0,0,0,22, 2,2,2,2, 2,2)),
+	waveViewPanel(new FXPacker(this,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
+		horzZoomPanel(new FXPacker(waveViewPanel,LAYOUT_SIDE_BOTTOM | FRAME_NONE | LAYOUT_FILL_X | LAYOUT_FIX_HEIGHT, 0,0,0,22, 4,4,2,2, 2,2)),
+			horzZoomFitButton(new FXButton(horzZoomPanel,"Fit\tZoom to Fit Selection",NULL,this,ID_HORZ_ZOOM_FIT,FRAME_RAISED | LAYOUT_SIDE_LEFT | LAYOUT_FILL_Y)),
 			horzZoomMinusInd(new FXButton(horzZoomPanel," - \tZoom Out Full",NULL,this,ID_HORZ_ZOOM_DIAL_MINUS,FRAME_RAISED | LAYOUT_SIDE_LEFT | LAYOUT_FILL_Y)),
-			horzZoomDial(new FXDial(horzZoomPanel,this,ID_HORZ_ZOOM_DIAL,LAYOUT_SIDE_LEFT | DIAL_HORIZONTAL|DIAL_HAS_NOTCH | LAYOUT_FILL_Y | LAYOUT_FIX_WIDTH, 0,0,150,0, 0,0,0,0)),
+			horzZoomDial(new FXDial(horzZoomPanel,this,ID_HORZ_ZOOM_DIAL,LAYOUT_SIDE_LEFT | DIAL_HORIZONTAL|DIAL_HAS_NOTCH | LAYOUT_FILL_Y | LAYOUT_FIX_WIDTH, 0,0,200,0, 0,0,0,0)),
 			horzZoomPlusInd(new FXButton(horzZoomPanel," + \tZoom In Full",NULL,this,ID_HORZ_ZOOM_DIAL_PLUS,FRAME_RAISED | LAYOUT_SIDE_LEFT | LAYOUT_FILL_Y)),
 			horzZoomValueLabel(new FXLabel(horzZoomPanel,"",NULL,LAYOUT_SIDE_LEFT | LAYOUT_FILL_Y)),
 			bothZoomMinusButton(new FXButton(horzZoomPanel," -- \tHorizontally and Vertically Zoom Out Full",NULL,this,ID_BOTH_ZOOM_DIAL_MINUS,FRAME_RAISED | LAYOUT_SIDE_RIGHT | LAYOUT_FILL_Y)),
@@ -150,10 +149,10 @@ CSoundWindow::CSoundWindow(FXWindow *mainWindow,CLoadedSound *_loadedSound) :
 			vertZoomPlusInd(new FXButton(vertZoomPanel,"+\tZoom In Full",NULL,this,ID_VERT_ZOOM_DIAL_PLUS,FRAME_RAISED | LAYOUT_SIDE_TOP | LAYOUT_FILL_X)),
 			vertZoomDial(new FXDial(vertZoomPanel,this,LAYOUT_SIDE_TOP | ID_VERT_ZOOM_DIAL,DIAL_VERTICAL|DIAL_HAS_NOTCH | LAYOUT_FILL_X | LAYOUT_FIX_HEIGHT, 0,0,0,100, 0,0,0,0)),
 			vertZoomMinusInd(new FXButton(vertZoomPanel,"-\tZoom Out Full",NULL,this,ID_VERT_ZOOM_DIAL_MINUS,FRAME_RAISED | LAYOUT_SIDE_TOP | LAYOUT_FILL_X)),
-		mutePanel(new FXPacker(waveViewPanel,LAYOUT_SIDE_LEFT | FRAME_NONE | LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0)),
-			upperMuteLabel(mutePanel==NULL ? NULL : new FXLabel(mutePanel,"M\tMute Channels",NULL,LABEL_NORMAL|LAYOUT_SIDE_TOP|LAYOUT_FIX_HEIGHT)),
-			invertMuteButton(mutePanel==NULL ? NULL : new FXButton(mutePanel,"!\tInvert the Muted State of Each Channel or (right click) Unmute All Channels",NULL,this,ID_INVERT_MUTE_BUTTON,LAYOUT_FILL_X | FRAME_RAISED|FRAME_THICK | LAYOUT_SIDE_BOTTOM|LAYOUT_FIX_HEIGHT)),
-			muteContents(mutePanel==NULL ? NULL : new FXVerticalFrame(mutePanel,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
+		mutePanel(new FXPacker(waveViewPanel,LAYOUT_SIDE_LEFT | FRAME_NONE | LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
+			upperMuteLabel(new FXLabel(mutePanel,"M\tMute Channels",NULL,LABEL_NORMAL|LAYOUT_SIDE_TOP|LAYOUT_FIX_HEIGHT)),
+			invertMuteButton(new FXButton(mutePanel,"!\tInvert the Muted State of Each Channel or (right click) Unmute All Channels",NULL,this,ID_INVERT_MUTE_BUTTON,LAYOUT_FILL_X | FRAME_RAISED|FRAME_THICK | LAYOUT_SIDE_BOTTOM|LAYOUT_FIX_HEIGHT)),
+			muteContents(new FXVerticalFrame(mutePanel,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
 		waveView(new FXRezWaveView(waveViewPanel,_loadedSound)),
 
 	statusFont(getApp()->getNormalFont()),
@@ -166,19 +165,10 @@ CSoundWindow::CSoundWindow(FXWindow *mainWindow,CLoadedSound *_loadedSound) :
 	playingLEDOn(false),
 	pausedLEDOn(false)
 {
-	delete getAccelTable(); // delete the existing one to setup a new one
-	setAccelTable(mainWindow->getAccelTable());
-
 	new FXButton(horzZoomPanel,"Redraw",NULL,this,ID_REDRAW_BUTTON,FRAME_RAISED | LAYOUT_SIDE_RIGHT | LAYOUT_FILL_Y);
 
 	waveView->setTarget(this);
 	waveView->setSelector(ID_WAVEVIEW);
-
-	if(activeToggleButton!=NULL)
-	{
-		activeToggleButton->setState(false);
-		//activeToggleButton->setFocusRectangleStyle to nothing...
-	}
 
 	recreateMuteButtons(false);
 	
@@ -265,8 +255,6 @@ CSoundWindow::CSoundWindow(FXWindow *mainWindow,CLoadedSound *_loadedSound) :
 
 CSoundWindow::~CSoundWindow()
 {
-	setAccelTable(NULL); // unset it since ~FXWindow delete's it and ours is global
-
 	if(timerHandle!=NULL)
 		getApp()->removeTimeout(timerHandle);
 
@@ -315,54 +303,31 @@ void CSoundWindow::recreateMuteButtons(bool callCreate)
 void CSoundWindow::setActiveState(bool isActive)
 {
 	if(isActive)
-		static_cast<CMainWindow *>(getOwner())->positionShuttleGivenSpeed(loadedSound->channel->getSeekSpeed(),shuttleControlScalar,shuttleControlSpringBack);
-
-	if(gFocusMethod==fmFocusButton)
 	{
-		activeToggleButton->setBackColor(isActive ? FXRGB(230,230,230) : FXRGB(25,25,25));
-		activeToggleButton->setTextColor(isActive ? FXRGB(0,0,0) : FXRGB(255,255,255));
-		activeToggleButton->setFrameStyle(isActive ? (FRAME_THICK|FRAME_RAISED) : (FRAME_THICK|FRAME_SUNKEN));
-		activeToggleButton->setState(isActive);
-
-		if(isActive)
-		{
-			gSoundFileManager->untoggleActiveForAllSoundWindows(this);
-			raise();
-		}
+		static_cast<CMainWindow *>(getOwner()->getOwner()->getOwner())->positionShuttleGivenSpeed(loadedSound->channel->getSeekSpeed(),shuttleControlScalar,shuttleControlSpringBack);
+		recalc();
+		gSoundFileManager->untoggleActiveForAllSoundWindows(this);
+		show();
 	}
-	else if(gFocusMethod==fmSoundWindowList)
-	{
-		if(isActive)
-		{
-			show();
-			gSoundFileManager->untoggleActiveForAllSoundWindows(this);
-		}
-		else
-			hide();
-	}
+	else
+		hide();
 }
 
 bool CSoundWindow::getActiveState() const
 {
-	if(gFocusMethod==fmFocusButton)
-		return(activeToggleButton->getState() ? true : false);
-	else if(gFocusMethod==fmSoundWindowList)
-		return(shown());
-	else
-		throw(runtime_error(string(__func__)+" -- unhandle gFocusMethod: "+istring(gFocusMethod)));
+	return(shown());
 }
 
 void CSoundWindow::show()
 {
-	FXTopWindow::show();
+	FXPacker::show();
 	if(firstTimeShowing)
 	{
 			// approximately show 10 (setting) seconds of sound (apx because we haven't done layout yet)
 			// can't do this at construction because we don't know the max until the window's are laid out
-		waveView->showAmount(10.0,0);
-
-		horzZoomDial->setValue((FXint)(waveView->getHorzZoom()*100*ZOOM_MUL));
-		horzZoomValueLabel->setText(("  "+istring(horzZoomDial->getValue()/(double)ZOOM_MUL,3,1,true)+"%").c_str());
+		waveView->showAmount(gInitialLengthToShow,0);
+		horzZoomDial->setValue(zoomFactorToZoomDial(waveView->getHorzZoom()));
+		onHorzZoomDialChange(NULL,0,NULL);
 
 		firstTimeShowing=false;
 	}
@@ -404,18 +369,9 @@ void CSoundWindow::updateFromEdit()
 {
 	// see if the number of channels changed
 	if(loadedSound->sound->getChannelCount()!=muteButtonCount)
-	{
 		recreateMuteButtons(true);
-		/* ??? not necessary anymore... FXWaveViewCanvas::updateFromEdit() handles it
-			// sort of a hack to get it to redisplay properly
-		onVertZoomDialPlusIndClick(NULL,0,NULL);
-		onVertZoomDialMinusIndClick(NULL,0,NULL);
-		*/
-	}
 
-	setTitle(loadedSound->getFilename().c_str()); // incase the filename changed
 	waveView->updateFromEdit();
-	//onHorzZoomDialChange(NULL,0,NULL);
 	updateAllStatusInfo();
 }
 
@@ -429,11 +385,11 @@ void CSoundWindow::updateAllStatusInfo()
 
 	// ??? this should depend on the FXRezWaveView's actual horzZoomFactor value because the FXDial doesn't represent how many samples a pixel represents
 	int places;
-	if(horzZoomDial->getValue()>90*ZOOM_MUL)
+	if(horzZoomDial->getValue()>75*ZOOM_MUL)
 		places=5;
-	else if(horzZoomDial->getValue()>80*ZOOM_MUL)
-		places=4;
 	else if(horzZoomDial->getValue()>60*ZOOM_MUL)
+		places=4;
+	else if(horzZoomDial->getValue()>40*ZOOM_MUL)
 		places=3;
 	else
 		places=2;
@@ -448,11 +404,11 @@ void CSoundWindow::updateSelectionStatusInfo()
 {
 	// ??? this should depend on the FXRezWaveView's actual horzZoomFactor value because the FXDial doesn't represent how many samples a pixel represents
 	int places;
-	if(horzZoomDial->getValue()>90*ZOOM_MUL)
+	if(horzZoomDial->getValue()>75*ZOOM_MUL)
 		places=5;
-	else if(horzZoomDial->getValue()>80*ZOOM_MUL)
-		places=4;
 	else if(horzZoomDial->getValue()>60*ZOOM_MUL)
+		places=4;
+	else if(horzZoomDial->getValue()>40*ZOOM_MUL)
 		places=3;
 	else 
 		places=2;
@@ -465,11 +421,11 @@ void CSoundWindow::updateSelectionStatusInfo()
 void CSoundWindow::updatePlayPositionStatusInfo()
 {
 	int places;
-	if(horzZoomDial->getValue()>90*ZOOM_MUL)
+	if(horzZoomDial->getValue()>75*ZOOM_MUL)
 		places=5;
-	else if(horzZoomDial->getValue()>80*ZOOM_MUL)
-		places=4;
 	else if(horzZoomDial->getValue()>60*ZOOM_MUL)
+		places=4;
+	else if(horzZoomDial->getValue()>40*ZOOM_MUL)
 		places=3;
 	else
 		places=2;
@@ -495,31 +451,9 @@ void CSoundWindow::centerStopPos()
 
 void CSoundWindow::create()
 {
-	FXTopWindow::create();
-
-
-	if(gFocusMethod==fmFocusButton)
-	{
-		FXTopWindow::show(PLACEMENT_VISIBLE);
-
-		#define OFFSET_AMOUNT 35
-		
-		// each time a window opens, offset it a little
-		static FXint offset=-OFFSET_AMOUNT;
-		offset=(offset+OFFSET_AMOUNT)%(OFFSET_AMOUNT*10);
-		move(getX()+offset,getY()+offset);
-	}
+	FXPacker::create();
 
 	updateAllStatusInfo();
-
-	if(mutePanel!=NULL)
-	{
-		// set the proper height of the labels above and below the panel with the mute checkboxes in it
-		int top,height;
-		waveView->getWaveSize(top,height);
-		upperMuteLabel->setHeight(top);
-		invertMuteButton->setHeight(waveView->getHeight()-(height+top)-2);
-	}
 }
 
 // --- event handlers I setup  --------------------------------------------
@@ -535,7 +469,7 @@ long CSoundWindow::onMuteButton(FXObject *sender,FXSelector,void*)
 
 long CSoundWindow::onInvertMuteButton(FXObject *sender,FXSelector sel,void *ptr)
 {
-	if(SELTYPE(sel)==SEL_COMMAND)
+	if(FXSELTYPE(sel)==SEL_COMMAND)
 	{
 		for(unsigned t=0;t<loadedSound->sound->getChannelCount();t++)
 			muteButtons[t]->setCheck(!muteButtons[t]->getCheck());
@@ -550,6 +484,17 @@ long CSoundWindow::onInvertMuteButton(FXObject *sender,FXSelector sel,void *ptr)
 	}
 
 	onMuteButton(sender,sel,ptr);
+
+	return 1;
+}
+
+long CSoundWindow::onResize(FXObject *sender,FXSelector sel,void *ptr)
+{
+	// set the proper height of the labels above and below the panel with the mute checkboxes in it
+	int top,height;
+	waveView->getWaveSize(top,height);
+	upperMuteLabel->setHeight(top);
+	invertMuteButton->setHeight(waveView->getHeight()-(height+top));
 
 	return 1;
 }
@@ -607,25 +552,29 @@ long CSoundWindow::onDrawPlayPosition(FXObject *sender,FXSelector,void*)
 	return 1;
 }
 
-
 // horz zoom handlers
 
 long CSoundWindow::onHorzZoomDialChange(FXObject *sender ,FXSelector sel,void *ptr)
 {
+	FXWaveCanvas::HorzRecenterTypes horzRecenterType=FXWaveCanvas::hrtAuto;
+
 	FXint dummy;
 	FXuint keyboardModifierState;
 	horzZoomDial->getCursorPosition(dummy,dummy,keyboardModifierState);
 
-	// depend on keyboard modifier change the way it recenters while zooming
-	FXWaveCanvas::HorzRecenterTypes horzRecenterType=FXWaveCanvas::hrtAuto;
-	if(keyboardModifierState&SHIFTMASK)
-		horzRecenterType=FXWaveCanvas::hrtStart;
-	else if(keyboardModifierState&CONTROLMASK)
-		horzRecenterType=FXWaveCanvas::hrtStop;
+	// only regard the keyboard modifier keys if the mouse is bing used to drag the dial
+	if(keyboardModifierState&LEFTBUTTONMASK)
+	{
+		// depend on keyboard modifier change the way it recenters while zooming
+		if(keyboardModifierState&SHIFTMASK)
+			horzRecenterType=FXWaveCanvas::hrtStart;
+		else if(keyboardModifierState&CONTROLMASK)
+			horzRecenterType=FXWaveCanvas::hrtStop;
+	}
 		
 
 	// ??? for some reason, this does not behave quite like the original (before rewrite), but it is acceptable for now... perhaps look at it later
-	waveView->setHorzZoom(pow(horzZoomDial->getValue()/(100.0*ZOOM_MUL),1.0/3.0),horzRecenterType);
+	waveView->setHorzZoom(zoomDialToZoomFactor(horzZoomDial->getValue()),horzRecenterType);
 	horzZoomValueLabel->setText(("  "+istring(horzZoomDial->getValue()/(double)ZOOM_MUL,3,1,true)+"%").c_str());
 	horzZoomValueLabel->repaint(); // make it update now
 
@@ -636,16 +585,55 @@ long CSoundWindow::onHorzZoomDialChange(FXObject *sender ,FXSelector sel,void *p
 
 long CSoundWindow::onHorzZoomDialPlusIndClick(FXObject *sender,FXSelector sel,void *ptr)
 {
-	horzZoomDial->setValue(100*ZOOM_MUL);
-	onHorzZoomDialChange(NULL,0,NULL);
+	horzZoomInFull();
 	return 1;
 }
 
 long CSoundWindow::onHorzZoomDialMinusIndClick(FXObject *sender,FXSelector sel,void *ptr)
 {
+	horzZoomOutFull();
+	return 1;
+}
+
+long CSoundWindow::onHorzZoomFitClick(FXObject *sender,FXSelector sel,void *ptr)
+{
+	horzZoomSelectionFit();
+	return 1;
+}
+
+void CSoundWindow::horzZoomInSome()
+{
+	FXint hi,lo;
+	horzZoomDial->getRange(hi,lo);
+	horzZoomDial->setValue((FXint)(horzZoomDial->getValue()-((hi-lo)/25.0))); // zoom in 1/25th of the full range
+	onHorzZoomDialChange(NULL,0,NULL);
+}
+
+void CSoundWindow::horzZoomOutSome()
+{
+	FXint hi,lo;
+	horzZoomDial->getRange(hi,lo);
+	horzZoomDial->setValue((FXint)(horzZoomDial->getValue()+((hi-lo)/25.0))); // zoom out 1/25th of the full range
+	onHorzZoomDialChange(NULL,0,NULL);
+}
+
+void CSoundWindow::horzZoomInFull()
+{
+	horzZoomDial->setValue(100*ZOOM_MUL);
+	onHorzZoomDialChange(NULL,0,NULL);
+}
+
+void CSoundWindow::horzZoomOutFull()
+{
 	horzZoomDial->setValue(0);
 	onHorzZoomDialChange(NULL,0,NULL);
-	return 1;
+}
+
+void CSoundWindow::horzZoomSelectionFit()
+{
+	waveView->showAmount((sample_fpos_t)(loadedSound->channel->getStopPosition()-loadedSound->channel->getStartPosition()+1)/(sample_fpos_t)loadedSound->sound->getSampleRate(),loadedSound->channel->getStartPosition(),10);
+	horzZoomDial->setValue(zoomFactorToZoomDial(waveView->getHorzZoom()));
+	horzZoomValueLabel->setText(("  "+istring(horzZoomDial->getValue()/(double)ZOOM_MUL,3,1,true)+"%").c_str());
 }
 
 
@@ -734,12 +722,12 @@ long CSoundWindow::onAddCue(FXObject *sender,FXSelector sel,void *ptr)
 {
 	try
 	{
-		CActionParameters actionParameters;
+		CActionParameters actionParameters(NULL);
 
 		// add the parameters for the dialog to display initially
 		actionParameters.addStringParameter("name","Cue1");
 
-		switch(SELTYPE(sel))
+		switch(FXSELTYPE(sel))
 		{
 		case FXRezWaveView::SEL_ADD_CUE:
 			actionParameters.addSamplePosParameter("position",*((sample_pos_t *)ptr));
@@ -756,7 +744,7 @@ long CSoundWindow::onAddCue(FXObject *sender,FXSelector sel,void *ptr)
 
 		actionParameters.addBoolParameter("isAnchored",false);
 
-		addCueActionFactory->performAction(loadedSound,&actionParameters,false,false);
+		addCueActionFactory->performAction(loadedSound,&actionParameters,false);
 	}
 	catch(exception &e)
 	{
@@ -768,15 +756,15 @@ long CSoundWindow::onAddCue(FXObject *sender,FXSelector sel,void *ptr)
 
 long CSoundWindow::onRemoveCue(FXObject *sender,FXSelector sel,void *ptr)
 {
-	CActionParameters actionParameters;
+	CActionParameters actionParameters(NULL);
 	actionParameters.addUnsignedParameter("index",*((size_t *)ptr));
-	removeCueActionFactory->performAction(loadedSound,&actionParameters,false,false);
+	removeCueActionFactory->performAction(loadedSound,&actionParameters,false);
 	return 1;
 }
 
 long CSoundWindow::onEditCue(FXObject *sender,FXSelector sel,void *ptr)
 {
-	CActionParameters actionParameters;
+	CActionParameters actionParameters(NULL);
 	size_t cueIndex=*((size_t *)ptr);
 
 	// add the parameters for the dialog to display initially
@@ -785,7 +773,7 @@ long CSoundWindow::onEditCue(FXObject *sender,FXSelector sel,void *ptr)
 	actionParameters.addSamplePosParameter("position",loadedSound->sound->getCueTime(cueIndex));
 	actionParameters.addBoolParameter("isAnchored",loadedSound->sound->isCueAnchored(cueIndex));
 
-	replaceCueActionFactory->performAction(loadedSound,&actionParameters,false,false);
+	replaceCueActionFactory->performAction(loadedSound,&actionParameters,false);
 	return 1;
 }
 
@@ -793,15 +781,6 @@ long CSoundWindow::onShowCueList(FXObject *sender,FXSelector sel,void *ptr)
 {
 	gCueListDialog->setLoadedSound(loadedSound);
 	gCueListDialog->execute(PLACEMENT_CURSOR);
-	return 1;
-}
-
-
-// focusing handlers
-long CSoundWindow::onActiveToggleButton(FXObject *sender,FXSelector sel,void *ptr)
-{
-	setActiveState(true);
-	activeToggleButton->killFocus();
 	return 1;
 }
 

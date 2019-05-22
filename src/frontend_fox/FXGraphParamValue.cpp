@@ -30,6 +30,8 @@
 #include <CNestedDataFile/CNestedDataFile.h>
 #define DOT (CNestedDataFile::delimChar)
 
+#include "utils.h"
+
 #include "../backend/CSound.h"
 
 #define NODE_RADIUS 4
@@ -67,7 +69,7 @@ class CHorzRuler : public FXHorizontalFrame
 	FXDECLARE(CHorzRuler)
 public:
 	CHorzRuler(FXComposite *p,FXGraphParamValue *_parent) :
-		FXHorizontalFrame(p,FRAME_RAISED | LAYOUT_FILL_X | LAYOUT_FIX_HEIGHT | LAYOUT_SIDE_TOP, 0,0,0,17),
+		FXHorizontalFrame(p,FRAME_NONE | LAYOUT_FILL_X | LAYOUT_FIX_HEIGHT | LAYOUT_SIDE_TOP, 0,0,0,17),
 
 		parent(_parent),
 
@@ -105,7 +107,11 @@ public:
 
 		FXDCWindow dc(this,ev);
 		dc.setForeground(FXRGB(20,20,20));
+#if REZ_FOX_VERSION<10117
 		dc.setTextFont(font);
+#else
+		dc.setFont(font);
+#endif
 
 		#define H_TICK_FREQ 50
 
@@ -121,7 +127,7 @@ public:
 		const int s=0;
 		const int e=parent->getGraphPanelWidth()-1;
 
-		// y actually goes from the event's min-10 to max+10 incase part of some text needs be be redrawn (and we limit it to 0..height)
+		// x actually goes from the event's min-10 to max+10 incase part of some text needs be be redrawn (and we limit it to 0..height)
 		const int maxX=min(parent->getGraphPanelWidth(),(ev->rect.w+ev->rect.x)+10);
 		for(int x=max(0,(ev->rect.x)-10);x<=maxX;x++)
 		{
@@ -134,7 +140,7 @@ public:
 				dc.drawLine(renderX,getHeight()-2,renderX,getHeight()-10);
 				//dc.drawLine(renderX+H_TICK_FREQ/2,getHeight()-2,renderX+H_TICK_FREQ/2,getHeight()-4);
 
-				const string sValue=parent->getHorzValueString(parent->screenToNodeHorzValue(x));
+				const string sValue=parent->getHorzValueString(parent->screenToNodeHorzValue(x,false));
 
 				int offset=font->getTextWidth(sValue.c_str(),sValue.length()); // put text left of the tick mark
 
@@ -144,7 +150,7 @@ public:
 				//dc.drawLine(getWidth()-2,renderY,getWidth()-5,renderY); // half way tick between labled ticks
 		}
 
-		return(0);
+		return 0;
 	}
 
 protected:
@@ -174,7 +180,7 @@ class CVertRuler : public FXHorizontalFrame
 	FXDECLARE(CVertRuler)
 public:
 	CVertRuler(FXComposite *p,FXGraphParamValue *_parent) :
-		FXHorizontalFrame(p,FRAME_RAISED | LAYOUT_FILL_Y | LAYOUT_FIX_WIDTH | LAYOUT_SIDE_LEFT, 0,0,42),
+		FXHorizontalFrame(p,FRAME_NONE | LAYOUT_FILL_Y | LAYOUT_FIX_WIDTH | LAYOUT_SIDE_LEFT, 0,0,42),
 
 		parent(_parent),
 
@@ -211,7 +217,11 @@ public:
 
 		FXDCWindow dc(this,ev);
 		dc.setForeground(FXRGB(20,20,20));
+#if REZ_FOX_VERSION<10117
 		dc.setTextFont(font);
+#else
+		dc.setFont(font);
+#endif
 
 		#define V_TICK_FREQ 20
 
@@ -233,7 +243,7 @@ public:
 		{
 			// this is, y=s+(((e-s)*t)/(N-1)) [0..N interpolated across s..e] solved for t, and then we get the remainder of the resulting division instead of the actual quotient)
 			const double t=fmod((double)((y-s)*(N-1)),(double)(e-s));
-			const int renderY=y+(((FXPacker *)(parent->graphPanel->getParent()))->getPadTop());
+			const int renderY=y+(((FXPacker *)(parent->graphCanvas->getParent()))->getPadTop());
 
 			if(t<(N-1))
 			{ // draw and label this tick
@@ -249,7 +259,7 @@ public:
 				//dc.drawLine(getWidth()-2,renderY,getWidth()-5,renderY); // half way tick between labled ticks
 		}
 
-		return(0);
+		return 0;
 	}
 
 protected:
@@ -278,38 +288,49 @@ FXDEFMAP(FXGraphParamValue) FXGraphParamValueMap[]=
 {
 	//Message_Type				ID					Message_Handler
 
-	FXMAPFUNC(SEL_PAINT,			FXGraphParamValue::ID_GRAPH_PANEL,	FXGraphParamValue::onGraphPanelPaint),
+	FXMAPFUNC(SEL_PAINT,			FXGraphParamValue::ID_GRAPH_CANVAS,	FXGraphParamValue::onGraphPanelPaint),
 
-	FXMAPFUNC(SEL_CONFIGURE,		FXGraphParamValue::ID_GRAPH_PANEL,	FXGraphParamValue::onGraphPanelResize),
+	FXMAPFUNC(SEL_CONFIGURE,		FXGraphParamValue::ID_GRAPH_CANVAS,	FXGraphParamValue::onGraphPanelResize),
 
-	FXMAPFUNC(SEL_LEFTBUTTONPRESS,		FXGraphParamValue::ID_GRAPH_PANEL,	FXGraphParamValue::onCreateOrStartDragNode),
-	FXMAPFUNC(SEL_MOTION,			FXGraphParamValue::ID_GRAPH_PANEL,	FXGraphParamValue::onDragNode),
-	FXMAPFUNC(SEL_LEFTBUTTONRELEASE,	FXGraphParamValue::ID_GRAPH_PANEL,	FXGraphParamValue::onStopDragNode),
-	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	FXGraphParamValue::ID_GRAPH_PANEL,	FXGraphParamValue::onDestroyNode),
+	FXMAPFUNC(SEL_LEFTBUTTONPRESS,		FXGraphParamValue::ID_GRAPH_CANVAS,	FXGraphParamValue::onCreateOrStartDragNode),
+	FXMAPFUNC(SEL_MOTION,			FXGraphParamValue::ID_GRAPH_CANVAS,	FXGraphParamValue::onDragNode),
+	FXMAPFUNC(SEL_LEFTBUTTONRELEASE,	FXGraphParamValue::ID_GRAPH_CANVAS,	FXGraphParamValue::onStopDragNode),
+	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	FXGraphParamValue::ID_GRAPH_CANVAS,	FXGraphParamValue::onDestroyNode),
 
 	FXMAPFUNC(SEL_COMMAND,			FXGraphParamValue::ID_SCALAR_SPINNER,	FXGraphParamValue::onScalarSpinnerChange),
 	FXMAPFUNC(SEL_COMMAND,			FXGraphParamValue::ID_CLEAR_BUTTON,	FXGraphParamValue::onPatternButton),
+
+	FXMAPFUNC(SEL_CHANGED,			FXGraphParamValue::ID_HORZ_DEFORM_SLIDER,FXGraphParamValue::onHorzDeformSliderChange),
+	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	FXGraphParamValue::ID_HORZ_DEFORM_SLIDER,FXGraphParamValue::onHorzDeformSliderReset),
+	FXMAPFUNC(SEL_CHANGED,			FXGraphParamValue::ID_VERT_DEFORM_SLIDER,FXGraphParamValue::onVertDeformSliderChange),
+	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	FXGraphParamValue::ID_VERT_DEFORM_SLIDER,FXGraphParamValue::onVertDeformSliderReset),
 };
 
-FXIMPLEMENT(FXGraphParamValue,FXPacker,FXGraphParamValueMap,ARRAYNUMBER(FXGraphParamValueMap))
+FXIMPLEMENT(FXGraphParamValue,FXVerticalFrame,FXGraphParamValueMap,ARRAYNUMBER(FXGraphParamValueMap))
 
 FXGraphParamValue::FXGraphParamValue(const string _title,const int minScalar,const int maxScalar,const int _initScalar,FXComposite *p,int opts,int x,int y,int w,int h) :
-	FXPacker(p,opts|FRAME_RIDGE,x,y,w,h, 2,2,2,2, 0,0),
+	FXVerticalFrame(p,opts|FRAME_RAISED,x,y,w,h, 0,0,0,0, 0,0),
 
 	title(_title),
 
 	initScalar(_initScalar),
 
-	buttonPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 0,0,2,0)),
+	graphPanel(new FXPacker(this,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
+		vertDeformPanel(new FXVerticalFrame(graphPanel,FRAME_NONE | LAYOUT_SIDE_RIGHT|LAYOUT_FILL_Y, 0,0,0,0, 2,2,0,0, 0,0)),
+			vertDeformSlider(new FXSlider(vertDeformPanel,this,ID_VERT_DEFORM_SLIDER, FRAME_NONE | LAYOUT_FILL_Y | SLIDER_VERTICAL|SLIDER_TICKS_LEFT|SLIDER_ARROW_LEFT, 0,0,0,0, 0,0,0,0)),
+		horzRuler(new CHorzRuler(graphPanel,this)),
+		vertRuler(new CVertRuler(graphPanel,this)),
+		horzDeformPanel(new FXHorizontalFrame(graphPanel,FRAME_NONE | LAYOUT_SIDE_BOTTOM|LAYOUT_FILL_X, 0,0,0,0, 0,0,2,0, 0,0)),
+			horzDeformSlider(new FXSlider(horzDeformPanel,this,ID_HORZ_DEFORM_SLIDER, FRAME_NONE | LAYOUT_FILL_X | SLIDER_HORIZONTAL|SLIDER_TICKS_TOP|SLIDER_ARROW_UP,0,0,0,0, 0,0,0,0)),
+		graphCanvas(new FXCanvas(graphPanel,this,ID_GRAPH_CANVAS,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
+	
+	statusPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 4,0)),
+		horzValueLabel(new FXLabel(statusPanel,": ",NULL,LAYOUT_LEFT)),
+		vertValueLabel(new FXLabel(statusPanel,": ",NULL,LAYOUT_LEFT)),
+
+	buttonPanel(new FXHorizontalFrame(this,FRAME_NONE | LAYOUT_FILL_X, 0,0,0,0, 0,0,2,2)),
 		scalarLabel(NULL),
 		scalarSpinner(NULL),
-	horzRuler(new CHorzRuler(this,this)),
-	vertRuler(new CVertRuler(this,this)),
-	statusPanel(new FXHorizontalFrame(this,FRAME_RAISED | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X, 0,0,0,0, 0,0,0,0, 4,0)),
-		horzValueLabel(new FXLabel(statusPanel,": ",NULL,LAYOUT_LEFT)),
-		vertValueLabel(new FXLabel(statusPanel,": ",NULL)),
-	graphPanelParent(new FXPacker(this,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0)),
-		graphPanel(new FXCanvas(graphPanelParent,this,ID_GRAPH_PANEL,LAYOUT_FILL_X|LAYOUT_FILL_Y)),
 
 	draggingNode(-1),
 	dragOffsetX(0),dragOffsetY(0),
@@ -328,11 +349,30 @@ FXGraphParamValue::FXGraphParamValue(const string _title,const int minScalar,con
 	vertInterpretValue(NULL),
 	vertUninterpretValue(NULL),
 
-	backBuffer(new FXImage(getApp()))
+	backBuffer(new FXImage(getApp())),
+
+	textFont(getApp()->getNormalFont())
 {
-	// just to give a minimum width and height to the panel
-	new FXFrame(this,LAYOUT_FIX_WIDTH | FRAME_NONE | LAYOUT_SIDE_TOP, 0,0,500,0, 0,0,0,0);
-	new FXFrame(this,LAYOUT_FIX_HEIGHT | FRAME_NONE | LAYOUT_SIDE_RIGHT, 0,0,0,250, 0,0,0,0);
+	// create a smaller font to use 
+        FXFontDesc d;
+        textFont->getFontDesc(d);
+        d.size-=10;
+        textFont=new FXFont(getApp(),d);
+
+	
+	const int deformSliderRange=4000;
+
+	horzDeformSlider->setRange(-deformSliderRange,deformSliderRange); // symmetry is assumed when the slider is used (and horz and very should be the same
+	horzDeformSlider->setTickDelta((deformSliderRange*2+1)/(11-1)); // 11 tick marks
+	horzDeformSlider->setValue(0);
+	horzDeformSlider->setTipText("Horizontally Deform the Nodes Toward One Side or the Other\nRight-Click to Reset to the Middle");
+
+	vertDeformSlider->setRange(-deformSliderRange,deformSliderRange); // symmetry is assumed when the slider is used (and horz and very should be the same
+	vertDeformSlider->setTickDelta((deformSliderRange*2+1)/(11-1)); // 11 tick marks
+	vertDeformSlider->setValue(0);
+	vertDeformSlider->setTipText("Vertically Deform the Nodes Toward the Top or Bottom\nRight-Click to Reset to the Middle");
+
+
 
 	if(minScalar!=maxScalar)
 	{
@@ -349,11 +389,19 @@ FXGraphParamValue::FXGraphParamValue(const string _title,const int minScalar,con
 	backBuffer->create();
 
 	clearNodes();
+
+	setFontOfAllChildren(buttonPanel,textFont);
+	setFontOfAllChildren(statusPanel,textFont);
 }
 
 FXGraphParamValue::~FXGraphParamValue()
 {
+	delete textFont;
 }
+
+// set the default w & h of this widget
+FXint FXGraphParamValue::getDefaultWidth() { return 500; }
+FXint FXGraphParamValue::getDefaultHeight() { return 300; }
 
 void FXGraphParamValue::setSound(CSound *_sound,sample_pos_t _start,sample_pos_t _stop)
 {
@@ -380,6 +428,7 @@ void FXGraphParamValue::setHorzParameters(const string horzAxisLabel,const strin
 	horzUninterpretValue=uninterpretValue;
 
 	clearStatus();
+	updateNumbers();
 }
 
 void FXGraphParamValue::setVertParameters(const string vertAxisLabel,const string vertUnits,f_at_xs interpretValue,f_at_xs uninterpretValue)
@@ -390,6 +439,7 @@ void FXGraphParamValue::setVertParameters(const string vertAxisLabel,const strin
 	vertUninterpretValue=uninterpretValue;
 
 	clearStatus();
+	updateNumbers();
 }
 
 void FXGraphParamValue::clearNodes()
@@ -403,27 +453,62 @@ void FXGraphParamValue::clearNodes()
 	CGraphParamValueNode last(1.0,0.5);
 	nodes.push_back(last);
 
-	graphPanel->update();
+	graphCanvas->update();
 }
 
 
 long FXGraphParamValue::onScalarSpinnerChange(FXObject *sender,FXSelector sel,void *ptr)
 {
 	updateNumbers();
-	return(1);
+	return 1;
 }
 
 long FXGraphParamValue::onPatternButton(FXObject *sender,FXSelector sel,void *ptr)
 {
-	clearNodes();
+	switch(FXSELID(sel))
+	{
+	case ID_CLEAR_BUTTON:
+		horzDeformSlider->setValue(0);
+		vertDeformSlider->setValue(0);
+		clearNodes();
+		break;
 
-	graphPanel->update();
-	return(1);
+	}
+
+	graphCanvas->update();
+	return 1;
 }
+
+long FXGraphParamValue::onHorzDeformSliderChange(FXObject *sender,FXSelector sel,void *ptr)
+{
+	graphCanvas->update();
+	return 1;
+}
+
+long FXGraphParamValue::onVertDeformSliderChange(FXObject *sender,FXSelector sel,void *ptr)
+{
+	graphCanvas->update();
+	return 1;
+}
+
+long FXGraphParamValue::onHorzDeformSliderReset(FXObject *sender,FXSelector sel,void *ptr)
+{
+	horzDeformSlider->setValue(0);
+	graphCanvas->update();
+	return 1;
+}
+
+long FXGraphParamValue::onVertDeformSliderReset(FXObject *sender,FXSelector sel,void *ptr)
+{
+	vertDeformSlider->setValue(0);
+	graphCanvas->update();
+	return 1;
+}
+
 
 long FXGraphParamValue::onGraphPanelPaint(FXObject *sender,FXSelector sel,void *ptr)
 {
-	FXDCWindow dc(graphPanel);
+	FXDCWindow dc(graphCanvas);
 
 	// draw the whole background
 	dc.drawImage(backBuffer,0,0);
@@ -538,19 +623,19 @@ don't pass thru the control points
 		dc.fillArc(x-NODE_RADIUS,y-NODE_RADIUS,NODE_RADIUS*2,NODE_RADIUS*2,0*64,360*64);
 	}
 		
-	return(1);
+	return 1;
 }
 
 #include "drawPortion.h"
 long FXGraphParamValue::onGraphPanelResize(FXObject *sender,FXSelector sel,void *ptr)
 {
 	// render waveform to the backbuffer
-	backBuffer->resize(graphPanel->getWidth(),graphPanel->getHeight());
+	backBuffer->resize(graphCanvas->getWidth(),graphCanvas->getHeight());
 	FXDCWindow dc(backBuffer);
 	if(sound!=NULL)
 	{
-		const int canvasWidth=graphPanel->getWidth();
-		const int canvasHeight=graphPanel->getHeight();
+		const int canvasWidth=graphCanvas->getWidth();
+		const int canvasHeight=graphCanvas->getHeight();
 		const sample_pos_t length=stop-start+1;
 		const double hScalar=(double)((sample_fpos_t)length/canvasWidth);
 		const int hOffset=(int)(start/hScalar);
@@ -562,8 +647,13 @@ long FXGraphParamValue::onGraphPanelResize(FXObject *sender,FXSelector sel,void 
 	{
 		dc.setForeground(FXRGB(0,0,0));
 		dc.setFillStyle(FILL_SOLID);
-		dc.fillRectangle(0,0,graphPanel->getWidth(),graphPanel->getHeight());
+		dc.fillRectangle(0,0,graphCanvas->getWidth(),graphCanvas->getHeight());
 	}
+
+	// make the vertical deform slider's top and bottom appear at the top and bottom of the graph canvas
+	int totalPad=graphCanvas->getParent()->getHeight()-graphCanvas->getHeight();
+	vertDeformPanel->setPadTop(graphCanvas->getY());
+	vertDeformPanel->setPadBottom(totalPad-graphCanvas->getY());
 
 	return 1;
 }
@@ -571,28 +661,28 @@ long FXGraphParamValue::onGraphPanelResize(FXObject *sender,FXSelector sel,void 
 // always returns an odd value >=1
 int FXGraphParamValue::getGraphPanelWidth() const
 {
-	int w=graphPanel->getWidth();
+	int w=graphCanvas->getWidth();
 	if(w%2==0)
 		w--;
-	return(max(w,1));
+	return max(w,1);
 }
 
 // always returns an odd value >=1
 int FXGraphParamValue::getGraphPanelHeight() const
 {
-	int h=graphPanel->getHeight();
+	int h=graphCanvas->getHeight();
 	if(h%2==0)
 		h--;
-	return(max(h,1));
+	return max(h,1);
 }
 
 int FXGraphParamValue::insertIntoNodes(const CGraphParamValueNode &node)
 {
 	// sanity checks
 	if(nodes.size()<2)
-		throw(runtime_error(string(__func__)+" -- nodes doesn't already contain at least 2 items"));
+		throw runtime_error(string(__func__)+" -- nodes doesn't already contain at least 2 items");
 	if(node.x<0.0 || node.x>1.0)
-		throw(runtime_error(string(__func__)+" -- node's x is out of range: "+istring(node.x)));
+		throw runtime_error(string(__func__)+" -- node's x is out of range: "+istring(node.x));
 
 	int insertedIndex=-1;
 
@@ -610,7 +700,7 @@ int FXGraphParamValue::insertIntoNodes(const CGraphParamValueNode &node)
 		}
 	}
 
-	return(insertedIndex);
+	return insertedIndex;
 }
 
 long FXGraphParamValue::onCreateOrStartDragNode(FXObject *sender,FXSelector sel,void *ptr)
@@ -634,8 +724,8 @@ long FXGraphParamValue::onCreateOrStartDragNode(FXObject *sender,FXSelector sel,
 	}
 	
 	updateStatus();
-	graphPanel->update();
-	return(1);
+	graphCanvas->update();
+	return 1;
 }
 
 long FXGraphParamValue::onDragNode(FXObject *sender,FXSelector sel,void *ptr)
@@ -672,29 +762,29 @@ long FXGraphParamValue::onDragNode(FXObject *sender,FXSelector sel,void *ptr)
 
 		// redraw
 		updateStatus();
-		graphPanel->update();
+		graphCanvas->update();
 	}
-	return(1);
+	return 1;
 }
 
 long FXGraphParamValue::onStopDragNode(FXObject *sender,FXSelector sel,void *ptr)
 {
 	draggingNode=-1;
 	clearStatus();
-	return(1);
+	return 1;
 }
 
 long FXGraphParamValue::onDestroyNode(FXObject *sender,FXSelector sel,void *ptr)
 {
 	FXEvent *ev=(FXEvent *)ptr;
 	int nodeIndex=findNodeAt(ev->win_x,ev->win_y);
-	if(nodeIndex!=-1)
+	if(nodeIndex!=-1 && nodeIndex!=0 && nodeIndex!=(int)(nodes.size()-1)) // not the first or the last node
 	{
 		nodes.erase(nodes.begin()+nodeIndex);
 		draggingNode=-1;
-		graphPanel->update();
+		graphCanvas->update();
 	}
-	return(1);
+	return 1;
 }
 
 int FXGraphParamValue::findNodeAt(int x,int y)
@@ -708,46 +798,106 @@ int FXGraphParamValue::findNodeAt(int x,int y)
 
 		// see if the node's position is <= the NODE_RADIUS from the give x,y position
 		if( ((nx-x)*(nx-x)+(ny-y)*(ny-y)) <= (NODE_RADIUS*NODE_RADIUS) )
-			return(t);
+			return t;
 	}
 
-	return(-1);
+	return -1;
 }
 
-double FXGraphParamValue::screenToNodeHorzValue(int x)
+double FXGraphParamValue::deformNodeX(double x,FXint sliderValue) const
 {
-	double v=((double)x/(double)(graphPanel->getWidth()-1));
+/*
+	This deformation takes x:[0,1] and translates it to a deformation of x yet still with the range of [0,1]
+	The deformation is to plug x into one quadrant of the unit circle given by the graph of f(x)=cos(asin(x)) where x:[0,1]
+	Then I use the rule that cos(asin(x)) == sqrt(1-x^2)
+	So, f(x) = sqrt(1-x^2)
+	
+	Then I let the slider define a variable, p, that adjusts how much from a straight line to a more and more taught curve
+	to deform x by.  This comes from generalizing the f(x) above to:
+		f(x) = ( 1-x^p ) ^ (1/p)  (that is, p takes the place of '2' in the previous f(x))
+
+	So, now p can go from 1 (where f(x) produces the line, y=x) and upwards where elbow of the curve is more and more and more bent toward (1,0)
+	
+	So, the x coord of the node plugged into this f(x) where s==1 does no deforming and where s is greater, the x is more bent in one direction
+
+	So the slider going from [-N,N] is scaled to s: [-1,1] and when s>=0 I let s define p as p=(K*s)+1
+	But when s<0 I let be defined as p=(K*(-s))+1, but I flip the f(x) equation horizontally and vertically so that the bend tends toward (0,1)
+	This way, the slider deforms the nodes' x values leftwards or rightwards depending on the slider's value being - or +
+
+	And as a side note: I square s (but maintain the sign) so that more values in the middle will be available but s is will [-1,1] 
+	
+*/
+
+	FXint lo,hi; // assuming symmetry on low and hi and vert and horz are the same
+	horzDeformSlider->getRange(lo,hi);
+
+		// s=[-1,1]
+	double s=(double)sliderValue/(double)hi;
+	s=fabs(s)*s;
+
+	if(s>=0)
+	{
+		double p=(10.0*s)+1.0;
+		return pow( 1.0-pow(1.0-x,p) , 1.0/p );
+	}
+	else
+	{
+		double p=(10.0*(-s))+1.0;
+		return 1.0-pow( 1.0-pow(x,p) , 1.0/p );
+	}
+
+}
+
+double FXGraphParamValue::undeformNodeX(double x,FXint sliderValue) const
+{
+	/* this computes the inverse of the previous deformNodeX method above */
+	/* which simplifies to just calling deformNodeX with the negated sliderValue */
+	return deformNodeX(x,-sliderValue);
+}
+
+int FXGraphParamValue::nodeToScreenX(const CGraphParamValueNode &node)
+{
+	return (int)(deformNodeX(node.x,horzDeformSlider->getValue())*(graphCanvas->getWidth()-1));
+}
+
+int FXGraphParamValue::nodeToScreenY(const CGraphParamValueNode &node)
+{
+	return (int)((1.0-deformNodeX(node.y,vertDeformSlider->getValue()))*(getGraphPanelHeight()));
+}
+
+double FXGraphParamValue::screenToNodeHorzValue(int x,bool undeform)
+{
+	double v=((double)x/(double)(graphCanvas->getWidth()-1));
 	if(v<0.0)
 		v=0.0;
 	else if(v>1.0)
 		v=1.0;
-	return(v);
+
+	if(undeform)
+		return undeformNodeX(v,horzDeformSlider->getValue());
+	else
+		return v;
 }
 
-double FXGraphParamValue::screenToNodeVertValue(int y)
+double FXGraphParamValue::screenToNodeVertValue(int y,bool undeform)
 {
 	double v=(1.0-((double)y/(double)(getGraphPanelHeight()-1)));
 	if(v<0.0)
 		v=0.0;
 	else if(v>1.0)
 		v=1.0;
-	return(v);
-}
 
-int FXGraphParamValue::nodeToScreenX(const CGraphParamValueNode &node)
-{
-	return((int)(node.x*(graphPanel->getWidth()-1)));
-}
-
-int FXGraphParamValue::nodeToScreenY(const CGraphParamValueNode &node)
-{
-	return((int)((1.0-node.y)*(getGraphPanelHeight())));
+	if(undeform)
+		return undeformNodeX(v,vertDeformSlider->getValue());
+	else
+		return v;
 }
 
 void FXGraphParamValue::updateNumbers()
 {
 	horzRuler->update();
 	vertRuler->update();
+	updateStatus();
 }
 
 const CGraphParamValueNodeList &FXGraphParamValue::getNodes() const
@@ -755,13 +905,16 @@ const CGraphParamValueNodeList &FXGraphParamValue::getNodes() const
 	retNodes=nodes;
 	for(size_t t=0;t<retNodes.size();t++)
 	{
+		retNodes[t].x=deformNodeX(retNodes[t].x,horzDeformSlider->getValue());
+		retNodes[t].y=deformNodeX(retNodes[t].y,vertDeformSlider->getValue());
+
 		if(horzInterpretValue!=NULL)
-			retNodes[t].x=horzInterpretValue(nodes[t].x,0);
+			retNodes[t].x=horzInterpretValue(retNodes[t].x,0);
 		if(vertInterpretValue!=NULL)
-			retNodes[t].y=vertInterpretValue(nodes[t].y,getScalar());
+			retNodes[t].y=vertInterpretValue(retNodes[t].y,getScalar());
 	}
 
-	return(retNodes);
+	return retNodes;
 }
 
 const string FXGraphParamValue::getVertValueString(double vertValue) const
@@ -786,8 +939,8 @@ void FXGraphParamValue::updateStatus()
 	const CGraphParamValueNode &n=nodes[draggingNode];
 
 	// draw status
-	horzValueLabel->setText((horzAxisLabel+": "+getHorzValueString(n.x)+horzUnits).c_str());
-	vertValueLabel->setText((vertAxisLabel+": "+getVertValueString(n.y)+vertUnits).c_str());
+	horzValueLabel->setText((horzAxisLabel+": "+getHorzValueString(deformNodeX(n.x,horzDeformSlider->getValue()))+horzUnits).c_str());
+	vertValueLabel->setText((vertAxisLabel+": "+getVertValueString(deformNodeX(n.y,vertDeformSlider->getValue()))+vertUnits).c_str());
 }
 
 void FXGraphParamValue::clearStatus()
@@ -813,7 +966,7 @@ const int FXGraphParamValue::getMinScalar() const
 	FXint lo=0,hi=0;
 	if(scalarSpinner!=NULL)
 		scalarSpinner->getRange(lo,hi);
-	return(lo);
+	return lo;
 }
 
 const int FXGraphParamValue::getMaxScalar() const
@@ -821,12 +974,12 @@ const int FXGraphParamValue::getMaxScalar() const
 	FXint lo=0,hi=0;
 	if(scalarSpinner!=NULL)
 		scalarSpinner->getRange(lo,hi);
-	return(hi);
+	return hi;
 }
 
 const string FXGraphParamValue::getTitle() const
 {
-	return(title);
+	return title;
 }
 
 void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
@@ -857,7 +1010,7 @@ void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 
 	updateNumbers();
 	update();
-	graphPanel->update();
+	graphCanvas->update();
 }
 
 void FXGraphParamValue::writeToFile(const string &prefix,CNestedDataFile *f) const

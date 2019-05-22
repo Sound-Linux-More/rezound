@@ -66,7 +66,12 @@ bool ASoundTranslator::loadSound(const string filename,CSound *sound) const
 	return true;
 }
 
-bool ASoundTranslator::saveSound(const string filename,CSound *sound) const
+bool ASoundTranslator::saveSound(const string filename,const CSound *sound) const
+{
+	return saveSound(filename,sound,0,sound->getLength());
+}
+
+bool ASoundTranslator::saveSound(const string filename,const CSound *sound,const sample_pos_t saveStart,const sample_pos_t saveLength) const
 {
 	sound->lockSize();
 	try
@@ -84,7 +89,11 @@ bool ASoundTranslator::saveSound(const string filename,CSound *sound) const
 		 *
 		 * ESPECIALLY since saving a file can be cancelled thus killing the original
 		 */
-		bool ret=onSaveSound(filename,sound);
+
+		if(saveLength>sound->getLength() || (sound->getLength()-saveLength)<saveStart)
+			throw runtime_error(string(__func__)+" -- invalid saveStart and saveLength range: from "+istring(saveStart)+" for "+istring(saveLength));
+
+		bool ret=onSaveSound(filename,sound,saveStart,saveLength);
 		sound->unlockSize();
 		return ret;
 	}
@@ -95,3 +104,20 @@ bool ASoundTranslator::saveSound(const string filename,CSound *sound) const
 	}
 }
 
+const vector<string> ASoundTranslator::getFlatFormatList()
+{
+	vector<string> v;
+	
+	for(size_t t=0;t<registeredTranslators.size();t++)
+	{
+		const vector<string> formatNames=registeredTranslators[t]->getFormatNames();
+		const vector<vector<string> > formatExtensions=registeredTranslators[t]->getFormatExtensions();
+		for(size_t i=0;i<formatNames.size();i++)
+		{
+			for(size_t k=0;k<formatExtensions[i].size();k++)
+				v.push_back(formatExtensions[i][k]+" ["+formatNames[i]+"]");
+		}
+	}
+
+	return v;
+}

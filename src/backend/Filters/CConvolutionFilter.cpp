@@ -138,7 +138,7 @@ bool CConvolutionFilter::doActionSizeSafe(CActionSound &actionSound,bool prepare
 					}
 
 					//TSimpleConvolver<mix_sample_t,float> convolver(filterKernel,filterKernelLength-filterKernelLengthSub);
-					TFFTConvolver<float,float> convolver(filterKernel,filterKernelLength-filterKernelLengthSub);
+					TFFTConvolverTimeDomainKernel<float,float> convolver(filterKernel,filterKernelLength-filterKernelLengthSub);
 
 					TDSPSinglePoleLowpassFilter<float,float> inputLowpassFilter(freq_to_fraction(inputLowpassFreq,actionSound.sound->getSampleRate()));
 
@@ -254,8 +254,8 @@ void CConvolutionFilter::undoActionSizeSafe(const CActionSound &actionSound)
 
 // --------------------------------------------------
 
-CConvolutionFilterFactory::CConvolutionFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
-	AActionFactory("Convolution Filter","Convolve One Audio File with this One",false,channelSelectDialog,normalDialog,NULL)
+CConvolutionFilterFactory::CConvolutionFilterFactory(AActionDialog *channelSelectDialog,AActionDialog *dialog) :
+	AActionFactory("Convolution Filter","Convolve One Audio File with this One",channelSelectDialog,dialog)
 {
 }
 
@@ -263,7 +263,7 @@ CConvolutionFilterFactory::~CConvolutionFilterFactory()
 {
 }
 
-CConvolutionFilter *CConvolutionFilterFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
+CConvolutionFilter *CConvolutionFilterFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
 {
 	return(new CConvolutionFilter(
 		actionSound,

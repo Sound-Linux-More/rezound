@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __ActionDialogs_H__
-#define __ActionDialogs_H__
+#ifndef __EditActionDialogs_H__
+#define __EditActionDialogs_H__
 
 #include "../../config/common.h"
 #include "fox_compat.h"
@@ -69,6 +69,21 @@ class CAddChannelsDialog : public CActionParamDialog
 public:
 	CAddChannelsDialog(FXWindow *mainWindow);
 	virtual ~CAddChannelsDialog(){}
+};
+
+
+
+
+// --- save as multiple filenames --------
+
+class CSaveAsMultipleFilesDialog : public CActionParamDialog
+{
+public:
+	CSaveAsMultipleFilesDialog(FXWindow *mainWindow);
+	virtual ~CSaveAsMultipleFilesDialog(){}
+
+protected:
+	const string getExplaination() const;
 };
 
 

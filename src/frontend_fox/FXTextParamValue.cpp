@@ -21,11 +21,14 @@
 #include "FXTextParamValue.h"
 
 #include <stdlib.h>
+#include <math.h> // for log10
 
 #include <istring>
 
 #include <CNestedDataFile/CNestedDataFile.h>
 #define DOT (CNestedDataFile::delimChar)
+
+#include "utils.h"
 
 /*
 	- This is the text entry widget used over and over by ReZound on action dialogs
@@ -42,28 +45,72 @@ FXDEFMAP(FXTextParamValue) FXTextParamValueMap[]=
 
 FXIMPLEMENT(FXTextParamValue,FXHorizontalFrame,FXTextParamValueMap,ARRAYNUMBER(FXTextParamValueMap))
 
-FXTextParamValue::FXTextParamValue(FXComposite *p,int opts,const char *title,const double _minValue,const double _maxValue) :
-	FXHorizontalFrame(p,opts|FRAME_RIDGE | LAYOUT_FILL_X|LAYOUT_CENTER_Y,0,0,0,0, 6,6,2,4, 2,0),
+FXTextParamValue::FXTextParamValue(FXComposite *p,int opts,const char *title,const double _initialValue,const double _minValue,const double _maxValue) :
+	FXHorizontalFrame(p,opts|FRAME_RAISED | LAYOUT_FILL_X|LAYOUT_CENTER_Y,0,0,0,0, 2,2,4,4, 0,0),
 
+	isNumeric(true),
+	
+	initialValue(istring(_initialValue)),
 	minValue(_minValue),
 	maxValue(_maxValue),
 
 	titleLabel(new FXLabel(this,title,NULL,LABEL_NORMAL|LAYOUT_CENTER_Y)),
-	valueTextBox(new FXTextField(this,8,this,ID_VALUE_TEXTBOX, TEXTFIELD_NORMAL | LAYOUT_CENTER_Y|LAYOUT_FILL_X)),
-	valueSpinner(new FXSpinner(this,0,this,ID_VALUE_SPINNER, SPIN_NORMAL|SPIN_NOTEXT | LAYOUT_FILL_Y)),
-	unitsLabel(new FXLabel(this,"",NULL,LABEL_NORMAL|LAYOUT_CENTER_Y))
+	valueTextBox(new FXTextField(this,8,this,ID_VALUE_TEXTBOX, TEXTFIELD_NORMAL | LAYOUT_CENTER_Y)),
+	valueSpinner(new FXSpinner(this,0,this,ID_VALUE_SPINNER, SPIN_NORMAL|SPIN_NOTEXT | LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0)),
+	unitsLabel(new FXLabel(this,"",NULL,LABEL_NORMAL|LAYOUT_CENTER_Y)),
+
+	textFont(getApp()->getNormalFont())
 {
+	valueTextBox->setNumColumns((FXint)(log10(maxValue)+1));
+
+	// create a smaller font to use 
+        FXFontDesc d;
+        textFont->getFontDesc(d);
+        d.size-=10;
+        textFont=new FXFont(getApp(),d);
+
 	valueSpinner->setRange(-10,10);
+	setValue(_initialValue);
+
+	//setFontOfAllChildren(this,textFont);
+}
+
+FXTextParamValue::FXTextParamValue(FXComposite *p,int opts,const char *title,const string _initialValue) :
+	FXHorizontalFrame(p,opts|FRAME_RAISED | LAYOUT_FILL_X|LAYOUT_CENTER_Y,0,0,0,0, 2,2,4,4, 0,0),
+
+	isNumeric(false),
+
+	initialValue(_initialValue),
+
+	titleLabel(new FXLabel(this,title,NULL,LABEL_NORMAL|LAYOUT_CENTER_Y)),
+	valueTextBox(new FXTextField(this,8,this,ID_VALUE_TEXTBOX, TEXTFIELD_NORMAL | LAYOUT_CENTER_Y|LAYOUT_FILL_X)),
+	valueSpinner(NULL),
+	unitsLabel(NULL),
+
+	textFont(getApp()->getNormalFont())
+{
+	// create a smaller font to use 
+        FXFontDesc d;
+        textFont->getFontDesc(d);
+        d.size-=10;
+        textFont=new FXFont(getApp(),d);
+
+	//setFontOfAllChildren(this,textFont);
+	setText(_initialValue);
 }
 
 FXTextParamValue::~FXTextParamValue()
 {
+	delete textFont;
 }
 
 void FXTextParamValue::setUnits(const FXString units,const FXString tipText)
 {
-	unitsLabel->setText(units);
-	unitsLabel->setTipText(tipText);
+	if(isNumeric)
+	{
+		unitsLabel->setText(units);
+		unitsLabel->setTipText(tipText);
+	}
 }
 
 long FXTextParamValue::onValueSpinnerChange(FXObject *sender,FXSelector sel,void *ptr)
@@ -74,7 +121,9 @@ long FXTextParamValue::onValueSpinnerChange(FXObject *sender,FXSelector sel,void
 	valueTextBox->setText(istring(v).c_str());
 
 	validateRange();
-	return(1);
+	
+	changed();
+	return 1;
 }
 
 long FXTextParamValue::onValueTextBoxChange(FXObject *sender,FXSelector sel,void *ptr)
@@ -82,30 +131,50 @@ long FXTextParamValue::onValueTextBoxChange(FXObject *sender,FXSelector sel,void
 	// just verity that a value character was typed???
 	
 	validateRange();
-	return(1);
+	changed();
+	return 1;
 }
 
 const double FXTextParamValue::getValue()
 {
 	validateRange();
-	return(atof(valueTextBox->getText().text()));
+	return atof(valueTextBox->getText().text());
 }
 
 void FXTextParamValue::setValue(const double value)
 {
 	valueTextBox->setText(istring(value).c_str());
 	validateRange();
+	changed();
+}
+
+const string FXTextParamValue::getText()
+{
+	validateRange();
+	return valueTextBox->getText().text();
+}
+
+void FXTextParamValue::setText(const string value)
+{
+	validateRange();
+	valueTextBox->setText(value.c_str());
+	changed();
 }
 
 void FXTextParamValue::setRange(const double _minValue,const double _maxValue)
 {
 	minValue=_minValue;
 	maxValue=_maxValue;
+	valueTextBox->setNumColumns((FXint)(log10(maxValue)+1));
 	validateRange();
+	changed();
 }
 
 void FXTextParamValue::validateRange()
 {
+	if(!isNumeric)
+		return;
+
 	double v=atof(valueTextBox->getText().text());
 
 	if(v<minValue)
@@ -118,32 +187,45 @@ void FXTextParamValue::validateRange()
 
 const string FXTextParamValue::getTitle() const
 {
-	return(titleLabel->getText().text());
+	return titleLabel->getText().text();
 }
 
 void FXTextParamValue::setTipText(const FXString &text)
 {
 	titleLabel->setTipText(text);	
 	valueTextBox->setTipText(text);
-	valueSpinner->setTipText(text);
+	if(isNumeric)
+		valueSpinner->setTipText(text);
 }
 
 FXString FXTextParamValue::getTipText() const
 {
-	return(titleLabel->getTipText());	
+	return titleLabel->getTipText();
 }
 
 void FXTextParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 {
 	const string key=prefix+DOT+getTitle()+DOT;
-	const string v=f->getValue((key+"value").c_str());
-	setValue(atof(v.c_str()));
+	const string v= f->keyExists((key+"value").c_str()) ? f->getValue((key+"value").c_str()) : initialValue;
+	if(isNumeric)
+		setValue(atof(v.c_str()));
+	else
+		setText(v);
+	changed();
 }
 
 void FXTextParamValue::writeToFile(const string &prefix,CNestedDataFile *f)
 {
 	const string key=prefix+DOT+getTitle()+DOT;
-	f->createKey((key+"value").c_str(),istring(getValue()));
+	if(isNumeric)
+		f->createKey((key+"value").c_str(),istring(getValue()));
+	else
+		f->createKey((key+"value").c_str(),getText());
 }
 
+void FXTextParamValue::changed()
+{
+	if(target)
+		target->handle(this,FXSEL(SEL_COMMAND,getSelector()),NULL);
+}
 

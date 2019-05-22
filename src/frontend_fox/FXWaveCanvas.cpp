@@ -399,12 +399,12 @@ const sample_pos_t FXWaveCanvas::getHorzOffsetToCenterStopPos() const
 	return (sample_pos_t)max((sample_fpos_t)0.0,sample_fpos_round(loadedSound->channel->getStopPosition()/horzZoomFactor)-getWidth()/2);
 }
 
-void FXWaveCanvas::showAmount(double seconds,sample_pos_t pos)
+void FXWaveCanvas::showAmount(double seconds,sample_pos_t pos,int marginPixels)
 {
 	if(seconds<(loadedSound->sound->getLength()/loadedSound->sound->getSampleRate()))
 	{
-		horzZoomFactor=max((sample_fpos_t)1.0,((sample_fpos_t)seconds*loadedSound->sound->getSampleRate())/getWidth());
-		horzOffset=(sample_pos_t)(max((sample_pos_t)0,min(loadedSound->sound->getLength(),pos))/horzZoomFactor);
+		horzZoomFactor=max((sample_fpos_t)1.0,((sample_fpos_t)seconds*loadedSound->sound->getSampleRate())/(getWidth()-(2*marginPixels)));
+		horzOffset=(sample_pos_t)(max((sample_fpos_t)0,min((sample_fpos_t)loadedSound->sound->getLength()-getWidth()+RIGHT_MARGIN,(sample_fpos_t)pos-(marginPixels*horzZoomFactor)))/horzZoomFactor);
 		prevHorzZoomFactor_horzOffset=horzZoomFactor;
 
 		// recalc the percent value so that getHorzZoom() will return the correct value
@@ -489,6 +489,7 @@ const FXint FXWaveCanvas::getCueScreenX(size_t cueIndex) const
 
 const sample_pos_t FXWaveCanvas::getCueTimeFromX(FXint screenX) const
 {
+	// ??? uh this is VERY similar to getSamplePosForScreenX
 	return((sample_pos_t)(((sample_fpos_t)screenX+(sample_fpos_t)horzOffset)*horzZoomFactor));
 
 }
@@ -498,6 +499,7 @@ const sample_pos_t FXWaveCanvas::getCueTimeFromX(FXint screenX) const
 
 const sample_pos_t FXWaveCanvas::getSamplePosForScreenX(FXint X) const
 {
+	// ??? uh this is VERY similar to getCueTimeFromX
 	sample_fpos_t p=sample_fpos_floor(((sample_fpos_t)(X+horzOffset))*horzZoomFactor);
 	if(p<0)
 		p=0.0;

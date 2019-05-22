@@ -1,4 +1,5 @@
 - File Formats:
+	- (soon support for libsndfile in place of libaudiofile)
 	- Native ReZound
 	- WAVE			(libaudiofile)
 	- AIFF/AIFF-C		(libaudiofile)
@@ -11,6 +12,12 @@
 - Audio I/O Interfaces
 	- native OSS
 	- PortAudio ( http://www.portaudio.com )
+
+- File Operations
+	- Standard: New, Open, Save, Save As, Close, Revert
+	- Reopen History
+	- Save Selection As
+	- Save As Multiple Files
 
 - Fast Editing of Large Files
 
@@ -25,6 +32,7 @@
 - Recording
 	- Realtime Level Meters (display also when not recording)
 	- Record Time Limit Setting
+	- Record can Actually Start when a Given Audio Threshold is Met
 	- Start and Pause Recording
 	- Can Reset the Record Position to the Beginning While Recording
 	- Add Cue Positions While Recording
@@ -41,10 +49,15 @@
 	- Jump to Previous Cue
 	- Jump to Next Cue
 	- Shuttle Play Position Control
+	- Play from Mouse Cursor (hold ctrl and use left and right mouse buttons)
+
+- Playback Audio Level Meters and Frequency Analyzer
 
 - Full Featured Editing Tools
 	- Copy
+	- Copy to New
 	- Cut
+	- Cut to New
 	- Delete
 	- Crop
 	- Paste
@@ -55,6 +68,7 @@
 		- Mix
 		- Limited Mix
 		- Fit Mix
+		- Paste to New
 	- Insert Silence
 	- Mute
 	- Add Channels
@@ -77,7 +91,8 @@
 
 - Convolution
 	- For Various Effects Like Reverb and Applying Room Characteristics
-	- Custom Filters
+
+- Arbitrary FIR Filter (the user can draw their own frequency response)
 
 - IIR Single Pole Filters
 	- Lowpass
@@ -92,6 +107,8 @@
 
 - Looping Tools (much more to come)
 	- Make Selection Symetric
+	- Add N Equally Spaced Cues
+	- Add a Cue Every X Seconds
 
 - Mastering/Remastering Tools (more to come)
 	- Remove DC Component

@@ -18,54 +18,33 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __CSoundListWindow_H__
-#define __CSoundListWindow_H__
+#ifndef __LoopingActionDialogs_H__
+#define __LoopingActionDialogs_H__
 
 #include "../../config/common.h"
 #include "fox_compat.h"
 
-#include <fox/fx.h>
+#include "CActionParamDialog.h"
 
-class CSoundListWindow;
-extern CSoundListWindow *gSoundListWindow;
 
-class CSoundWindow;
+// --- add cues --------------------------
 
-class CSoundListWindow : public FXTopWindow
+class CAddNCuesDialog : public CActionParamDialog
 {
-	FXDECLARE(CSoundListWindow);
 public:
-
-	CSoundListWindow(FXWindow *mainWindow);
-	virtual ~CSoundListWindow();
-
-	enum 
-	{
-		ID_SOUND_LIST=FXTopWindow::ID_LAST,
-		ID_LAST
-	};
-
-	virtual void show();
-	virtual void hide();
-
-	long onSoundListChange(FXObject *sender,FXSelector sel,void *ptr);
-
-	long onCloseWindow(FXObject *sender,FXSelector sel,void *ptr);
-
-	void addSoundWindow(CSoundWindow *window);
-	void removeSoundWindow(CSoundWindow *window);
-	void updateWindowName(CSoundWindow *window);
-
-protected:
-	CSoundListWindow() {}
-
-private:
-
-	FXPacker *contents;
-		FXComposite *soundListFrame;
-			FXList *soundList;
-
-	void hideOrShow();
+	CAddNCuesDialog(FXWindow *mainWindow);
+	virtual ~CAddNCuesDialog(){}
 };
+
+class CAddTimedCuesDialog : public CActionParamDialog
+{
+public:
+	CAddTimedCuesDialog(FXWindow *mainWindow);
+	virtual ~CAddTimedCuesDialog(){}
+};
+
+
+
+
 
 #endif

@@ -32,6 +32,8 @@
 #include "../backend/CActionParameters.h"
 #include "../backend/CActionSound.h"
 
+#include "CFOXIcons.h"
+
 #define DOT (CNestedDataFile::delimChar)
 
 
@@ -45,7 +47,9 @@ FXDEFMAP(CActionParamDialog) CActionParamDialogMap[]=
 	FXMAPFUNC(SEL_COMMAND,		CActionParamDialog::ID_USER_PRESET_USE_BUTTON,	CActionParamDialog::onPresetUseButton),
 	FXMAPFUNC(SEL_COMMAND,		CActionParamDialog::ID_USER_PRESET_SAVE_BUTTON,	CActionParamDialog::onPresetSaveButton),
 	FXMAPFUNC(SEL_COMMAND,		CActionParamDialog::ID_USER_PRESET_REMOVE_BUTTON,CActionParamDialog::onPresetRemoveButton),
-	FXMAPFUNC(SEL_DOUBLECLICKED,	CActionParamDialog::ID_USER_PRESET_LIST,	CActionParamDialog::onPresetUseButton),
+	FXMAPFUNC(SEL_DOUBLECLICKED,CActionParamDialog::ID_USER_PRESET_LIST,		CActionParamDialog::onPresetUseButton),
+
+	FXMAPFUNC(SEL_COMMAND,		CActionParamDialog::ID_EXPLAIN_BUTTON,			CActionParamDialog::onExplainButton),
 };
 		
 
@@ -61,13 +65,15 @@ FXIMPLEMENT(CActionParamDialog,FXModalDialogBox,CActionParamDialogMap,ARRAYNUMBE
 
 CActionParamDialog::CActionParamDialog(FXWindow *mainWindow,const FXString title,bool showPresetPanel) :
 	FXModalDialogBox(mainWindow,title,0,0,FXModalDialogBox::ftVertical),
+
+	explainationButtonCreated(false),
 	
 	splitter(new FXSplitter(getFrame(),SPLITTER_VERTICAL|SPLITTER_REVERSED | LAYOUT_FILL_X|LAYOUT_FILL_Y)),
 		topPanel(new FXHorizontalFrame(splitter,FRAME_RAISED|FRAME_THICK, 0,0,0,0, 0,0,0,0, 0,0)),
 			leftMargin(new FXFrame(topPanel,FRAME_NONE|LAYOUT_FILL_Y|LAYOUT_FIX_WIDTH,0,0,0,0, 0,0,0,0)),
-			controlsFrame(new FXPacker(topPanel,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0)),
+			controlsFrame(new FXPacker(topPanel,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0)),
 			rightMargin(new FXFrame(topPanel,FRAME_NONE|LAYOUT_FILL_Y|LAYOUT_FIX_WIDTH,0,0,0,0, 0,0,0,0)),
-		presetsFrame(showPresetPanel ? new FXHorizontalFrame(splitter,FRAME_RAISED|FRAME_THICK | LAYOUT_FILL_X, 0,0,0,0, 5,5,5,5) : NULL),
+		presetsFrame(showPresetPanel ? new FXHorizontalFrame(splitter,FRAME_RAISED|FRAME_THICK | LAYOUT_FILL_X, 0,0,0,0, 2,2,2,2) : NULL),
 			nativePresetList(NULL),
 			userPresetList(NULL)
 {
@@ -82,7 +88,7 @@ CActionParamDialog::CActionParamDialog(FXWindow *mainWindow,const FXString title
 			if(gSysPresetsFile->getArraySize((getTitle()+DOT+"names").text())>0)
 			{
 				// native preset stuff
-				FXPacker *listFrame=new FXPacker(presetsFrame,FRAME_SUNKEN|FRAME_THICK|LAYOUT_FIX_WIDTH | LAYOUT_FILL_Y, 0,0,200,0, 0,0,0,0, 0,0); // had to do this because FXList won't take that frame style
+				FXPacker *listFrame=new FXPacker(presetsFrame,FRAME_SUNKEN|FRAME_THICK|LAYOUT_FIX_WIDTH | LAYOUT_FILL_Y, 0,0,210,0, 0,0,0,0, 0,0); // had to do this because FXList won't take that frame style
 					nativePresetList=new FXList(listFrame,4,this,ID_NATIVE_PRESET_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y);
 				new FXButton(presetsFrame,"&Use\tOr Double-Click an Item in the List",NULL,this,ID_NATIVE_PRESET_BUTTON);
 			}
@@ -94,7 +100,7 @@ CActionParamDialog::CActionParamDialog(FXWindow *mainWindow,const FXString title
 		}
 
 		// user preset stuff
-		FXPacker *listFrame=new FXPacker(presetsFrame,FRAME_SUNKEN|FRAME_THICK|LAYOUT_FIX_WIDTH | LAYOUT_FILL_Y, 0,0,200,0, 0,0,0,0, 0,0); // had to do this because FXList won't take that frame style
+		FXPacker *listFrame=new FXPacker(presetsFrame,FRAME_SUNKEN|FRAME_THICK|LAYOUT_FIX_WIDTH | LAYOUT_FILL_Y, 0,0,210,0, 0,0,0,0, 0,0); // had to do this because FXList won't take that frame style
 			userPresetList=new FXList(listFrame,4,this,ID_USER_PRESET_LIST,LIST_BROWSESELECT | LAYOUT_FILL_X|LAYOUT_FILL_Y);
 		FXPacker *buttonGroup=new FXVerticalFrame(presetsFrame);
 			new FXButton(buttonGroup,"&Use\tOr Double-Click an Item in the List",NULL,this,ID_USER_PRESET_USE_BUTTON,BUTTON_NORMAL|LAYOUT_FILL_X);
@@ -113,21 +119,22 @@ CActionParamDialog::~CActionParamDialog()
 {
 }
 
-void *CActionParamDialog::newHorzPanel(void *parent,bool createBorder)
+void CActionParamDialog::create()
 {
-	if(parent==NULL)
-	{
-		if(controlsFrame->numChildren()>0)
-			throw runtime_error(string(__func__)+" -- this method has already been called with a NULL parameter");
-		parent=controlsFrame;
-	}
-	if(createBorder)
-		return new FXHorizontalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 5,5,5,5);
-	else
-		return new FXHorizontalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0);
+	if(!explainationButtonCreated && getExplaination()!="")
+		new FXButton(getButtonFrame(),"Explain",FOXIcons->explain,this,ID_EXPLAIN_BUTTON,FRAME_RAISED|FRAME_THICK | JUSTIFY_NORMAL | ICON_ABOVE_TEXT | LAYOUT_FIX_WIDTH, 0,0,60,0, 2,2,2,2);
+	explainationButtonCreated=true;
+	
+	FXModalDialogBox::create();
 }
 
-void *CActionParamDialog::newVertPanel(void *parent,bool createBorder)
+long CActionParamDialog::onExplainButton(FXObject *sender,FXSelector sel,void *ptr)
+{
+	Message(getExplaination());
+	return 1;
+}
+
+FXPacker *CActionParamDialog::newHorzPanel(void *parent,bool createBorder)
 {
 	if(parent==NULL)
 	{
@@ -136,9 +143,23 @@ void *CActionParamDialog::newVertPanel(void *parent,bool createBorder)
 		parent=controlsFrame;
 	}
 	if(createBorder)
-		return new FXVerticalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 5,5,5,5);
+		return new FXHorizontalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0);
 	else
-		return new FXVerticalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0);
+		return new FXHorizontalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0);
+}
+
+FXPacker *CActionParamDialog::newVertPanel(void *parent,bool createBorder)
+{
+	if(parent==NULL)
+	{
+		if(controlsFrame->numChildren()>0)
+			throw runtime_error(string(__func__)+" -- this method has already been called with a NULL parameter");
+		parent=controlsFrame;
+	}
+	if(createBorder)
+		return new FXVerticalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 2,2,2,2, 0,0);
+	else
+		return new FXVerticalFrame((FXPacker *)parent,FRAME_NONE | LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 0,0,0,0, 0,0);
 }
 
 void CActionParamDialog::addSlider(void *parent,const string name,const string units,FXConstantParamValue::f_at_xs interpretValue,FXConstantParamValue::f_at_xs uninterpretValue,f_at_x optRetValueConv,const double initialValue,const int minScalar,const int maxScalar,const int initScalar,bool showInverseButton)
@@ -148,28 +169,46 @@ void CActionParamDialog::addSlider(void *parent,const string name,const string u
 	FXConstantParamValue *slider=new FXConstantParamValue(interpretValue,uninterpretValue,minScalar,maxScalar,initScalar,showInverseButton,(FXPacker *)parent,0,name.c_str());
 	slider->setUnits(units.c_str());
 	slider->setValue(initialValue);
-	parameters.push_back(pair<ParamTypes,void *>(ptConstant,(void *)slider));
+	parameters.push_back(make_pair(ptConstant,(void *)slider));
 	retValueConvs.push_back(optRetValueConv);
 }
 
-void CActionParamDialog::addTextEntry(void *parent,const string name,const string units,const double initialValue,const double minValue,const double maxValue,const string unitsTipText)
+void CActionParamDialog::addNumericTextEntry(void *parent,const string name,const string units,const double initialValue,const double minValue,const double maxValue,const string unitsTipText)
 {
 	if(parent==NULL)
 		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
-	FXTextParamValue *textEntry=new FXTextParamValue((FXPacker *)parent,0,name.c_str(),minValue,maxValue);
+	FXTextParamValue *textEntry=new FXTextParamValue((FXPacker *)parent,0,name.c_str(),initialValue,minValue,maxValue);
 	textEntry->setUnits(units.c_str(),unitsTipText.c_str());
-	textEntry->setValue(initialValue);
-	parameters.push_back(pair<ParamTypes,void *>(ptText,(void *)textEntry));
+	parameters.push_back(make_pair(ptNumericText,(void *)textEntry));
 	retValueConvs.push_back(NULL);
 }
 
-void CActionParamDialog::addFilenameEntry(void *parent,const string name,const string initialFilename,const string tipText)
+void CActionParamDialog::addStringTextEntry(void *parent,const string name,const string initialValue,const string unitsTipText)
 {
 	if(parent==NULL)
 		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
-	FXFilenameParamValue *filenameEntry=new FXFilenameParamValue((FXPacker *)parent,0,name.c_str(),initialFilename);
-	filenameEntry->setTipText(tipText.c_str());
-	parameters.push_back(pair<ParamTypes,void *>(ptFilename,(void *)filenameEntry));
+	FXTextParamValue *textEntry=new FXTextParamValue((FXPacker *)parent,0,name.c_str(),initialValue);
+	parameters.push_back(make_pair(ptStringText,(void *)textEntry));
+	retValueConvs.push_back(NULL);
+}
+
+FXTextParamValue *CActionParamDialog::getTextParam(const string name)
+{
+	for(size_t t=0;t<parameters.size();t++)
+	{
+		if((parameters[t].first==ptStringText || parameters[t].first==ptNumericText) && ((FXTextParamValue *)parameters[t].second)->getTitle()==name)
+			return (FXTextParamValue *)parameters[t].second;
+	}
+	throw runtime_error(string(__func__)+" -- no text param found named "+name);
+}
+
+void CActionParamDialog::addDiskEntityEntry(void *parent,const string name,const string initialEntityName,FXDiskEntityParamValue::DiskEntityTypes entityType,const string tipText)
+{
+	if(parent==NULL)
+		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
+	FXDiskEntityParamValue *diskEntityEntry=new FXDiskEntityParamValue((FXPacker *)parent,0,name.c_str(),initialEntityName,entityType);
+	diskEntityEntry->setTipText(tipText.c_str());
+	parameters.push_back(make_pair(ptDiskEntity,(void *)diskEntityEntry));
 	retValueConvs.push_back(NULL);
 }
 
@@ -180,7 +219,7 @@ void CActionParamDialog::addComboTextEntry(void *parent,const string name,const 
 		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
 	FXComboTextParamValue *comboTextEntry=new FXComboTextParamValue((FXPacker *)parent,0,name.c_str(),items,isEditable);
 	comboTextEntry->setTipText(tipText.c_str());
-	parameters.push_back(pair<ParamTypes,void *>(ptComboText,(void *)comboTextEntry));
+	parameters.push_back(make_pair(ptComboText,(void *)comboTextEntry));
 	retValueConvs.push_back(NULL);
 }
 
@@ -189,9 +228,9 @@ FXComboTextParamValue *CActionParamDialog::getComboText(const string name)
 	for(size_t t=0;t<parameters.size();t++)
 	{
 		if(parameters[t].first==ptComboText && ((FXComboTextParamValue *)parameters[t].second)->getTitle()==name)
-			return((FXComboTextParamValue *)parameters[t].second);
+			return (FXComboTextParamValue *)parameters[t].second;
 	}
-	return(NULL);
+	throw runtime_error(string(__func__)+" -- no combo text param found named "+name);
 }
 
 
@@ -201,7 +240,7 @@ void CActionParamDialog::addCheckBoxEntry(void *parent,const string name,const b
 		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
 	FXCheckBoxParamValue *checkBoxEntry=new FXCheckBoxParamValue((FXPacker *)parent,0,name.c_str(),checked);
 	checkBoxEntry->setTipText(tipText.c_str());
-	parameters.push_back(pair<ParamTypes,void *>(ptCheckBox,(void *)checkBoxEntry));
+	parameters.push_back(make_pair(ptCheckBox,(void *)checkBoxEntry));
 	retValueConvs.push_back(NULL);
 }
 
@@ -212,7 +251,7 @@ void CActionParamDialog::addGraph(void *parent,const string name,const string ho
 	FXGraphParamValue *graph=new FXGraphParamValue(name.c_str(),minScalar,maxScalar,initialScalar,(FXPacker *)parent,LAYOUT_FILL_X|LAYOUT_FILL_Y);
 	graph->setHorzParameters(horzAxisLabel,horzUnits,horzInterpretValue,horzUninterpretValue);
 	graph->setVertParameters(vertAxisLabel,vertUnits,vertInterpretValue,vertUninterpretValue);
-	parameters.push_back(pair<ParamTypes,void *>(ptGraph,(void *)graph));
+	parameters.push_back(make_pair(ptGraph,(void *)graph));
 	retValueConvs.push_back(optRetValueConv);
 }
 
@@ -222,8 +261,18 @@ void CActionParamDialog::addGraphWithWaveform(void *parent,const string name,con
 		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
 	FXGraphParamValue *graph=new FXGraphParamValue(name.c_str(),minScalar,maxScalar,initialScalar,(FXPacker *)parent,LAYOUT_FILL_X|LAYOUT_FILL_Y);
 	graph->setVertParameters(vertAxisLabel,vertUnits,vertInterpretValue,vertUninterpretValue);
-	parameters.push_back(pair<ParamTypes,void *>(ptGraphWithWaveform,(void *)graph));
+	parameters.push_back(make_pair(ptGraphWithWaveform,(void *)graph));
 	retValueConvs.push_back(optRetValueConv);
+}
+
+FXGraphParamValue *CActionParamDialog::getGraphParam(const string name)
+{
+	for(size_t t=0;t<parameters.size();t++)
+	{
+		if((parameters[t].first==ptGraph || parameters[t].first==ptGraphWithWaveform) && ((FXGraphParamValue *)parameters[t].second)->getTitle()==name)
+			return (FXGraphParamValue *)parameters[t].second;
+	}
+	throw runtime_error(string(__func__)+" -- no graph param found named "+name);
 }
 
 void CActionParamDialog::addLFO(void *parent,const string name,const string ampUnits,const string ampTitle,const double maxAmp,const string freqUnits,const double maxFreq,const bool hideBipolarLFOs)
@@ -232,7 +281,7 @@ void CActionParamDialog::addLFO(void *parent,const string name,const string ampU
 		throw runtime_error(string(__func__)+" -- parent was passed NULL -- used CActionParameValue::newHorzPanel() or newVertPanel() to obtain a parent parameter to pass");
 	FXLFOParamValue *LFOEntry=new FXLFOParamValue((FXPacker *)parent,0,name.c_str(),ampUnits,ampTitle,maxAmp,freqUnits,maxFreq,hideBipolarLFOs);
 	//LFOEntry->setTipText(tipText.c_str());
-	parameters.push_back(pair<ParamTypes,void *>(ptLFO,(void *)LFOEntry));
+	parameters.push_back(make_pair(ptLFO,(void *)LFOEntry));
 	retValueConvs.push_back(NULL);
 }
 
@@ -250,8 +299,12 @@ void CActionParamDialog::setValue(size_t index,const double value)
 		((FXConstantParamValue *)parameters[index].second)->setValue(value);
 		break;
 
-	case ptText:
+	case ptNumericText:
 		((FXTextParamValue *)parameters[index].second)->setValue(value);
+		break;
+
+	case ptStringText:
+		((FXTextParamValue *)parameters[index].second)->setText(istring(value));
 		break;
 
 	case ptComboText:
@@ -276,7 +329,7 @@ void CActionParamDialog::setValue(size_t index,const double value)
 		*/
 
 	default:
-		throw(runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first)));
+		throw runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first));
 	}
 }
 
@@ -289,12 +342,13 @@ void CActionParamDialog::setControlHeight(size_t index,const size_t height)
 		((FXConstantParamValue *)parameters[index].second)->setHeight(height);
 		break;
 
-	case ptText:
+	case ptNumericText:
+	case ptStringText:
 		((FXTextParamValue *)parameters[index].second)->setHeight(height);
 		break;
 
-	case ptFilename:
-		((FXFilenameParamValue *)parameters[index].second)->setHeight(height);
+	case ptDiskEntity:
+		((FXDiskEntityParamValue *)parameters[index].second)->setHeight(height);
 		break;
 
 	case ptComboText:
@@ -315,7 +369,7 @@ void CActionParamDialog::setControlHeight(size_t index,const size_t height)
 		break;
 
 	default:
-		throw(runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first)));
+		throw runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first));
 	}
 }
 
@@ -326,11 +380,12 @@ const size_t CActionParamDialog::getControlHeight(size_t index) const
 	case ptConstant:
 		return ((FXConstantParamValue *)parameters[index].second)->getHeight();
 
-	case ptText:
+	case ptNumericText:
+	case ptStringText:
 		return ((FXTextParamValue *)parameters[index].second)->getHeight();
 
-	case ptFilename:
-		return ((FXFilenameParamValue *)parameters[index].second)->getHeight();
+	case ptDiskEntity:
+		return ((FXDiskEntityParamValue *)parameters[index].second)->getHeight();
 
 	case ptComboText:
 		return ((FXComboTextParamValue *)parameters[index].second)->getHeight();
@@ -346,25 +401,28 @@ const size_t CActionParamDialog::getControlHeight(size_t index) const
 		return ((FXGraphParamValue *)parameters[index].second)->getHeight();
 
 	default:
-		throw(runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first)));
+		throw runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first));
 	}
 }
 #endif
 
-void CActionParamDialog::setTipText(size_t index,const string tipText)
+void CActionParamDialog::setTipText(const string name,const string tipText)
 {
+	const unsigned index=findParamByName(name);
+	
 	switch(parameters[index].first)
 	{
 	case ptConstant:
 		((FXConstantParamValue *)parameters[index].second)->setTipText(tipText.c_str());
 		break;
 
-	case ptText:
+	case ptNumericText:
+	case ptStringText:
 		((FXTextParamValue *)parameters[index].second)->setTipText(tipText.c_str());
 		break;
 
-	case ptFilename:
-		((FXFilenameParamValue *)parameters[index].second)->setTipText(tipText.c_str());
+	case ptDiskEntity:
+		((FXDiskEntityParamValue *)parameters[index].second)->setTipText(tipText.c_str());
 		break;
 
 	case ptComboText:
@@ -389,7 +447,7 @@ void CActionParamDialog::setTipText(size_t index,const string tipText)
 */
 
 	default:
-		throw(runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first)));
+		throw runtime_error(string(__func__)+" -- unhandled or unimplemented parameter type: "+istring(parameters[index].first));
 	}
 }
 
@@ -428,7 +486,7 @@ bool CActionParamDialog::show(CActionSound *actionSound,CActionParameters *actio
 				}
 				break;
 
-			case ptText:
+			case ptNumericText:
 				{
 					FXTextParamValue *textEntry=(FXTextParamValue *)parameters[t].second;
 					double ret=textEntry->getValue();
@@ -440,12 +498,23 @@ bool CActionParamDialog::show(CActionSound *actionSound,CActionParameters *actio
 				}
 				break;
 
-			case ptFilename:
+			case ptStringText:
 				{
-					FXFilenameParamValue *filenameEntry=(FXFilenameParamValue *)parameters[t].second;
-					const string ret=filenameEntry->getFilename();
-					actionParameters->addStringParameter(filenameEntry->getTitle(),ret);	
-					actionParameters->addBoolParameter(filenameEntry->getTitle()+" OpenAsRaw",filenameEntry->getOpenAsRaw());	
+					FXTextParamValue *textEntry=(FXTextParamValue *)parameters[t].second;
+					const string ret=textEntry->getText();
+					actionParameters->addStringParameter(textEntry->getTitle(),ret);	
+				}
+				break;
+
+			case ptDiskEntity:
+				{
+					FXDiskEntityParamValue *diskEntityEntry=(FXDiskEntityParamValue *)parameters[t].second;
+					const string ret=diskEntityEntry->getEntityName();
+
+					actionParameters->addStringParameter(diskEntityEntry->getTitle(),ret);	
+
+					if(diskEntityEntry->getEntityType()==FXDiskEntityParamValue::detAudioFilename)
+						actionParameters->addBoolParameter(diskEntityEntry->getTitle()+" OpenAsRaw",diskEntityEntry->getOpenAsRaw());	
 				}
 				break;
 
@@ -491,7 +560,7 @@ bool CActionParamDialog::show(CActionSound *actionSound,CActionParameters *actio
 				break;
 
 			default:
-				throw(runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first)));
+				throw runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first));
 			}
 		}
 
@@ -510,19 +579,19 @@ bool CActionParamDialog::show(CActionSound *actionSound,CActionParameters *actio
 	getApp()->repaint(); // force redraws from disappearing dialogs now
 #endif
 
-	return(retval);
+	return retval;
 }
 
 long CActionParamDialog::onPresetUseButton(FXObject *sender,FXSelector sel,void *ptr)
 {
 	CNestedDataFile *presetsFile;
 	FXList *listBox;
-	if(SELID(sel)==ID_NATIVE_PRESET_BUTTON || SELID(sel)==ID_NATIVE_PRESET_LIST)
+	if(FXSELID(sel)==ID_NATIVE_PRESET_BUTTON || FXSELID(sel)==ID_NATIVE_PRESET_LIST)
 	{
 		presetsFile=gSysPresetsFile;
 		listBox=nativePresetList;
 	}
-	else //if(SELID(sel)==ID_USER_PRESET_BUTTON || SELID(sel)==ID_USER_PRESET_LIST)
+	else //if(FXSELID(sel)==ID_USER_PRESET_BUTTON || FXSELID(sel)==ID_USER_PRESET_LIST)
 	{
 		presetsFile=gUserPresetsFile;
 		listBox=userPresetList;
@@ -533,7 +602,7 @@ long CActionParamDialog::onPresetUseButton(FXObject *sender,FXSelector sel,void 
 		if(listBox->getCurrentItem()<0)
 		{
 			gStatusComm->beep();
-			return(1);
+			return 1;
 		}
 		
 		const string name=string(listBox->getItemText(listBox->getCurrentItem()).text()).substr(4);
@@ -547,12 +616,13 @@ long CActionParamDialog::onPresetUseButton(FXObject *sender,FXSelector sel,void 
 				((FXConstantParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
 				break;
 
-			case ptText:
+			case ptNumericText:
+			case ptStringText:
 				((FXTextParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
 				break;
 
-			case ptFilename:
-				((FXFilenameParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
+			case ptDiskEntity:
+				((FXDiskEntityParamValue *)parameters[t].second)->readFromFile(title,presetsFile);
 				break;
 
 			case ptComboText:
@@ -573,7 +643,7 @@ long CActionParamDialog::onPresetUseButton(FXObject *sender,FXSelector sel,void 
 				break;
 
 			default:
-				throw(runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first)));
+				throw runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first));
 			}
 		}
 	}
@@ -582,7 +652,7 @@ long CActionParamDialog::onPresetUseButton(FXObject *sender,FXSelector sel,void 
 		Error(e.what());
 	}
 
-	return(1);
+	return 1;
 }
 
 long CActionParamDialog::onPresetSaveButton(FXObject *sender,FXSelector sel,void *ptr)
@@ -619,7 +689,7 @@ long CActionParamDialog::onPresetSaveButton(FXObject *sender,FXSelector sel,void
 			{
 				alreadyExists=true;
 				if(Question("Overwrite Existing Preset '"+name+"'",yesnoQues)!=yesAns)
-					return(1);
+					return 1;
 			}
 
 			for(unsigned t=0;t<parameters.size();t++)
@@ -630,12 +700,13 @@ long CActionParamDialog::onPresetSaveButton(FXObject *sender,FXSelector sel,void
 					((FXConstantParamValue *)parameters[t].second)->writeToFile(title,presetsFile);
 					break;
 
-				case ptText:
+				case ptNumericText:
+				case ptStringText:
 					((FXTextParamValue *)parameters[t].second)->writeToFile(title,presetsFile);
 					break;
 
-				case ptFilename:
-					((FXFilenameParamValue *)parameters[t].second)->writeToFile(title,presetsFile);
+				case ptDiskEntity:
+					((FXDiskEntityParamValue *)parameters[t].second)->writeToFile(title,presetsFile);
 					break;
 
 				case ptComboText:
@@ -656,7 +727,7 @@ long CActionParamDialog::onPresetSaveButton(FXObject *sender,FXSelector sel,void
 					break;
 
 				default:
-					throw(runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first)));
+					throw runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first));
 				}
 			}
 
@@ -675,7 +746,7 @@ long CActionParamDialog::onPresetSaveButton(FXObject *sender,FXSelector sel,void
 		}
 	}
 
-	return(1);
+	return 1;
 }
 
 long CActionParamDialog::onPresetRemoveButton(FXObject *sender,FXSelector sel,void *ptr)
@@ -699,7 +770,7 @@ long CActionParamDialog::onPresetRemoveButton(FXObject *sender,FXSelector sel,vo
 	else
 		gStatusComm->beep();
 
-	return(1);
+	return 1;
 }
 
 void CActionParamDialog::buildPresetLists()
@@ -740,4 +811,55 @@ void CActionParamDialog::buildPresetList(CNestedDataFile *f,FXList *list)
 	}
 }
 
+
+unsigned CActionParamDialog::findParamByName(const string name) const
+{
+	for(unsigned t=0;t<parameters.size();t++)
+	{
+		switch(parameters[t].first)
+		{
+		case ptConstant:
+			if(((FXConstantParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		case ptNumericText:
+		case ptStringText:
+			if(((FXTextParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		case ptDiskEntity:
+			if(((FXDiskEntityParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		case ptComboText:
+			if(((FXComboTextParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		case ptCheckBox:
+			if(((FXCheckBoxParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		case ptGraph:
+		case ptGraphWithWaveform:
+			if(((FXGraphParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		case ptLFO:
+			if(((FXLFOParamValue *)parameters[t].second)->getTitle()==name)
+				return t;
+			break;
+
+		default:
+			throw runtime_error(string(__func__)+" -- unhandled parameter type: "+istring(parameters[t].first));
+		}
+	}
+
+	throw runtime_error(string(__func__)+" -- no param found named "+name);
+}
 

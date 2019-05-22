@@ -98,11 +98,11 @@ LDFLAGS = @LDFLAGS@
 # doc directory
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-noinst_HEADERS =  		CCopyCutDeleteEdit.h 		CCropEdit.h 		CCueAction.h 		CInsertSilenceEdit.h 		CMuteEdit.h 		CPasteEdit.h 		CRotateEdit.h 		CSwapChannelsEdit.h 		CAddChannelsEdit.h 		CRemoveChannelsEdit.h 		CSelectionEdit.h 		EditActions.h
+noinst_HEADERS =  		CCopyCutDeleteEdit.h 		CCopyCutToNewEdit.h 		CCropEdit.h 		CCueAction.h 		CInsertSilenceEdit.h 		CMuteEdit.h 		CPasteEdit.h 		CPasteAsNewEdit.h 		CRotateEdit.h 		CSwapChannelsEdit.h 		CAddChannelsEdit.h 		CRemoveChannelsEdit.h 		CSelectionEdit.h 		CSaveSelectionAsAction.h 		CSaveAsMultipleFilesAction.h 		EditActions.h
 
 
 noinst_LTLIBRARIES = libEdits.la
-libEdits_la_SOURCES =  		CCopyCutDeleteEdit.cpp 		CCropEdit.cpp 		CCueAction.cpp 		CInsertSilenceEdit.cpp 		CMuteEdit.cpp 		CPasteEdit.cpp 		CRotateEdit.cpp 		CSwapChannelsEdit.cpp 		CAddChannelsEdit.cpp 		CRemoveChannelsEdit.cpp 		CSelectionEdit.cpp 
+libEdits_la_SOURCES =  		CCopyCutDeleteEdit.cpp 		CCopyCutToNewEdit.cpp 		CCropEdit.cpp 		CCueAction.cpp 		CInsertSilenceEdit.cpp 		CMuteEdit.cpp 		CPasteEdit.cpp 		CPasteAsNewEdit.cpp 		CRotateEdit.cpp 		CSwapChannelsEdit.cpp 		CAddChannelsEdit.cpp 		CRemoveChannelsEdit.cpp 		CSaveSelectionAsAction.cpp 		CSaveAsMultipleFilesAction.cpp 		CSelectionEdit.cpp 
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -115,10 +115,11 @@ CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
 libEdits_la_LDFLAGS = 
 libEdits_la_LIBADD = 
-libEdits_la_OBJECTS =  CCopyCutDeleteEdit.lo CCropEdit.lo CCueAction.lo \
-CInsertSilenceEdit.lo CMuteEdit.lo CPasteEdit.lo CRotateEdit.lo \
-CSwapChannelsEdit.lo CAddChannelsEdit.lo CRemoveChannelsEdit.lo \
-CSelectionEdit.lo
+libEdits_la_OBJECTS =  CCopyCutDeleteEdit.lo CCopyCutToNewEdit.lo \
+CCropEdit.lo CCueAction.lo CInsertSilenceEdit.lo CMuteEdit.lo \
+CPasteEdit.lo CPasteAsNewEdit.lo CRotateEdit.lo CSwapChannelsEdit.lo \
+CAddChannelsEdit.lo CRemoveChannelsEdit.lo CSaveSelectionAsAction.lo \
+CSaveAsMultipleFilesAction.lo CSelectionEdit.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -276,6 +277,18 @@ CCopyCutDeleteEdit.lo CCopyCutDeleteEdit.o : CCopyCutDeleteEdit.cpp \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../../src/PoolFile/TPoolAccesser.cpp ../ASoundClipboard.h
+CCopyCutToNewEdit.lo CCopyCutToNewEdit.o : CCopyCutToNewEdit.cpp \
+	CCopyCutToNewEdit.h ../../../config/common.h \
+	../../../config/config.h ../AAction.h ../settings.h \
+	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
+	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
+	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp ../ASoundFileManager.h \
+	../CActionParameters.h ../ALFO.h ../CGraphParamValueNode.h \
+	../CLoadedSound.h
 CCropEdit.lo CCropEdit.o : CCropEdit.cpp CCropEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
@@ -318,6 +331,18 @@ CMuteEdit.lo CMuteEdit.o : CMuteEdit.cpp CMuteEdit.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../../src/PoolFile/TPoolAccesser.cpp
+CPasteAsNewEdit.lo CPasteAsNewEdit.o : CPasteAsNewEdit.cpp \
+	CPasteAsNewEdit.h ../../../config/common.h \
+	../../../config/config.h ../AAction.h ../settings.h \
+	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
+	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
+	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp ../ASoundClipboard.h \
+	../ASoundFileManager.h ../CActionParameters.h ../ALFO.h \
+	../CGraphParamValueNode.h ../CLoadedSound.h
 CPasteEdit.lo CPasteEdit.o : CPasteEdit.cpp CPasteEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
@@ -354,6 +379,32 @@ CRotateEdit.lo CRotateEdit.o : CRotateEdit.cpp CRotateEdit.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
 	../ALFO.h ../CGraphParamValueNode.h
+CSaveAsMultipleFilesAction.lo CSaveAsMultipleFilesAction.o : \
+	CSaveAsMultipleFilesAction.cpp CSaveAsMultipleFilesAction.h \
+	../../../config/common.h ../../../config/config.h ../AAction.h \
+	../settings.h ../CActionSound.h ../CSound_defs.h \
+	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
+	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
+	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
+	../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp \
+	../../../src/misc/CPath.h ../CActionParameters.h ../ALFO.h \
+	../CGraphParamValueNode.h ../ASoundFileManager.h \
+	../ASoundTranslator.h
+CSaveSelectionAsAction.lo CSaveSelectionAsAction.o : \
+	CSaveSelectionAsAction.cpp CSaveSelectionAsAction.h \
+	../../../config/common.h ../../../config/config.h ../AAction.h \
+	../settings.h ../CActionSound.h ../CSound_defs.h \
+	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
+	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
+	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
+	../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp ../ASoundFileManager.h \
+	../CActionParameters.h ../ALFO.h ../CGraphParamValueNode.h
 CSelectionEdit.lo CSelectionEdit.o : CSelectionEdit.cpp CSelectionEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \

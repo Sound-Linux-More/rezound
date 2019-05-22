@@ -882,7 +882,7 @@ fi
 
 PACKAGE=rezound
 
-VERSION=0.5.1beta
+VERSION=0.6.0beta
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -7347,11 +7347,51 @@ EOF
 fi
 
 
+ac_safe=`echo "fox/FXBackBufferedCanvas.h" | sed 'y%./+-%__p_%'`
+echo $ac_n "checking for fox/FXBackBufferedCanvas.h""... $ac_c" 1>&6
+echo "configure:7353: checking for fox/FXBackBufferedCanvas.h" >&5
+if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  cat > conftest.$ac_ext <<EOF
+#line 7358 "configure"
+#include "confdefs.h"
+#include <fox/FXBackBufferedCanvas.h>
+EOF
+ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+{ (eval echo configure:7363: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+if test -z "$ac_err"; then
+  rm -rf conftest*
+  eval "ac_cv_header_$ac_safe=yes"
+else
+  echo "$ac_err" >&5
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  eval "ac_cv_header_$ac_safe=no"
+fi
+rm -f conftest*
+fi
+if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+  
+	 	rm -f $srcdir/src/misc/missing/generated/fox/FXBackBufferedCanvas.h
+	
+else
+  echo "$ac_t""no" 1>&6
+
+		mkdir -p $srcdir/src/misc/missing/generated/fox 2>/dev/null
+		cp $srcdir/src/misc/missing/FXBackBufferedCanvas.h-missing $srcdir/src/misc/missing/generated/fox/FXBackBufferedCanvas.h
+	
+fi
+
+
 
 # Extract the first word of "reswrap", so it can be a program name with args.
 set dummy reswrap; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:7355: checking for $ac_word" >&5
+echo "configure:7395: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_RESWRAP'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -7393,7 +7433,7 @@ if test "${enable_standalone+set}" = set; then
   enableval="$enable_standalone"
   
 				echo $ac_n "checking for dlopen in -ldl""... $ac_c" 1>&6
-echo "configure:7397: checking for dlopen in -ldl" >&5
+echo "configure:7437: checking for dlopen in -ldl" >&5
 ac_lib_var=`echo dl'_'dlopen | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -7401,7 +7441,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-ldl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 7405 "configure"
+#line 7445 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -7412,7 +7452,7 @@ int main() {
 dlopen()
 ; return 0; }
 EOF
-if { (eval echo configure:7416: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:7456: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else

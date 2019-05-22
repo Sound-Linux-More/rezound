@@ -1,12 +1,19 @@
 --- THINGS TO DO FOR SURE ---
 
-	- Possibly remove the concept of 'advanced mode' stuff for actions
-		- so far, I've only used it in two actions and don't see any reason to add it to more
-		- for gain and rate change I should just make two factories, but still use the same action code.. and I can make the procedure for adding new actions a bit more easy to understand without getting confused by the 'advanced mode' code
+	- When they're all implemented, I need to update the description to something like: 
+		... Including features such as: Recording, Effects Previews, Realistic Reverbs, Convolution, Custom FIR Filters, Several IIR Filters, Many Supported Audio Formats, LADSPA Support, Undo/Redo, Level Meters & Frequency Analyzer, Seek Shuttle Wheel, Loads of Editing Tools, Dynamic Range Compressor, and Many Other Tools
+			- and decide on the best ordering of this listing
+			- I'm also trying to negotiate some noise removal actions
+
+	- Implement createKey and getValue methods in CNestedData file and use them properly so I'm not doing string conversions everywhere in there
+
+	- I discovered that the M_PI (and others) #defines are not in the C/C++ specification... So I might want to test for them in configure.in and define them if they're not found in common.h ( M_PI=atan(1)*4; )
+
+	- Change all the status bars to say "Channel X/Y" so that they know how many iterations to expect (and i will have to be a count instead of literally i)
+
+	- Make a links section on the homepage about who is/has-used ReZound
 
 	- I might want to make sure that gcc is some minimum version in configure.in.. I really don't think gcc2.8 will cut it
-
-	- create a 'paste to new' edit action
 
 	- create a "monoize" action under remaster that says: mix X% of left onto the right and X% of the right onto the left or any channel configuration for that matter
 		- the backend factory could probably make sure it's a 2 channel sound before continuing ( override AActionFactory::doPreActionSetup() and return true or false or throw an EUserMessage )
@@ -294,6 +301,7 @@
 		- for multi-track editing, I could create a derivation of CSound that wraps around a given CSound that returns peak data according to the volume envelopes
 			- I would need to address how real-time effects get inserted into the play queue, perhaps CSoundPlayerChannel would pull data from a module chain
 				- then different playback rates and formats could be handled by just having an initial sample rate conversion module to the native sample rate
+		- either have an option to render a click track, or make a feature that just plays one while recording
 
 		- or for multi-track editing, I could create a derivation of CSoundPlayerChannel that overrides prebufferChunk() so that it reads from all the sounds that are in the multitrack sound for that chunk period and apply any real-time alterations
 
@@ -507,4 +515,10 @@
 	- I could create an adaptive remove-DC action which looks at a window at a time of data  (window-time given by the user) and the DC offset determined for each window would form a set of line segments to be the subtraction from the sound.
 		- This should/might remove any very long trend in the data that causes a slow shift rather than a constant offset
 		- Perhaps, I could let this window time go from 1 to the length of the sound, and some interesting effects could be produced with very small values
+
+	- Possibly remove the concept of 'advanced mode' stuff for actions
+		- so far, I've only used it in two actions and don't see any reason to add it to more
+		- for gain and rate change I should just make two factories, but still use the same action code.. and I can make the procedure for adding new actions a bit more easy to understand without getting confused by the 'advanced mode' code
+
+	- create a 'paste as new', 'copy to new' and 'cut to new' edit actions
 

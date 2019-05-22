@@ -33,8 +33,8 @@ FXDEFMAP(CActionMenuCommand) CActionMenuCommandMap[]=
 {
 	//Message_Type				ID				Message_Handler
 
-	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	0,				CActionMenuCommand::onMouseClick),
 	FXMAPFUNC(SEL_LEFTBUTTONRELEASE,	0,				CActionMenuCommand::onMouseClick),
+	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,	0,				CActionMenuCommand::onMouseClick),
 
 	FXMAPFUNC(SEL_KEYRELEASE,		0,				CActionMenuCommand::onKeyClick),
 
@@ -49,7 +49,7 @@ CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposit
 	FXMenuCommand(
 		p,
 		(_actionFactory->getName()+"\t"+accelKeyText.text()).c_str(),
-		(ic==NULL ? (_actionFactory->hasAdvancedMode() ? FOXIcons->advanced_action_buff : FOXIcons->normal_action_buff) : ic),
+		(ic==NULL ? FOXIcons->normal_action_buff : ic),
 		this,
 		ID_HOTKEY,
 		opts
@@ -86,10 +86,14 @@ long CActionMenuCommand::onCommand(FXObject *sender,FXSelector sel,void *ptr)
 	{
 			// ??? let action parameters contain actionSound and the two bool parameters
 			// they should have some flag which says that they would not be streamed to disk (if that were ever something I do with action parameters)
-		CActionParameters actionParameters;
-		actionFactory->performAction(activeSound,&actionParameters,prevEvent.state&SHIFTMASK,prevEvent.click_button==RIGHTBUTTON);
+		CActionParameters actionParameters(gSoundFileManager);
+		actionFactory->performAction(activeSound,&actionParameters,prevEvent.state&SHIFTMASK);
 
 		gSoundFileManager->updateAfterEdit();
+
+		// now, in case a newly created window has taken the place of the previously active window, it still may be necessary to update the previous active sound window 
+		if(gSoundFileManager->getActive()!=activeSound && gSoundFileManager->isValidLoadedSound(activeSound))
+			gSoundFileManager->updateAfterEdit(activeSound);
 
 		prevEvent.state=0;
 		prevEvent.click_button=0;

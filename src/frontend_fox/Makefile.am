@@ -42,8 +42,8 @@ libfrontend_la_SOURCES= \
 			CProgressDialog.cpp \
 			CSoundFileManager.cpp \
 			CFrontendHooks.cpp \
-			CSoundListWindow.cpp \
 			CSoundWindow.cpp \
+			CMetersWindow.cpp \
 			CStatusComm.cpp \
 			CUserNotesDialog.cpp \
 			CRawDialog.cpp \
@@ -55,10 +55,11 @@ libfrontend_la_SOURCES= \
 			EffectActionDialogs.cpp \
 			FilterActionDialogs.cpp \
 			RemasterActionDialogs.cpp \
+			LoopingActionDialogs.cpp \
 			CAboutDialog.cpp \
 			FXConstantParamValue.cpp \
 			FXTextParamValue.cpp \
-			FXFilenameParamValue.cpp \
+			FXDiskEntityParamValue.cpp \
 			FXComboTextParamValue.cpp \
 			FXCheckBoxParamValue.cpp \
 			FXGraphParamValue.cpp \
@@ -113,8 +114,8 @@ noinst_HEADERS=\
 	CProgressDialog.h \
 	CSoundFileManager.h \
 	CFrontendHooks.h \
-	CSoundListWindow.h \
 	CSoundWindow.h \
+	CMetersWindow.h \
 	CStatusComm.h \
 	CUserNotesDialog.h \
 	CRawDialog.h \
@@ -125,10 +126,11 @@ noinst_HEADERS=\
 	EffectActionDialogs.h \
 	FilterActionDialogs.h \
 	RemasterActionDialogs.h \
+	LoopingActionDialogs.h \
 	CAboutDialog.h \
 	FXConstantParamValue.h \
 	FXTextParamValue.h \
-	FXFilenameParamValue.h \
+	FXDiskEntityParamValue.h \
 	FXComboTextParamValue.h \
 	FXCheckBoxParamValue.h \
 	FXGraphParamValue.h \
@@ -139,6 +141,8 @@ noinst_HEADERS=\
 	FXWaveCanvas.h \
 	drawPortion.h \
 	rememberShow.h \
+	custom_cursors.h \
+	utils.h \
 	settings.h 
 
 EXTRA_DIST=convert_images.sh
@@ -147,7 +151,7 @@ EXTRA_DIST=convert_images.sh
 
 $(top_srcdir)/src/frontend_fox/CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
 $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp: $(top_srcdir)/src/images/*.gif
-	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh $(RESWRAP) $(top_srcdir)/src/images 
+	cd $(top_srcdir)/src/frontend_fox && ./convert_images.sh $(RESWRAP) $(top_srcdir)/src/images && cd $(top_srcdir)/src/frontend_fox && make CFOXIcons.o
 
 CFOXIcons.cpp: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
 CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.h

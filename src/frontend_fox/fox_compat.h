@@ -35,6 +35,12 @@
 	#define getModality modalModality
 #endif
 
+#if REZ_FOX_VERSION<10117
+	#define FXSELID(x) SELID(x)
+	#define FXSELTYPE(x) SELTYPE(x)
+	#define FXSEL(x,y) MKUINT(y,x)
+#endif
+
 
 
 

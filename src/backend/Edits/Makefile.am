@@ -28,16 +28,20 @@ include $(top_srcdir)/config/am_include.mk
 ## in make dist
 noinst_HEADERS= \
 		CCopyCutDeleteEdit.h \
+		CCopyCutToNewEdit.h \
 		CCropEdit.h \
 		CCueAction.h \
 		CInsertSilenceEdit.h \
 		CMuteEdit.h \
 		CPasteEdit.h \
+		CPasteAsNewEdit.h \
 		CRotateEdit.h \
 		CSwapChannelsEdit.h \
 		CAddChannelsEdit.h \
 		CRemoveChannelsEdit.h \
 		CSelectionEdit.h \
+		CSaveSelectionAsAction.h \
+		CSaveAsMultipleFilesAction.h \
 		EditActions.h
 
 ## see PoolFile Makefile.am for explanation here out
@@ -45,13 +49,17 @@ noinst_HEADERS= \
 noinst_LTLIBRARIES=libEdits.la
 libEdits_la_SOURCES= \
 		CCopyCutDeleteEdit.cpp \
+		CCopyCutToNewEdit.cpp \
 		CCropEdit.cpp \
 		CCueAction.cpp \
 		CInsertSilenceEdit.cpp \
 		CMuteEdit.cpp \
 		CPasteEdit.cpp \
+		CPasteAsNewEdit.cpp \
 		CRotateEdit.cpp \
 		CSwapChannelsEdit.cpp \
 		CAddChannelsEdit.cpp \
 		CRemoveChannelsEdit.cpp \
+		CSaveSelectionAsAction.cpp \
+		CSaveAsMultipleFilesAction.cpp \
 		CSelectionEdit.cpp 

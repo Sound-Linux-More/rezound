@@ -34,7 +34,7 @@
 
 #include <CNestedDataFile/CNestedDataFile.h>
 
-
+#define DOT string(CNestedDataFile::delimChar)
 
 // one or the other of these two will ifdef itself in or out based on HAVE_LIBPORTAUDIO
 #include "CPortAudioSoundPlayer.h"
@@ -204,20 +204,42 @@ bool initializeBackend(ASoundPlayer *&_soundPlayer,int argc,char *argv[])
 			gFallbackWorkDir= gSettingsRegistry->getValue("fallbackWorkDir");
 
 
-		if(gSettingsRegistry->keyExists("whichClipboard"))
-			gWhichClipboard= atoi(gSettingsRegistry->getValue("whichClipboard").c_str());
-
 		if(gSettingsRegistry->keyExists("clipboardDir"))
 			gClipboardDir= gSettingsRegistry->getValue("clipboardDir");
 
 		if(gSettingsRegistry->keyExists("clipboardFilenamePrefix"))
 			gClipboardFilenamePrefix= gSettingsRegistry->getValue("clipboardFilenamePrefix");
 
+		if(gSettingsRegistry->keyExists("whichClipboard"))
+			gWhichClipboard= atoi(gSettingsRegistry->getValue("whichClipboard").c_str());
+
+		if(gSettingsRegistry->keyExists(("ReopenHistory"+DOT+"maxReopenHistory").c_str()))
+			gMaxReopenHistory= atoi(gSettingsRegistry->getValue(("ReopenHistory"+DOT+"maxReopenHistory").c_str()).c_str());
+
 		if(gSettingsRegistry->keyExists("followPlayPosition"))
 			gFollowPlayPosition= gSettingsRegistry->getValue("followPlayPosition")=="true";
 
+		if(gSettingsRegistry->keyExists("levelMetersEnabled"))
+			gLevelMetersEnabled= gSettingsRegistry->getValue("levelMetersEnabled")=="true";
+
+		if(gSettingsRegistry->keyExists("frequencyAnalyzerEnabled"))
+			gFrequencyAnalyzerEnabled= gSettingsRegistry->getValue("frequencyAnalyzerEnabled")=="true";
+
 		if(gSettingsRegistry->keyExists("initialLengthToShow"))
 			gInitialLengthToShow= atof(gSettingsRegistry->getValue("initialLengthToShow").c_str());
+
+		if(gSettingsRegistry->keyExists(("Meters"+DOT+"meterUpdateTime").c_str()))
+			gMeterUpdateTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"meterUpdateTime").c_str()).c_str());
+		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Level"+DOT+"RMSWindowTime").c_str()))
+			gMeterRMSWindowTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"Level"+DOT+"RMSWindowTime").c_str()).c_str());
+		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Level"+DOT+"maxPeakFallDelayTime").c_str()))
+			gMaxPeakFallDelayTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"Level"+DOT+"maxPeakFallDelayTime").c_str()).c_str());
+		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Level"+DOT+"maxPeakFallRate").c_str()))
+			gMaxPeakFallRate= atof(gSettingsRegistry->getValue(("Meters"+DOT+"Level"+DOT+"maxPeakFallRate").c_str()).c_str());
+		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Analyzer"+DOT+"peakFallDelayTime").c_str()))
+			gAnalyzerPeakFallDelayTime= atoi(gSettingsRegistry->getValue(("Meters"+DOT+"Analyzer"+DOT+"peakFallDelayTime").c_str()).c_str());
+		if(gSettingsRegistry->keyExists(("Meters"+DOT+"Analyzer"+DOT+"peakFallRate").c_str()))
+			gAnalyzerPeakFallRate= atof(gSettingsRegistry->getValue(("Meters"+DOT+"Analyzer"+DOT+"peakFallRate").c_str()).c_str());
 
 
 		if(gSettingsRegistry->keyExists("crossfadeEdges"))
@@ -369,8 +391,22 @@ void deinitializeBackend()
 	gSettingsRegistry->createKey("clipboardDir",gClipboardDir);
 	gSettingsRegistry->createKey("clipboardFilenamePrefix",gClipboardFilenamePrefix);
 	gSettingsRegistry->createKey("whichClipboard",gWhichClipboard);
+
+	gSettingsRegistry->createKey(("ReopenHistory"+DOT+"maxReopenHistory").c_str(),gMaxReopenHistory);
+
 	gSettingsRegistry->createKey("followPlayPosition",gFollowPlayPosition ? "true" : "false");
+
+	gSettingsRegistry->createKey("levelMetersEnabled",gLevelMetersEnabled ? "true" : "false");
+	gSettingsRegistry->createKey("frequencyAnalyzerEnabled",gFrequencyAnalyzerEnabled ? "true" : "false");
+
 	gSettingsRegistry->createKey("initialLengthToShow",gInitialLengthToShow);
+
+	gSettingsRegistry->createKey(("Meters"+DOT+"meterUpdateTime").c_str(),gMeterUpdateTime);
+	gSettingsRegistry->createKey(("Meters"+DOT+"Level"+DOT+"RMSWindowTime").c_str(),gMeterRMSWindowTime);
+	gSettingsRegistry->createKey(("Meters"+DOT+"Level"+DOT+"maxPeakFallDelayTime").c_str(),gMaxPeakFallDelayTime);
+	gSettingsRegistry->createKey(("Meters"+DOT+"Level"+DOT+"maxPeakFallRate").c_str(),gMaxPeakFallRate);
+	gSettingsRegistry->createKey(("Meters"+DOT+"Analyzer"+DOT+"peakFallDelayTime").c_str(),gAnalyzerPeakFallDelayTime);
+	gSettingsRegistry->createKey(("Meters"+DOT+"Analyzer"+DOT+"peakFallRate").c_str(),gAnalyzerPeakFallRate);
 
 	gSettingsRegistry->createKey("crossfadeEdges",(float)gCrossfadeEdges);
 		gSettingsRegistry->createKey("crossfadeStartTime",gCrossfadeStartTime);

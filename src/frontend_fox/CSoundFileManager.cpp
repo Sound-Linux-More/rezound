@@ -30,13 +30,13 @@
 
 #include "../backend/CLoadedSound.h"
 #include "CSoundWindow.h"
-#include "CSoundListWindow.h"
+#include "CMainWindow.h"
 
 #include <fox/fx.h>
 
 CSoundFileManager *gSoundFileManager=NULL;
 
-CSoundFileManager::CSoundFileManager(FXWindow *_mainWindow,ASoundPlayer *_soundPlayer,CNestedDataFile *_loadedRegistryFile) :
+CSoundFileManager::CSoundFileManager(CMainWindow *_mainWindow,ASoundPlayer *_soundPlayer,CNestedDataFile *_loadedRegistryFile) :
 	ASoundFileManager(_soundPlayer,_loadedRegistryFile),
 	mainWindow(_mainWindow)
 {
@@ -48,15 +48,15 @@ CSoundFileManager::~CSoundFileManager()
 
 void CSoundFileManager::createWindow(CLoadedSound *loaded)
 {
-	CSoundWindow *win=new CSoundWindow(mainWindow,loaded);
+	CSoundWindow *win=new CSoundWindow(mainWindow->getParentOfSoundWindows(),loaded);
 	win->create();
+	win->show();
 
 	soundWindows.push_back(win);
 
-	if(gFocusMethod==fmSoundWindowList)
-		gSoundListWindow->addSoundWindow(win);
-
 	win->setActiveState(true);
+
+	mainWindow->rebuildSoundWindowList();
 }
 
 void CSoundFileManager::destroyWindow(CLoadedSound *loaded)
@@ -67,29 +67,39 @@ void CSoundFileManager::destroyWindow(CLoadedSound *loaded)
 		{
 			CSoundWindow *win=soundWindows[t];
 
-			if(gFocusMethod==fmSoundWindowList)
-				gSoundListWindow->removeSoundWindow(win);
-
 			soundWindows.erase(soundWindows.begin()+t);
 
-			// make new active window
+			// make new active window (either in the same position or the last one)
 			if(!soundWindows.empty())
-				soundWindows[0]->setActiveState(true);
+			{
+				if(t<soundWindows.size())
+					soundWindows[t]->setActiveState(true);
+				else
+					soundWindows[soundWindows.size()-1]->setActiveState(true);
+			}
 
 			delete win;
 
-			return;
+			break;
 		}
 	}
+	mainWindow->rebuildSoundWindowList();
 }
 
 const size_t CSoundFileManager::getOpenedCount() const
 {
-	return(soundWindows.size());
+	return soundWindows.size();
 }
 
+CSoundWindow *CSoundFileManager::getSoundWindow(size_t index)
+{
+	return soundWindows[index];
+}
+
+CSoundWindow *previousActiveWindow=NULL; // used for alt-` meaning switch back to the previously active window
 void CSoundFileManager::untoggleActiveForAllSoundWindows(CSoundWindow *exceptThisOne)
 {
+	previousActiveWindow=getActiveWindow();
 	for(size_t t=0;t<soundWindows.size();t++)
 	{
 		if(soundWindows[t]!=exceptThisOne)
@@ -101,9 +111,9 @@ CLoadedSound *CSoundFileManager::getActive()
 {
 	CSoundWindow *activeSoundWindow=getActiveWindow();
 	if(activeSoundWindow)
-		return(activeSoundWindow->loadedSound);
+		return activeSoundWindow->loadedSound;
 	else
-		return(NULL);
+		return NULL;
 }
 
 CSoundWindow *CSoundFileManager::getActiveWindow()
@@ -112,20 +122,45 @@ CSoundWindow *CSoundFileManager::getActiveWindow()
 	for(size_t t=0;t<soundWindows.size();t++)
 	{
 		if(soundWindows[t]->getActiveState())
-			return(soundWindows[t]);
+			return soundWindows[t];
 	}
-	return(NULL);
+	return NULL;
 }
 
-void CSoundFileManager::updateAfterEdit()
+void CSoundFileManager::updateAfterEdit(CLoadedSound *soundToUpdate)
 {
 	CSoundWindow *activeSoundWindow=getActiveWindow();
+
+	// however, if soundToUpdate was passed, then find that sound window
+	if(soundToUpdate!=NULL)
+	{
+		activeSoundWindow=NULL;
+		for(size_t t=0;t<soundWindows.size();t++)
+		{
+			if(soundWindows[t]->loadedSound==soundToUpdate)
+			{
+				activeSoundWindow=soundWindows[t];
+				break;
+			}
+		}
+		if(activeSoundWindow==NULL)
+			throw runtime_error(string(__func__)+" -- given soundToUpdate was not found in the list of loaded sounds");
+	}
+
 	if(activeSoundWindow)
 	{
 		activeSoundWindow->updateFromEdit();
-		if(gFocusMethod==fmSoundWindowList)
-			gSoundListWindow->updateWindowName(activeSoundWindow); // incase the filename changed
-
+		mainWindow->rebuildSoundWindowList();
 	}
+}
+
+bool CSoundFileManager::isValidLoadedSound(const CLoadedSound *sound) const
+{
+	for(size_t t=0;t<soundWindows.size();t++)
+	{
+		if(soundWindows[t]->loadedSound==sound)
+			return true;
+	}
+	return false;
 }
 

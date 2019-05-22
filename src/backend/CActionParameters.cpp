@@ -25,11 +25,14 @@
 #include <istring>
 
 
-CActionParameters::CActionParameters()
+CActionParameters::CActionParameters(ASoundFileManager *_soundFileManager) :
+	soundFileManager(_soundFileManager)
 {
 }
 
-CActionParameters::CActionParameters(const CActionParameters &src)
+CActionParameters::CActionParameters(const CActionParameters &src) :
+	soundFileManager(src.soundFileManager),
+	parameterNames(src.parameterNames)
 {
 	for(unsigned t=0;t<src.parameters.size();t++)
 	{
@@ -72,6 +75,11 @@ CActionParameters::CActionParameters(const CActionParameters &src)
 CActionParameters::~CActionParameters()
 {
 	clear();
+}
+
+ASoundFileManager *CActionParameters::getSoundFileManager() const
+{
+	return soundFileManager;
 }
 
 void CActionParameters::clear()
@@ -348,6 +356,8 @@ const double CActionParameters::getDoubleParameter(const unsigned i) const
 		return(*((double *)parameters[i].second));
 	else if(parameters[i].first==ptUnsigned)
 		return((double)(*((unsigned *)parameters[i].second)));
+	if(parameters[i].first==ptBool)
+		return((double)(*((bool *)parameters[i].second)));
 	else
 		throw(runtime_error(string(__func__)+" -- parameter at index: "+istring(i)+" is not ptDouble nor ptUnsigned"));
 }
@@ -448,5 +458,4 @@ void CActionParameters::setLFODescription(const unsigned i,const CLFODescription
 	else
 		(*((CLFODescription *)parameters[i].second))=v;
 }
-
 

@@ -33,6 +33,8 @@ class CNestedDataFile;
 class ASoundPlayer;
 class ASoundTranslator;
 
+#include "CSound_defs.h"
+
 struct EStopClosing { };
 
 
@@ -46,10 +48,12 @@ public:
 	virtual ~ASoundFileManager() { }
 
 	void createNew();
+	CLoadedSound *createNew(const string filename,unsigned channelCount,unsigned sampleRate,unsigned length=1,bool rawFormat=false);
 	void open(const string filename="",bool openAsRaw=false);
 	// ??? should rename these to, saveActive... 
 	void save();
 	void saveAs();
+	void savePartial(const CSound *sound,const string filename,const sample_pos_t saveStart,const sample_pos_t saveLength);
 	enum CloseTypes { ctSaveYesNoStop,ctSaveYesNoCancel,ctSaveNone };
 	void close(CloseTypes closeType,CLoadedSound *closeWhichSound=NULL); // if nothing is passed for closeWhichSound, then the active sound is closed
 	void revert();
@@ -69,7 +73,7 @@ public:
 
 	// is called after an action is performed to update the screen or when the title
 	// bar and other status information of a loaded sound window needs to be modified
-	virtual void updateAfterEdit()=0;
+	virtual void updateAfterEdit(CLoadedSound *sound=NULL)=0; // if NULL, then use the active one
 
 	// returns a list of error messages
 	const vector<string> loadFilesInRegistry();

@@ -98,11 +98,11 @@ LDFLAGS = @LDFLAGS@
 # doc directory
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-noinst_HEADERS =  		CMakeSymetricAction.h 		LoopingActions.h
+noinst_HEADERS =  		CMakeSymetricAction.h 		CAddCuesAction.h 		LoopingActions.h
 
 
 noinst_LTLIBRARIES = libLooping.la
-libLooping_la_SOURCES =  			CMakeSymetricAction.cpp
+libLooping_la_SOURCES =  			CMakeSymetricAction.cpp 			CAddCuesAction.cpp
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -115,7 +115,7 @@ CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
 libLooping_la_LDFLAGS = 
 libLooping_la_LIBADD = 
-libLooping_la_OBJECTS =  CMakeSymetricAction.lo
+libLooping_la_OBJECTS =  CMakeSymetricAction.lo CAddCuesAction.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -249,6 +249,17 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+CAddCuesAction.lo CAddCuesAction.o : CAddCuesAction.cpp CAddCuesAction.h \
+	../../../config/common.h ../../../config/config.h ../AAction.h \
+	../settings.h ../CActionSound.h ../CSound_defs.h \
+	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
+	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
+	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
+	../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
+	../ALFO.h ../CGraphParamValueNode.h
 CMakeSymetricAction.lo CMakeSymetricAction.o : CMakeSymetricAction.cpp \
 	CMakeSymetricAction.h ../../../config/common.h \
 	../../../config/config.h ../AAction.h ../settings.h \

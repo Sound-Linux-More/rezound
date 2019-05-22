@@ -26,6 +26,7 @@
 #include "settings.h"
 
 #include <stdexcept>
+#include <algorithm>
 #include <CPath.h>
 
 #include <CNestedDataFile/CNestedDataFile.h>
@@ -36,8 +37,6 @@
 #include "CSoundPlayerChannel.h"
 #include "ASoundTranslator.h"
 #include "AFrontendHooks.h"
-
-#define MAX_REOPEN_HISTORY 16 // needs to be a preference ???
 
 ASoundFileManager::ASoundFileManager(ASoundPlayer *_soundPlayer,CNestedDataFile *_loadedRegistryFile) :
 	soundPlayer(_soundPlayer),
@@ -52,10 +51,6 @@ void ASoundFileManager::createNew()
 
 CLoadedSound *ASoundFileManager::prvCreateNew(bool askForLength)
 {
-	CSound *sound=NULL;
-	CSoundPlayerChannel *channel=NULL;
-	CLoadedSound *loaded=NULL;
-
 	string filename=getUntitledFilename(gPromptDialogDirectory,"rez");
 	bool rawFormat=false;
 	unsigned channelCount;
@@ -66,36 +61,45 @@ CLoadedSound *ASoundFileManager::prvCreateNew(bool askForLength)
 		(!askForLength && gFrontendHooks->promptForNewSoundParameters(filename,rawFormat,channelCount,sampleRate))
 	)
 	{
-		if(isFilenameRegistered(filename))
-			throw(runtime_error(string(__func__)+" -- a file named '"+filename+"' is already opened"));
-
-		// should get based on extension
-		const ASoundTranslator *translator=getTranslator(filename,rawFormat);
-
-		try
-		{
-				sound=new CSound(filename,sampleRate,channelCount,length);
-				channel=soundPlayer->newSoundPlayerChannel(sound);
-				loaded=new CLoadedSound(filename,channel,false,translator);
-
-				createWindow(loaded);
-		}
-		catch(...)
-		{
-			if(loaded!=NULL)
-				destroyWindow(loaded);
-			delete loaded;
-			delete channel;
-			delete sound;
-			throw;
-		}
-
-		registerFilename(filename);
-
-		return(loaded);
+		return createNew(filename,channelCount,sampleRate,length,rawFormat);
 	}
 
-	return(NULL);
+	return NULL;
+}
+
+CLoadedSound *ASoundFileManager::createNew(const string filename,unsigned channelCount,unsigned sampleRate,unsigned length,bool rawFormat)
+{
+	CSound *sound=NULL;
+	CSoundPlayerChannel *channel=NULL;
+	CLoadedSound *loaded=NULL;
+
+	if(isFilenameRegistered(filename))
+		throw runtime_error(string(__func__)+" -- a file named '"+filename+"' is already opened");
+
+	// should get based on extension
+	const ASoundTranslator *translator=getTranslator(filename,rawFormat);
+
+	try
+	{
+		sound=new CSound(filename,sampleRate,channelCount,length);
+		channel=soundPlayer->newSoundPlayerChannel(sound);
+		loaded=new CLoadedSound(filename,channel,false,translator);
+
+		createWindow(loaded);
+	}
+	catch(...)
+	{
+		if(loaded!=NULL)
+			destroyWindow(loaded);
+		delete loaded;
+		delete channel;
+		delete sound;
+		throw;
+	}
+
+	registerFilename(filename);
+
+	return loaded;
 }
 
 void ASoundFileManager::open(const string _filename,bool openAsRaw)
@@ -281,6 +285,36 @@ askAgain:
 			throw;
 		}
 	}
+}
+
+void ASoundFileManager::savePartial(const CSound *sound,const string _filename,const sample_pos_t saveStart,const sample_pos_t saveLength)
+{
+	string filename=_filename;
+	bool first=true;
+
+askAgain:
+	bool saveAsRaw=false;
+	if(filename=="" || !first)
+	{
+		if(!gFrontendHooks->promptForSaveSoundFilename(filename,saveAsRaw))
+			return;
+	}
+
+	first=false;
+
+	if(isFilenameRegistered(filename))
+		throw(runtime_error(string(__func__)+" -- file is currently opened: '"+filename+"'"));
+
+	if(CPath(filename).exists())
+	{
+		if(Question("Overwrite Existing File:\n"+filename,yesnoQues)!=yesAns)
+			goto askAgain;
+	}
+
+	const ASoundTranslator *translator=getTranslator(filename,saveAsRaw);
+
+	if(translator->saveSound(filename,sound,saveStart,saveLength))
+		updateReopenHistory(filename);
 }
 
 void ASoundFileManager::close(CloseTypes closeType,CLoadedSound *closeWhichSound)
@@ -525,7 +559,7 @@ void ASoundFileManager::updateReopenHistory(const string &filename)
 			reopenFilenames.push_back(h);
 	}
 
-	if(reopenFilenames.size()>=MAX_REOPEN_HISTORY)
+	if(reopenFilenames.size()>=gMaxReopenHistory)
 		reopenFilenames.erase(reopenFilenames.begin()+reopenFilenames.size()-1);
 		
 	reopenFilenames.insert(reopenFilenames.begin(),filename);
@@ -537,9 +571,9 @@ void ASoundFileManager::updateReopenHistory(const string &filename)
 const size_t ASoundFileManager::getReopenHistorySize() const
 {
 	size_t t;
-	for(t=0;gSettingsRegistry->keyExists(("ReopenHistory"+string(DOT)+"item"+istring(t)).c_str());t++);
+	for(t=0;t<gMaxReopenHistory && gSettingsRegistry->keyExists(("ReopenHistory"+string(DOT)+"item"+istring(t)).c_str());t++);
 
-	return(t);
+	return t;
 }
 
 const string ASoundFileManager::getReopenHistoryItem(const size_t index) const

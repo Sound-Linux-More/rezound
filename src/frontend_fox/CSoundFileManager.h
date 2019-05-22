@@ -29,6 +29,7 @@
 #include <vector>
 
 class CSoundWindow;
+class CMainWindow;
 class CNestedDataFile;
 
 #ifdef FOX_NO_NAMESPACE
@@ -41,23 +42,26 @@ class CNestedDataFile;
 class CSoundFileManager : public ASoundFileManager
 {
 public:
-	CSoundFileManager(FXWindow *mainWindow,ASoundPlayer *soundPlayer,CNestedDataFile *loadedRegistryFile);
+	CSoundFileManager(CMainWindow *mainWindow,ASoundPlayer *soundPlayer,CNestedDataFile *loadedRegistryFile);
 	virtual ~CSoundFileManager();
 
 	void untoggleActiveForAllSoundWindows(CSoundWindow *exceptThisOne);
 	
 	const size_t getOpenedCount() const;
+	CSoundWindow *getSoundWindow(size_t index);
 
 	CLoadedSound *getActive();
 	CSoundWindow *getActiveWindow();
-	void updateAfterEdit();
+	void updateAfterEdit(CLoadedSound *soundToUpdate=NULL); // if NULL, then use the active one
+
+	bool isValidLoadedSound(const CLoadedSound *sound) const;
 
 protected:
 	void createWindow(CLoadedSound *loaded);
 	void destroyWindow(CLoadedSound *loaded);
 
 private:
-	FXWindow *mainWindow;
+	CMainWindow *mainWindow;
 
 	vector<CSoundWindow *> soundWindows; // all the existing windows created by createWindow()
 

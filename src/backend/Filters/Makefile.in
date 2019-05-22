@@ -98,11 +98,11 @@ LDFLAGS = @LDFLAGS@
 # doc directory
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-noinst_HEADERS =  		CConvolutionFilter.h 		CSinglePoleFilter.h 		CBiquadResFilter.h 		FilterActions.h
+noinst_HEADERS =  		CConvolutionFilter.h 		CArbitraryFIRFilter.h 		CSinglePoleFilter.h 		CBiquadResFilter.h 		FilterActions.h
 
 
 noinst_LTLIBRARIES = libFilters.la
-libFilters_la_SOURCES =  			CConvolutionFilter.cpp 			CSinglePoleFilter.cpp 			CBiquadResFilter.cpp 
+libFilters_la_SOURCES =  			CConvolutionFilter.cpp 			CArbitraryFIRFilter.cpp 			CSinglePoleFilter.cpp 			CBiquadResFilter.cpp 
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -115,8 +115,8 @@ CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
 libFilters_la_LDFLAGS = 
 libFilters_la_LIBADD = 
-libFilters_la_OBJECTS =  CConvolutionFilter.lo CSinglePoleFilter.lo \
-CBiquadResFilter.lo
+libFilters_la_OBJECTS =  CConvolutionFilter.lo CArbitraryFIRFilter.lo \
+CSinglePoleFilter.lo CBiquadResFilter.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -250,6 +250,19 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+CArbitraryFIRFilter.lo CArbitraryFIRFilter.o : CArbitraryFIRFilter.cpp \
+	CArbitraryFIRFilter.h ../../../config/common.h \
+	../../../config/config.h ../AAction.h ../settings.h \
+	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
+	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
+	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp \
+	../CGraphParamValueNode.h ../CActionParameters.h ../ALFO.h \
+	../DSP/Convolver.h ../DSP/Delay.h \
+	../../../src/misc/TAutoBuffer.h ../unit_conv.h
 CBiquadResFilter.lo CBiquadResFilter.o : CBiquadResFilter.cpp \
 	CBiquadResFilter.h ../../../config/common.h \
 	../../../config/config.h ../AAction.h ../settings.h \

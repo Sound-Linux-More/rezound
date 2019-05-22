@@ -29,9 +29,12 @@
 #include "FXWaveScrollArea.h"
 
 #include "FXRezWaveView.h"
+#include "CSoundFileManager.h" // for gSoundFileManager
 
 #include "../backend/CLoadedSound.h"
 #include "../backend/CSoundPlayerChannel.h"
+#include "../backend/main_controls.h"
+
 
 /* TODO:
  *
@@ -71,7 +74,7 @@ FXDEFMAP(FXWaveScrollArea) FXWaveViewScrollAreaMap[]=
 FXIMPLEMENT(FXWaveScrollArea,FXScrollArea,FXWaveViewScrollAreaMap,ARRAYNUMBER(FXWaveViewScrollAreaMap))
 
 FXWaveScrollArea::FXWaveScrollArea(FXRezWaveView *_parent,CLoadedSound *_loadedSound) :
-	FXScrollArea(_parent,FRAME_RIDGE|LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0),
+	FXScrollArea(_parent,LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0),
 
 	parent(_parent),
 
@@ -79,7 +82,9 @@ FXWaveScrollArea::FXWaveScrollArea(FXRezWaveView *_parent,CLoadedSound *_loadedS
 
 	loadedSound(_loadedSound),
 
-	draggingSelectStart(false),draggingSelectStop(false)
+	draggingSelectStart(false),draggingSelectStop(false),
+
+	momentaryPlaying(false)
 {
 	enable();
 
@@ -96,6 +101,11 @@ FXWaveScrollArea::~FXWaveScrollArea()
 void FXWaveScrollArea::updateFromEdit()
 {
 	canvas->updateFromEdit();
+
+	setPosition(-canvas->getHorzOffset(),-canvas->getVertOffset());
+	layout();
+
+	// don't ask me why.. but if I don't put this twice it won't work unless I press the fit button twice.. and still it doesn't always work.. maybe I'll figure it out one day
 	setPosition(-canvas->getHorzOffset(),-canvas->getVertOffset());
 	layout();
 }
@@ -202,9 +212,22 @@ long FXWaveScrollArea::onMouseDown(FXObject*,FXSelector,void *ptr)
 	FXEvent *ev=(FXEvent*) ptr;
 	const FXint X=ev->click_x;
 
+	if(ev->click_button==LEFTBUTTON && ev->state&CONTROLMASK) // left button pressed while holding control
+	{
+		const sample_pos_t position=getSamplePosForScreenX(X);
+		play(gSoundFileManager,position);
+		return 1;
+	}
+	else if(ev->click_button==RIGHTBUTTON && ev->state&CONTROLMASK) // left button pressed while holding control
+	{
+		const sample_pos_t position=getSamplePosForScreenX(X);
+		play(gSoundFileManager,position);
+		momentaryPlaying=true;
+		return 1;
+	}
+
 	if(!draggingSelectStop && !draggingSelectStart)
 	{
-
 		if(ev->click_button==LEFTBUTTON)
 		{
 			if(X<=(FXint)canvas->getDrawSelectStop())
@@ -244,6 +267,13 @@ long FXWaveScrollArea::onMouseDown(FXObject*,FXSelector,void *ptr)
 long FXWaveScrollArea::onMouseUp(FXObject*,FXSelector,void *ptr)
 {
 	FXEvent *ev=(FXEvent*) ptr;
+
+	if(ev->click_button==RIGHTBUTTON && momentaryPlaying)
+	{
+		momentaryPlaying=false;
+		stop(gSoundFileManager);
+		return 1;
+	}
 
 	if((ev->click_button==LEFTBUTTON || ev->click_button==RIGHTBUTTON) && (draggingSelectStart || draggingSelectStop))
 	{
@@ -327,9 +357,9 @@ void FXWaveScrollArea::centerStopPos()
 	setPosition(-canvas->getHorzOffsetToCenterStopPos(),pos_y);
 }
 
-void FXWaveScrollArea::showAmount(double seconds,sample_pos_t pos)
+void FXWaveScrollArea::showAmount(double seconds,sample_pos_t pos,int marginPixels)
 {
-	canvas->showAmount(seconds,pos);
+	canvas->showAmount(seconds,pos,marginPixels);
 	updateFromEdit();
 }
 

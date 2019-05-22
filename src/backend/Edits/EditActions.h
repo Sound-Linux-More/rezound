@@ -25,14 +25,21 @@
 
 #include "CCropEdit.h"
 #include "CCopyCutDeleteEdit.h"
+#include "CCopyCutToNewEdit.h"
 #include "CMuteEdit.h"
 #include "CSelectionEdit.h"
 #include "CPasteEdit.h"
+#include "CPasteAsNewEdit.h"
 //#include "CTrimEdit.h"
 #include "CInsertSilenceEdit.h"
 #include "CRotateEdit.h"
 #include "CSwapChannelsEdit.h"
 #include "CAddChannelsEdit.h"
 #include "CRemoveChannelsEdit.h"
+
+// ---------- does not appear actually under the Edit menu
+#include "CSaveSelectionAsAction.h"
+#include "CSaveAsMultipleFilesAction.h"
+
 
 #endif
