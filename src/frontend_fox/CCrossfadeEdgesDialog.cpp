@@ -41,7 +41,7 @@ CCrossfadeEdgesDialog::CCrossfadeEdgesDialog(FXWindow *mainWindow) :
 		vector<string> fadeMethods;
 			fadeMethods.push_back(N_("Linear Fade"));
 			fadeMethods.push_back(N_("Parabolic Fade")); // a more industry standard term for this??? it means a gain x^2 where 0<=x<=1
-		addComboTextEntry(p,N_("Crossfade Fade Method"),fadeMethods,_("Linear will maintain a constant gain of 1.0\nParabolic sounds a bit more natural\nFor very quick fades (less than 250ms) linear is recommended"));
+		addComboTextEntry(p,N_("Crossfade Fade Method"),fadeMethods,CActionParamDialog::cpvtAsInteger,_("Linear will maintain a constant gain of 1.0\nParabolic sounds a bit more natural\nFor very quick fades (less than 250ms) linear is recommended"));
 
 }
 
@@ -57,9 +57,9 @@ void CCrossfadeEdgesDialog::showIt()
 	setValue(2,gCrossfadeFadeMethod);
 	if(CActionParamDialog::show(NULL,&actionParameters))
 	{
-		gCrossfadeStartTime=actionParameters.getDoubleParameter("Crossfade Start Edge");
-		gCrossfadeStopTime=actionParameters.getDoubleParameter("Crossfade Stop Edge");
-		gCrossfadeFadeMethod=(CrossfadeFadeMethods)actionParameters.getUnsignedParameter("Crossfade Fade Method");
+		gCrossfadeStartTime=actionParameters.getValue<double>("Crossfade Start Edge");
+		gCrossfadeStopTime=actionParameters.getValue<double>("Crossfade Stop Edge");
+		gCrossfadeFadeMethod=(CrossfadeFadeMethods)actionParameters.getValue<unsigned>("Crossfade Fade Method");
 	}
 }
 

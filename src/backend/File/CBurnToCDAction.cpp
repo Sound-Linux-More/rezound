@@ -23,6 +23,7 @@
 #include "../CActionSound.h"
 #include "../CActionParameters.h"
 #include "../DSP/TSoundStretcher.h"
+#include "../AStatusComm.h"
 
 #include <istring>
 #include <CPath.h>
@@ -37,8 +38,8 @@
 
 #include "parse_segment_cues.h"
 
-CBurnToCDAction::CBurnToCDAction(const CActionSound &_actionSound,const string _tempSpaceDir,const string _pathTo_cdrdao,const unsigned _burnSpeed,const unsigned _gapBetweenTracks,const string _device,const string _extra_cdrdao_options,const bool _selectionOnly,const bool _testOnly) :
-	AAction(_actionSound),
+CBurnToCDAction::CBurnToCDAction(const AActionFactory *factory,const CActionSound *_actionSound,const string _tempSpaceDir,const string _pathTo_cdrdao,const unsigned _burnSpeed,const unsigned _gapBetweenTracks,const string _device,const string _extra_cdrdao_options,const bool _selectionOnly,const bool _testOnly) :
+	AAction(factory,_actionSound),
 	tempSpaceDir(_tempSpaceDir),
 	pathTo_cdrdao(_pathTo_cdrdao),
 	burnSpeed(_burnSpeed),
@@ -54,11 +55,11 @@ CBurnToCDAction::~CBurnToCDAction()
 {
 }
 
-bool CBurnToCDAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
+bool CBurnToCDAction::doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)
 {
-	const CSound &sound=*(actionSound.sound);
-	const sample_pos_t selectionStart= selectionOnly ? actionSound.start : 0;
-	const sample_pos_t selectionLength= selectionOnly ? actionSound.selectionLength() : sound.getLength();
+	const CSound &sound=*(actionSound->sound);
+	const sample_pos_t selectionStart= selectionOnly ? actionSound->start : 0;
+	const sample_pos_t selectionLength= selectionOnly ? actionSound->selectionLength() : sound.getLength();
 	const sample_pos_t fullLength=sound.getLength();
 	const unsigned channelCount=sound.getChannelCount();
 	const unsigned sampleRate=sound.getSampleRate();
@@ -105,6 +106,7 @@ bool CBurnToCDAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 	{
 		string msg="These are the track(s) about to be created...\n\n";
 		int counter=1;
+#warning cues on top of each other cause this to get confused
 		sample_fpos_t totalBurnLength=0;
 		for(segments_t::iterator i=segments.begin();i!=segments.end();i++)
 		{
@@ -146,8 +148,8 @@ bool CBurnToCDAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 			}
 			else
 			{
-				Error(_("Total data to be burned is too large: ")+istring(totalBurnLength,3,1)+" "+_("minutes"));
-				return false;
+				if(Question(_("Total data to be burned is ")+istring(totalBurnLength)+" "+_("minutes")+".  "+_("You will probably need to enable an --overburn or --full-burn option to cdrdao.  See cdrdao for details.  Do this at your own risk.\n")+_("Do you want to continue?"),yesnoQues)!=yesAns)
+					return false;
 			}
 		}
 
@@ -349,10 +351,25 @@ bool CBurnToCDAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 	do {
 
 		// burn the files
-		const string command="'"+pathTo_cdrdao+"' "+(testOnly ? "simulate " : "write ")+endianSwap+"--speed "+istring(burnSpeed)+(istring(device).trim()=="" ? string("") : (" --device "+device))+" "+extra_cdrdao_options+" '"+TOCFilename+"'";
+		const string command="'"+pathTo_cdrdao+"' "+(testOnly ? "simulate " : "write ")+" -n "+endianSwap+"--speed "+istring(burnSpeed)+(istring(device).trim()=="" ? string("") : (" --device "+device))+" "+extra_cdrdao_options+" '"+TOCFilename+"' 2>&1"; // send err to out so we can capture it
 		printf("about to run command: %s\n",command.c_str());
+		/*
 		int status=system(command.c_str());
 		if(WEXITSTATUS(status)!=0)
+			Warning(_("cdrdao returned non-zero exit status.  Consult standard output/error for problems."));
+		else
+			CDCount++;
+		*/
+
+		FILE *p=popen(command.c_str(),"r");
+		showStatus(p);
+
+		// finish eating the output of the command (otherwise it causes errors)
+		for(char c; (fread(&c,1,1,p)==1); )
+			{ fwrite(&c,1,1,stdout); fflush(stdout); }
+
+		int ret=pclose(p);
+		if(WEXITSTATUS(ret)!=0)
 			Warning(_("cdrdao returned non-zero exit status.  Consult standard output/error for problems."));
 		else
 			CDCount++;
@@ -367,12 +384,12 @@ bool CBurnToCDAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFor
 	return true;
 }
 
-AAction::CanUndoResults CBurnToCDAction::canUndo(const CActionSound &actionSound) const
+AAction::CanUndoResults CBurnToCDAction::canUndo(const CActionSound *actionSound) const
 {
 	return curNA;
 }
 
-void CBurnToCDAction::undoActionSizeSafe(const CActionSound &actionSound)
+void CBurnToCDAction::undoActionSizeSafe(const CActionSound *actionSound)
 {
 	// not applicable
 }
@@ -428,6 +445,130 @@ const string CBurnToCDAction::detectDevice(const string pathTo_cdrdao)
 	return "";
 }
 
+#include <ctype.h>
+void CBurnToCDAction::showStatus(FILE *p)
+{
+	CStatusBar s(_("Burning..."),0,100,false); // ??? can I know pid to send a kill signal to for cancel?
+
+	// state machine looks for " [0-9]+ of [0-9]+ " and bases the progress upon the two parsed numbers
+	char c;
+	int state=0;
+	string str;
+	while(fread(&c,1,1,p)==1)
+	{
+		// output everything we read
+		fwrite(&c,1,1,stdout); fflush(stdout);
+
+		switch(state)
+		{
+		case 0:
+			str="";
+			if(c==' ')
+			{
+				str+=c;
+				state=1;
+			}
+			else
+				state=0;
+			break;
+
+		case 1:
+			if(isdigit(c))
+			{
+				str+=c;
+				state=2;
+			}
+			else
+				state=0;
+			break;
+
+		case 2:
+			if(isdigit(c))
+			{
+				str+=c;
+				state=2;
+			}
+			else if(c==' ')
+			{
+				str+=c;
+				state=3;
+			}
+			else
+				state=0;
+			break;
+
+		case 3:
+			if(c=='o')
+			{
+				str+=c;
+				state=4;
+			}
+			else
+				state=0;
+			break;
+
+		case 4:
+			if(c=='f')
+			{
+				str+=c;
+				state=5;
+			}
+			else
+				state=0;
+			break;
+
+		case 5:
+			if(c==' ')
+			{
+				str+=c;
+				state=6;
+			}
+			else
+				state=0;
+			break;
+
+		case 6:
+			if(isdigit(c))
+			{
+				str+=c;
+				state=7;
+			}
+			else
+				state=0;
+			break;
+
+		case 7:
+			if(isdigit(c))
+			{
+				str+=c;
+				state=7;
+			}
+			else if(c==' ')
+			{
+				str+=c;
+
+				// now we have our parsed string " [0-9]+ of [0-9] ", so update the progress
+				int part=1;
+				int whole=1;
+				sscanf(str.c_str()," %d of %d ",&part,&whole);
+
+				s.update(part*100/whole);
+
+				if(part>=whole)
+					return; // we're done
+
+				state=0;
+			}
+			else
+				state=0;
+			break;
+
+		default:
+			printf("%s: the state machine is messed up\n",__func__);
+			state=0; // messed up state machine
+		}
+	}
+}
 
 // ------------------------------
 
@@ -440,18 +581,19 @@ CBurnToCDActionFactory::~CBurnToCDActionFactory()
 {
 }
 
-CBurnToCDAction *CBurnToCDActionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CBurnToCDAction *CBurnToCDActionFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
 	return new CBurnToCDAction(
+		this,
 		actionSound,
-		actionParameters->getStringParameter("Temp Space Directory"),
-		actionParameters->getStringParameter("Path to cdrdao"),
-		actionParameters->getUnsignedParameter("Burn Speed")+1, /* +1 because it's the zero-based index into a list of numbers */
-		actionParameters->getUnsignedParameter("Gap Between Tracks"),
-		actionParameters->getStringParameter("Device"),
-		actionParameters->getStringParameter("Extra cdrdao Options"),
-		(actionParameters->getUnsignedParameter("Applies to")==1), // 0 -> "Entire File", 1 -> "Selection Only"
-		actionParameters->getBoolParameter("Simulate Burn Only")
+		actionParameters->getValue<string>("Temp Space Directory"),
+		actionParameters->getValue<string>("Path to cdrdao"),
+		actionParameters->getValue<unsigned>("Burn Speed")+1, /* +1 because it's the zero-based index into a list of numbers */
+		actionParameters->getValue<unsigned>("Gap Between Tracks"),
+		actionParameters->getValue<string>("Device"),
+		actionParameters->getValue<string>("Extra cdrdao Options"),
+		(actionParameters->getValue<unsigned>("Applies to")==1), // 0 -> "Entire File", 1 -> "Selection Only"
+		actionParameters->getValue<bool>("Simulate Burn Only")
 	);
 }
 

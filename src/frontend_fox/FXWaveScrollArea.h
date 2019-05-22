@@ -63,7 +63,6 @@ public:
 
 	const FXint getCanvasWidth() const;
 	const FXint getCueScreenX(size_t cueIndex) const;
-	const sample_pos_t getCueTimeFromX(FXint screenX) const;
 
 
 	void updateFromSelectionChange(FXWaveCanvas::LastChangedPositions lastChangedPosition=FXWaveCanvas::lcpNone);
@@ -85,6 +84,8 @@ public:
 	long onMouseMove(FXObject *object,FXSelector sel,void *ptr);
 
 	long onAutoScroll(FXObject *object,FXSelector sel,void *ptr);
+
+	long onHMouseWheel(FXObject *object,FXSelector sel,void *ptr);
 
 	enum
 	{

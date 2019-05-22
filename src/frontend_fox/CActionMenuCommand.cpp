@@ -49,11 +49,11 @@ FXDEFMAP(CActionMenuCommand) CActionMenuCommandMap[]=
 
 FXIMPLEMENT(CActionMenuCommand,FXMenuCommand,CActionMenuCommandMap,ARRAYNUMBER(CActionMenuCommandMap))
 
-CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposite* p, const FXString& accelKeyText, FXIcon* ic, FXuint opts) :
+CActionMenuCommand::CActionMenuCommand(AActionFactory *_actionFactory,FXComposite* p, FXIcon* ic, FXuint opts) :
 	FXMenuCommand(
 		p,
-		// i18n/translate the action's name, append '...' if it has a dialog and set the accelerator key
-		(string(gettext(_actionFactory->getName().c_str()))+(_actionFactory->hasDialog() ? "..." : "")+"\t"+accelKeyText.text()).c_str(),
+		// i18n/translate the action's name, append '...' if it has a dialog
+		(string(gettext(_actionFactory->getName().c_str()))+(_actionFactory->hasDialog() ? "..." : "")).c_str(),
 		(ic==NULL ? FOXIcons->normal_action_buff : ic),
 		this,
 		ID_HOTKEY,
@@ -106,7 +106,7 @@ long CActionMenuCommand::onKeyClick(FXObject *sender,FXSelector sel,void *ptr)
 long CActionMenuCommand::onCommand(FXObject *sender,FXSelector sel,void *ptr)
 {
 	CLoadedSound *activeSound=gSoundFileManager->getActive();
-	if(activeSound)
+	if(activeSound!=NULL || !actionFactory->requiresALoadedSound)
 	{
 		gSoundFileManager->getMainWindow()->actionMenuCommandTriggered(this);
 
@@ -115,11 +115,16 @@ long CActionMenuCommand::onCommand(FXObject *sender,FXSelector sel,void *ptr)
 		CActionParameters actionParameters(gSoundFileManager);
 		actionFactory->performAction(activeSound,&actionParameters,prevEvent.state&SHIFTMASK);
 
-		gSoundFileManager->updateAfterEdit();
+		// necessary if say a new file was opened, and it needs to be update (because AAction::performAction() didn't know about the new one that exists now)
+		if(gSoundFileManager->getActive()!=activeSound)
+			gSoundFileManager->updateAfterEdit();
 
+		// done in AActionFactory::performAction() now
+		/*
 		// now, in case a newly created window has taken the place of the previously active window, it still may be necessary to update the previous active sound window 
 		if(gSoundFileManager->getActive()!=activeSound && gSoundFileManager->isValidLoadedSound(activeSound))
 			gSoundFileManager->updateAfterEdit(activeSound);
+		*/
 
 		prevEvent.state=0;
 		prevEvent.click_button=0;

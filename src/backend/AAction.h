@@ -31,6 +31,7 @@ class AAction;
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 // I figure most actions will need 2 or 3 of these, so I'll include them here
 #include <math.h>
@@ -40,6 +41,7 @@ class AAction;
 #include "settings.h"
 #include "CActionSound.h"
 #include "AStatusComm.h"
+#include "CMacroRecorder.h"
 
 class CLoadedSound;
 class CSoundPlayerChannel;
@@ -56,6 +58,7 @@ class ASoundClipboard;
  * It takes care of knowing when to show dialogs for the and managing the undo
  * stack
  */
+static bool _dummy;
 class AActionFactory
 {
 public:
@@ -92,19 +95,29 @@ public:
 	 *	   true and false if a channel will be affected at all.  This information is
 	 *	   used to know which channels need to be crossfaded and such.
 	 */
-	//
-	bool performAction(CLoadedSound *loadedSound,CActionParameters *actionParameters,bool showChannelSelectDialog);
+	bool performAction(CLoadedSound *loadedSound,CActionParameters *actionParameters,bool showChannelSelectDialog,bool actionParametersAlreadySetup=false,bool &wentOntoUndoStack=_dummy);
 
 	const string &getName() const;
 	const string &getDescription() const;
 
 	bool hasDialog() const;
 
+	// this flag indicates whether this action requires the 'active' sound from the sound manager; defaults to true; can be modified by the derived class
+	bool requiresALoadedSound; 
+
+	// this flag indicates whether this action is affected by selection positions; defaults to true; can be modified by the dereived class
+	// 	(it is not equivalent in implications to crossfadeEdges is applicable (i.e. selection positions are applicable to the CBurnToCDAction, but crossfadingTheEdiges is not)
+	// 	(this flag is used by the macro recording/playing to know if it needs to ask the user how to set the selection positions when the macro is played back)
+	bool selectionPositionsAreApplicable; 
+
+	static CMacroRecorder macroRecorder;
+
 protected:
 
 	// - willResize can be passed as false to avoid locking the CSound object for resize if the action doesn't need that lock to, but a lockSize will be obtained anyway
 	// - crossfadeIsApplicable should be false for actions like copy and selection changes
-		// ??? all these cools is getting a little clunky
+		// ??? having all these bools is getting a little clunky
+		// ??? and I think that maybe this information should be left up to the AAction object and not the factory itself if that's possible
 	AActionFactory(const string actionName,const string actionDescription,AActionDialog *channelSelectDialog,AActionDialog *dialog,bool willResize=true,bool crossfadeEdgesIsApplicable=true);
 
 
@@ -117,7 +130,7 @@ protected:
 	 *   to use this void * to pass data... I sugguest a struct which is nested within the AAction derivation
 	 *   which the dialog will declare and object of
 	 */
-	virtual AAction *manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const=0;
+	virtual AAction *manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const=0;
 
 protected:
 	const string actionName;
@@ -160,9 +173,18 @@ public:
 	// - if channel is passed, restores the selection positions from before the action executed if a channel was given to doAction
 	void undoAction(CSoundPlayerChannel *channel=NULL);
 
+	const AActionFactory *getFactory() const { return factory; }
+
 	void setOrigIsModified() { origIsModified=true; }
 
 	static vector<ASoundClipboard *> clipboards;
+
+	// counts how many recursions of doAction are taking place
+	static int doActionRecursionCount;
+
+	// counts how many recursions of undoAction are taking place
+	static int undoActionRecursionCount;
+
 
 	/* 
 	 * This is set to the return value of ASoundFileManager::getPositionalInfo() when
@@ -172,7 +194,7 @@ public:
 	map<string,string> positionalInfo;
 
 protected:
-	AAction(const CActionSound &actionSound);
+	AAction(const AActionFactory *factory,const CActionSound *actionSound);
 
 	enum CanUndoResults
 	{
@@ -191,9 +213,9 @@ protected:
 	//   data-member because sometimes I want to invoke the method with different value
 	//
 	// doActionSizeSafe should return true if the action was done or false if not
-	virtual bool doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)=0;
-	virtual void undoActionSizeSafe(const CActionSound &actionSound)=0;
-	virtual CanUndoResults canUndo(const CActionSound &actionSound) const=0;
+	virtual bool doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)=0;
+	virtual void undoActionSizeSafe(const CActionSound *actionSound)=0;
+	virtual CanUndoResults canUndo(const CActionSound *actionSound) const=0;
 
 	// this method can be overloaded to return false, if the action does not warrent saving the file (i.e. the user will not be prompted)
 	virtual bool doesWarrantSaving() const;
@@ -203,7 +225,7 @@ protected:
 	// It is necessary for an inner crossfade to know from where to backup data to be able to crossfade with the new selection after the action.
 	// By default it returns start and stop just what's in actionSound.
 	// An action, for example, insert paste would want to return the stop as actionSound.start because the inner crossfade after the insert would want to blend the new stop position with what's before the original start position.
-	virtual bool getResultingCrossfadePoints(const CActionSound &actionSound,sample_pos_t &start,sample_pos_t &stop); 
+	virtual bool getResultingCrossfadePoints(const CActionSound *actionSound,sample_pos_t &start,sample_pos_t &stop); 
 
 	// ??? perhaps I could make a more intelligent system that saves and restores structure as well as data
 	// but take for example the CChangeRate action... we could surely backup the selection, but when we
@@ -227,8 +249,8 @@ protected:
 		mmAllButSelection,
 		mmAll
 	};
-	void moveSelectionToTempPools(const CActionSound &actionSound,const MoveModes moveMode,sample_pos_t replaceLength=0,sample_pos_t fudgeFactor=0);
-	void restoreSelectionFromTempPools(const CActionSound &actionSound,sample_pos_t removeWhere=0,sample_pos_t removeLength=0);
+	void moveSelectionToTempPools(const CActionSound *actionSound,const MoveModes moveMode,sample_pos_t replaceLength=0,sample_pos_t fudgeFactor=0);
+	void restoreSelectionFromTempPools(const CActionSound *actionSound,sample_pos_t removeWhere=0,sample_pos_t removeLength=0);
 	// frees what moveSelectionToTempPool, and crossfade methodscreated
 	void freeAllTempPools();
 
@@ -255,8 +277,9 @@ private:
 
 	void setSelection(sample_pos_t start,sample_pos_t stop,CSoundPlayerChannel *channel);
 
+	const AActionFactory * const factory; 	// the AActionFactory that created this object
 
-	CActionSound actionSound;		// the CActionSound this action was constructed with
+	auto_ptr<CActionSound> actionSound;	// a copy of the CActionSound this action was constructed with
 	bool willResize;
 	bool done;				// true if this action has already been done
 
@@ -278,10 +301,10 @@ private:
 
 	
 	// members used for crossfading and uncrossfading the edges after an action
-	void crossfadeEdges(const CActionSound &actionSound);
-	void prepareForInnerCrossfade(const CActionSound &actionSound);
-	void crossfadeEdgesInner(const CActionSound &actionSound);
-	void crossfadeEdgesOuter(const CActionSound &actionSound);
+	void crossfadeEdges(const CActionSound *actionSound);
+	void prepareForInnerCrossfade(const CActionSound *actionSound);
+	void crossfadeEdgesInner(const CActionSound *actionSound);
+	void crossfadeEdgesOuter(const CActionSound *actionSound);
 	void uncrossfadeEdges();
 	CrossfadeEdgesTypes didCrossfadeEdges;
 		// these data members are used differently depending on whether an inner or outer crossfade is done

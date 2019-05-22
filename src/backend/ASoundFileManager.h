@@ -49,15 +49,17 @@ public:
 	virtual ~ASoundFileManager() { }
 
 	void createNew();
-	CLoadedSound *createNew(const string filename,unsigned channelCount,unsigned sampleRate,unsigned length=1,bool rawFormat=false);
-		// returns false if a prompt for filename was cancelled or if there was an error loading
+	CLoadedSound *createNew(const string filename,unsigned channelCount,unsigned sampleRate,sample_pos_t length=1,bool rawFormat=false);
+		// returns false if a prompt for filename was cancelled, or if there was an error loading
 	bool open(const string filename="",bool openAsRaw=false);
+	bool open(const vector<string> &filenames,bool openAsRaw=false);
 
+#warning do this.. I can call soundFileManager->getActive() from actions when necessary
 	// ??? should rename these to, saveActive...  or pass them a CSound * (I prefer that), perhaps optionally pass saveAs a filename which can be ""
 		// returns false if something was cancelled
 	bool save();
 		// returns false if something was cancelled
-	bool saveAs();
+	bool saveAs(const string filename="",bool saveAsRaw=false);
 		// returns false if something was cancelled
 	bool savePartial(const CSound *sound,const string filename,const sample_pos_t saveStart,const sample_pos_t saveLength,bool useLastUserPrefs);
 
@@ -83,6 +85,9 @@ public:
 	// given an index from 0 to getOpenedCount()-1 should be implemented to 
 	// run the CLoadedSound pointer
 	virtual CLoadedSound *getSound(size_t index)=0;
+
+	// should be implemented to change the active sound to the one specified at the given index
+	virtual void setActiveSound(size_t index)=0;
 
 	// is called after an action is performed to update the screen or when the title
 	// bar and other status information of a loaded sound window needs to be modified
@@ -116,7 +121,9 @@ private:
 
 	CNestedDataFile *loadedRegistryFile;
 
-	void prvOpen(const string filename,bool readOnly,bool registerFilename,bool asRaw=false,const ASoundTranslator *translatorToUse=NULL);
+	// returns false if cancelled
+	bool prvOpen(const string filename,bool readOnly,bool registerFilename,bool asRaw=false,const ASoundTranslator *translatorToUse=NULL);
+
 	void registerFilename(const string filename);
 	void unregisterFilename(const string filename);
 	bool isFilenameRegistered(const string filename);

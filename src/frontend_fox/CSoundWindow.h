@@ -62,6 +62,8 @@ public:
 
 	int getZoomDecimalPlaces() const; // return number of decimal places that should be appropriated on a time value depending on the zoom factor
 
+	sample_pos_t getLeftEdgePosition() const;
+
 	enum
 	{
 		ID_HORZ_ZOOM_DIAL=FXTopWindow::ID_LAST,
@@ -166,7 +168,9 @@ private:
 
 	friend void playTrigger(void *Pthis);
 
+#if REZ_FOX_VERSION<10322
 	FXTimer *timerHandle; // used to draw play position
+#endif
 	bool firstTimeShowing;
 	bool closing;
 

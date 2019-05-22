@@ -41,6 +41,8 @@ libfrontend_la_SOURCES= \
 			CMainWindow.cpp \
 			CNewSoundDialog.cpp \
 			CRecordDialog.cpp \
+			CRecordMacroDialog.cpp \
+			CMacroActionParamsDialog.cpp \
 			CPasteChannelsDialog.cpp \
 			CProgressDialog.cpp \
 			CSoundFileManager.cpp \
@@ -58,6 +60,7 @@ libfrontend_la_SOURCES= \
 			CMIDIDumpSampleIdDialog.cpp \
 			ClibaudiofileSaveParametersDialog.cpp \
 			drawPortion.cpp \
+			FileActionDialogs.cpp \
 			EditActionDialogs.cpp \
 			EffectActionDialogs.cpp \
 			FilterActionDialogs.cpp \
@@ -78,6 +81,7 @@ libfrontend_la_SOURCES= \
 			FXWaveScrollArea.cpp \
 			FXWaveCanvas.cpp \
 			CLADSPAActionDialog.cpp \
+			CKeyBindingsDialog.cpp \
 			rememberShow.cpp \
 			settings.cpp
 
@@ -100,6 +104,7 @@ rezound_SOURCES= main.cpp
 ## separate directory
 _rezound_LDADD= libfrontend.la\
 	$(top_builddir)/src/backend/libbackend.la \
+	$(top_builddir)/src/backend/File/libFile.la \
 	$(top_builddir)/src/backend/Edits/libEdits.la \
 	$(top_builddir)/src/backend/Effects/libEffects.la \
 	$(top_builddir)/src/backend/Filters/libFilters.la \
@@ -110,14 +115,14 @@ _rezound_LDADD= libfrontend.la\
 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
 	$(top_builddir)/src/PoolFile/libPoolFile.la
 
-rezound_LDADD=$(_rezound_LDADD) @FOX_1_3_LIBS@ @FOX_1_2_LIBS@ @FOX_1_1_LIBS@ @FOX_LIBS@
+rezound_LDADD=$(_rezound_LDADD) @FOX_1_5_LIBS@  @FOX_1_4_LIBS@ @FOX_1_3_LIBS@ @FOX_1_2_LIBS@ @FOX_1_1_LIBS@ @FOX_LIBS@
 
 ## if I don't do this, automake leaves out @abc@ vars when creating the rezound_DEPENDENCES value
 ## so changes to the LADSPA lib (that may or may not be built) don't cause a re-link
 rezound_DEPENDENCIES=$(_rezound_LDADD)
 
 
-AM_CXXFLAGS=@FOX_1_3_CXXFLAGS@ @FOX_1_2_CXXFLAGS@ @FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
+AM_CXXFLAGS=@FOX_1_5_CXXFLAGS@ @FOX_1_4_CXXFLAGS@ @FOX_1_3_CXXFLAGS@ @FOX_1_2_CXXFLAGS@ @FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
 
 noinst_HEADERS=\
 	fox_compat.h \
@@ -132,6 +137,8 @@ noinst_HEADERS=\
 	CMainWindow.h \
 	CNewSoundDialog.h \
 	CRecordDialog.h \
+	CRecordMacroDialog.h \
+	CMacroActionParamsDialog.h \
 	CPasteChannelsDialog.h \
 	CProgressDialog.h \
 	CSoundFileManager.h \
@@ -148,6 +155,7 @@ noinst_HEADERS=\
 	CJACKPortChoiceDialog.h \
 	CMIDIDumpSampleIdDialog.h \
 	ClibaudiofileSaveParametersDialog.h \
+	FileActionDialogs.h \
 	EditActionDialogs.h \
 	EffectActionDialogs.h \
 	FilterActionDialogs.h \
@@ -168,6 +176,7 @@ noinst_HEADERS=\
 	FXWaveScrollArea.h \
 	FXWaveCanvas.h \
 	CLADSPAActionDialog.h \
+	CKeyBindingsDialog.h \
 	FXPopupHint.h \
 	FXBackBufferedCanvas.h \
 	drawPortion.h \

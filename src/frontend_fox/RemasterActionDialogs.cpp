@@ -46,12 +46,14 @@ CSimpleBalanceActionDialog::CSimpleBalanceActionDialog(FXWindow *mainWindow) :
 				addComboTextEntry(p2,
 					N_("Channel A"),
 					items,
+					CActionParamDialog::cpvtAsInteger,
 					""
 				);
 
 				addComboTextEntry(p2,
 					N_("Channel B"),
 					items,
+					CActionParamDialog::cpvtAsInteger,
 					""
 				);
 
@@ -73,6 +75,7 @@ CSimpleBalanceActionDialog::CSimpleBalanceActionDialog(FXWindow *mainWindow) :
 		addComboTextEntry(p0,
 			N_("Balance Type"),
 			balanceTypes,
+			CActionParamDialog::cpvtAsInteger,
 			CBalanceAction::getBalanceTypeExplanation()
 		);
 		/* not possible
@@ -121,12 +124,14 @@ CCurvedBalanceActionDialog::CCurvedBalanceActionDialog(FXWindow *mainWindow) :
 				addComboTextEntry(p2,
 					N_("Channel A"),
 					items,
+					CActionParamDialog::cpvtAsInteger,
 					""
 				);
 
 				addComboTextEntry(p2,
 					N_("Channel B"),
 					items,
+					CActionParamDialog::cpvtAsInteger,
 					""
 				);
 
@@ -147,6 +152,7 @@ CCurvedBalanceActionDialog::CCurvedBalanceActionDialog(FXWindow *mainWindow) :
 		addComboTextEntry(p0,
 			N_("Balance Type"),
 			balanceTypes,
+			CActionParamDialog::cpvtAsInteger,
 			CBalanceAction::getBalanceTypeExplanation()
 		);
 }
@@ -205,7 +211,8 @@ CMonoizeActionDialog::CMonoizeActionDialog(FXWindow *mainWindow) :
 			options.push_back(N_("Make All Channels The Same"));
 			addComboTextEntry(p0,
 				N_("Method"),
-				options
+				options,
+				CActionParamDialog::cpvtAsInteger
 			);
 }
 
@@ -493,6 +500,61 @@ CMarkQuietAreasDialog::CMarkQuietAreasDialog(FXWindow *mainWindow) :
 }
 
 
+// --- shorten quiet areas --------------------
+
+CShortenQuietAreasDialog::CShortenQuietAreasDialog(FXWindow *mainWindow) :
+	CActionParamDialog(mainWindow)
+{
+	FXConstantParamValue *t;
+	void *p1=newVertPanel(NULL);
+		void *p2=newHorzPanel(p1,false);
+			t=addSlider(p2,
+				N_("Threshold for Quiet"),
+				"dBFS",
+				new CActionParamMapper_dBFS(-48.0),
+				NULL,
+				false
+			);
+			t->setTipText(_("An audio level below this threshold is considered to be quiet."));
+
+			t=addSlider(p2,
+				N_("Must Remain Quiet for"),
+				"ms",
+				new CActionParamMapper_linear(500,1000,10,10000),
+				NULL,
+				false
+			);
+			t->setTipText(_("The audio level must remain below the threshold for this long before a beginning cue will be added."));
+
+			t=addSlider(p2,
+				N_("Must Remain Unquiet for"),
+				"ms",
+				new CActionParamMapper_linear(0,1000,10,10000),
+				NULL,
+				false
+			);
+			t->setTipText(_("After the beginning of a quiet area has been detected the audio level must rise above the threshold for this long for an ending cue to be added."));
+
+			t=addSlider(p2,
+				N_("Level Detector Window Time"),
+				"ms",
+				new CActionParamMapper_linear_range_scaled(35.0,.1,100,1,1,10),
+				NULL,
+				false
+			);
+			t->setTipText(_("This is the length of the window of audio to analyze for detecting the audio level."));
+
+			t=addSlider(p2,
+				N_("Shorten Found Area To"),
+				"x",
+				new CActionParamMapper_linear(0.5,1,1,1),
+				NULL,
+				false
+			);
+			t->setTipText(_("When a quiet area is found it will be shorted to this much of its original length."));
+}
+
+
 // --- resample ----------------------------
 
 CResampleDialog::CResampleDialog(FXWindow *mainWindow) :
@@ -512,10 +574,11 @@ CResampleDialog::CResampleDialog(FXWindow *mainWindow) :
 		addComboTextEntry(p0,
 			N_("New Sample Rate"),
 			items,
+			CActionParamDialog::cpvtAsInteger,
 			"",
 			true
 		);
-			getComboText("New Sample Rate")->setValue(44100);
+			getComboText("New Sample Rate")->setIntegerValue(44100);
 }
 
 

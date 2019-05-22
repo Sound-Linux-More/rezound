@@ -19,7 +19,6 @@
  */
 
 static void playTrigger(void *Pthis);
-#warning using the "fit" button doesnt refresh the ruler (cues stick in their position) 
 
 /*
  * TODO
@@ -120,8 +119,13 @@ void playTrigger(void *Pthis)
 {
 	CSoundWindow *that=(CSoundWindow *)Pthis;
 	// ??? this is called from another thread.. I don't know if it will cause a problem in FOX
+#if REZ_FOX_VERSION<10322
 	if(that->timerHandle==NULL)
 		that->timerHandle=that->getApp()->addTimeout(that,CSoundWindow::ID_DRAW_PLAY_POSITION,DRAW_PLAY_POSITION_TIME);
+#else
+	if(!that->getApp()->hasTimeout(that,CSoundWindow::ID_DRAW_PLAY_POSITION))
+		that->getApp()->addTimeout(that,CSoundWindow::ID_DRAW_PLAY_POSITION,DRAW_PLAY_POSITION_TIME);
+#endif
 }
 
 // ----------------------------------------------------------
@@ -134,7 +138,9 @@ CSoundWindow::CSoundWindow(FXComposite *parent,CLoadedSound *_loadedSound) :
 
 	loadedSound(_loadedSound),
 
+#if REZ_FOX_VERSION<10322
 	timerHandle(NULL),
+#endif
 	firstTimeShowing(true),
 	closing(false),
 
@@ -285,25 +291,23 @@ CSoundWindow::CSoundWindow(FXComposite *parent,CLoadedSound *_loadedSound) :
 
 
 	addCueActionFactory=new CAddCueActionFactory(gCueDialog);
+	gRegisteredActionFactories[addCueActionFactory->getName()]=addCueActionFactory; // we can register this, but it only records the absolute position it added the cue to... better would be to have separate action factories for add at start and add at stop positions .. then these two should be registered plus the one for "this position" for absolute positioning
 	removeCueActionFactory=new CRemoveCueActionFactory;
 	replaceCueActionFactory=new CReplaceCueActionFactory(gCueDialog);
 }
 
 CSoundWindow::~CSoundWindow()
 {
+#if REZ_FOX_VERSION<10322
 	if(timerHandle!=NULL)
 		getApp()->removeTimeout(timerHandle);
+#else
+	getApp()->removeTimeout(this,CSoundWindow::ID_DRAW_PLAY_POSITION);
+#endif
 
 	loadedSound->channel->removeOnPlayTrigger(playTrigger,this);
 
 	closing=true;
-/*
-	while(timerHandle!=NULL)
-	{
-		printf("waiting on timerHandle to fire\n");
-		fxsleep(1000); // sleep for 1 millisecond
-	}
-*/
 
 	delete addCueActionFactory;
 	delete removeCueActionFactory;
@@ -425,6 +429,7 @@ void CSoundWindow::updateFromEdit(bool undoing)
 
 	waveView->updateFromEdit(undoing);
 	updateAllStatusInfo();
+	gSoundFileManager->updateModifiedStatusIndicators();
 }
 
 static const string commifyNumber(const string s)
@@ -510,6 +515,10 @@ void CSoundWindow::centerStopPos()
 	waveView->centerStopPos();
 }
 
+sample_pos_t CSoundWindow::getLeftEdgePosition() const
+{
+	return waveView->getSamplePosForScreenX(0);
+}
 
 // events I get from overriding a method
 
@@ -567,9 +576,6 @@ long CSoundWindow::onResize(FXObject *sender,FXSelector sel,void *ptr)
 // little red play position bar draw event ... this method is called on a timer every fraction of a sec
 long CSoundWindow::onDrawPlayPosition(FXObject *sender,FXSelector,void*)
 {
-	// timer has fired
-	timerHandle=NULL;
-
 	if(closing) // destructor is waiting on this event
 		return 1;
 
@@ -605,7 +611,11 @@ long CSoundWindow::onDrawPlayPosition(FXObject *sender,FXSelector,void*)
 		// ??? I could make the calculation of the next event more intelligent
 		// 	- if the onscreen data is smaller I could register to get the timer faster 
 		// reregister to get this event again
+#if REZ_FOX_VERSION<10322
 		timerHandle=getApp()->addTimeout(this,ID_DRAW_PLAY_POSITION,DRAW_PLAY_POSITION_TIME);
+#else
+		getApp()->addTimeout(this,ID_DRAW_PLAY_POSITION,DRAW_PLAY_POSITION_TIME);
+#endif
 	}
 	else
 	{
@@ -799,24 +809,24 @@ long CSoundWindow::onAddCue(FXObject *sender,FXSelector sel,void *ptr)
 		CActionParameters actionParameters(NULL);
 
 		// add the parameters for the dialog to display initially
-		actionParameters.addStringParameter("name","Cue1");
+		actionParameters.setValue<string>("name","Cue1");
 
 		switch(FXSELTYPE(sel))
 		{
 		case FXRezWaveView::SEL_ADD_CUE:
-			actionParameters.addSamplePosParameter("position",*((sample_pos_t *)ptr));
+			actionParameters.setValue<sample_pos_t>("position",*((sample_pos_t *)ptr));
 			break;
 
 		case FXRezWaveView::SEL_ADD_CUE_AT_START_POSITION:
-			actionParameters.addSamplePosParameter("position",loadedSound->channel->getStartPosition());
+			actionParameters.setValue<sample_pos_t>("position",loadedSound->channel->getStartPosition());
 			break;
 
 		case FXRezWaveView::SEL_ADD_CUE_AT_STOP_POSITION:
-			actionParameters.addSamplePosParameter("position",loadedSound->channel->getStopPosition());
+			actionParameters.setValue<sample_pos_t>("position",loadedSound->channel->getStopPosition());
 			break;
 		}
 
-		actionParameters.addBoolParameter("isAnchored",false);
+		actionParameters.setValue<bool>("isAnchored",false);
 
 		addCueActionFactory->performAction(loadedSound,&actionParameters,false);
 		updateFromEdit();
@@ -832,7 +842,7 @@ long CSoundWindow::onAddCue(FXObject *sender,FXSelector sel,void *ptr)
 long CSoundWindow::onRemoveCue(FXObject *sender,FXSelector sel,void *ptr)
 {
 	CActionParameters actionParameters(NULL);
-	actionParameters.addUnsignedParameter("index",*((size_t *)ptr));
+	actionParameters.setValue<unsigned>("index",*((size_t *)ptr));
 	removeCueActionFactory->performAction(loadedSound,&actionParameters,false);
 	updateFromEdit();
 	return 1;
@@ -844,10 +854,10 @@ long CSoundWindow::onEditCue(FXObject *sender,FXSelector sel,void *ptr)
 	size_t cueIndex=*((size_t *)ptr);
 
 	// add the parameters for the dialog to display initially
-	actionParameters.addUnsignedParameter("index",cueIndex);
-	actionParameters.addStringParameter("name",loadedSound->sound->getCueName(cueIndex));
-	actionParameters.addSamplePosParameter("position",loadedSound->sound->getCueTime(cueIndex));
-	actionParameters.addBoolParameter("isAnchored",loadedSound->sound->isCueAnchored(cueIndex));
+	actionParameters.setValue<unsigned>("index",cueIndex);
+	actionParameters.setValue<string>("name",loadedSound->sound->getCueName(cueIndex));
+	actionParameters.setValue<sample_pos_t>("position",loadedSound->sound->getCueTime(cueIndex));
+	actionParameters.setValue<bool>("isAnchored",loadedSound->sound->isCueAnchored(cueIndex));
 
 	replaceCueActionFactory->performAction(loadedSound,&actionParameters,false);
 	updateFromEdit();

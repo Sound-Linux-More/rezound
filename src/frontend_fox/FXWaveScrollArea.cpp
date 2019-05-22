@@ -66,8 +66,8 @@ FXDEFMAP(FXWaveScrollArea) FXWaveViewScrollAreaMap[]=
 	FXMAPFUNC(SEL_TIMEOUT,			FXWindow::ID_AUTOSCROLL,	FXWaveScrollArea::onAutoScroll),
 
 #if FOX_MAJOR >= 1
-	// re-route the mouse wheel event to scroll horizontally instead of its default, vertically
-	FXMAPFUNC(SEL_MOUSEWHEEL,0,FXScrollArea::onHMouseWheel),
+	// re-route the mouse wheel event to scroll/zoom horizontally instead of its default, scrolling vertically
+	FXMAPFUNC(SEL_MOUSEWHEEL,0,FXWaveScrollArea::onHMouseWheel),
 #endif
 };
 
@@ -108,6 +108,8 @@ void FXWaveScrollArea::updateFromEdit(bool undoing)
 	// don't ask me why.. but if I don't put this twice it won't work unless I press the fit button twice.. and still it doesn't always work.. maybe I'll figure it out one day
 	setPosition(-canvas->getHorzOffset(),-canvas->getVertOffset());
 	layout();
+
+	update();
 }
 
 void FXWaveScrollArea::setHorzZoom(double v,FXWaveCanvas::HorzRecenterTypes horzRecenterType)
@@ -388,6 +390,10 @@ long FXWaveScrollArea::onAutoScroll(FXObject *object,FXSelector sel,void *ptr)
 	return ret;
 }
 
+long FXWaveScrollArea::onHMouseWheel(FXObject *object,FXSelector sel,void *ptr)
+{
+	return FXScrollArea::onHMouseWheel(object,sel,ptr);
+}
 
 void FXWaveScrollArea::centerStartPos()
 {
@@ -432,7 +438,3 @@ const FXint FXWaveScrollArea::getCueScreenX(size_t cueIndex) const
 	return canvas->getCueScreenX(cueIndex);
 }
 
-const sample_pos_t FXWaveScrollArea::getCueTimeFromX(FXint screenX) const
-{
-	return canvas->getCueTimeFromX(screenX);
-}

@@ -59,6 +59,7 @@ public:
 	FXIcon *pause;
 	FXIcon *play_all_looped;
 	FXIcon *play_all_once;
+	FXIcon *play_screen;
 	FXIcon *play_selection_looped_gap_before_repeat;
 	FXIcon *play_selection_looped;
 	FXIcon *play_selection_looped_skip_most;
@@ -83,6 +84,7 @@ public:
 	FXIcon *small_pause;
 	FXIcon *small_play_all_looped;
 	FXIcon *small_play_all_once;
+	FXIcon *small_play_screen;
 	FXIcon *small_play_selection_looped_gap_before_repeat;
 	FXIcon *small_play_selection_looped;
 	FXIcon *small_play_selection_looped_skip_most;

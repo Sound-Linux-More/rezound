@@ -47,7 +47,7 @@ ClibaudiofileSaveParametersDialog::ClibaudiofileSaveParametersDialog(FXWindow *m
 			sampleFormats.push_back("Unsigned");
 			sampleFormats.push_back("32bit float");
 			sampleFormats.push_back("64bit double");
-		FXComboTextParamValue *sampleFormat=addComboTextEntry(p,N_("Sample Format"),sampleFormats,"");
+		FXComboTextParamValue *sampleFormat=addComboTextEntry(p,N_("Sample Format"),sampleFormats,CActionParamDialog::cpvtAsInteger,"");
 			sampleFormat->setTarget(this);
 			sampleFormat->setSelector(ID_SAMPLE_FORMAT_COMBOBOX);
 		
@@ -59,11 +59,15 @@ ClibaudiofileSaveParametersDialog::ClibaudiofileSaveParametersDialog(FXWindow *m
 			sampleWidths.push_back("16");
 			sampleWidths.push_back("24");
 			sampleWidths.push_back("32");
-		addComboTextEntry(p,N_("Sample Width"),sampleWidths,"");
+		addComboTextEntry(p,N_("Sample Width"),sampleWidths,CActionParamDialog::cpvtAsInteger,"");
 
 		vector<string> compressionTypes;
 			// will be populated with values later
-		addComboTextEntry(p,N_("Compression Type"),compressionTypes,"");
+		addComboTextEntry(p,N_("Compression Type"),compressionTypes,CActionParamDialog::cpvtAsInteger,"");
+
+		addCheckBoxEntry(p,N_("Save Cues"),true,_("Enable or Disable the saving of cues to the file if the format supports it"));
+		addCheckBoxEntry(p,N_("Save User Notes"),true,_("Enable or Disable the saving of user notes to the file if the format supports it"));
+		new FXLabel(p,_("Some software may not handle files containing cues or user notes.\nSo, you can disable their being saved to the file."));
 }
 
 #ifdef HAVE_LIBAUDIOFILE
@@ -128,9 +132,11 @@ bool ClibaudiofileSaveParametersDialog::show(AFrontendHooks::libaudiofileSavePar
 
 	if(CActionParamDialog::show(NULL,&actionParameters))
 	{
-		parameters.sampleFormat=indexTo_AF_SAMPFMT_xxx(actionParameters.getUnsignedParameter("Sample Format"));
-		parameters.sampleWidth=indexToSampleWidth(actionParameters.getUnsignedParameter("Sample Width"));
-		parameters.compressionType=parameters.supportedCompressionTypes[actionParameters.getUnsignedParameter("Compression Type")].second;
+		parameters.sampleFormat=indexTo_AF_SAMPFMT_xxx(actionParameters.getValue<unsigned>("Sample Format"));
+		parameters.sampleWidth=indexToSampleWidth(actionParameters.getValue<unsigned>("Sample Width"));
+		parameters.compressionType=parameters.supportedCompressionTypes[actionParameters.getValue<unsigned>("Compression Type")].second;
+		parameters.saveCues=actionParameters.getValue<bool>("Save Cues");
+		parameters.saveUserNotes=actionParameters.getValue<bool>("Save User Notes");
 		return true;
 	}
 	else
@@ -140,7 +146,7 @@ bool ClibaudiofileSaveParametersDialog::show(AFrontendHooks::libaudiofileSavePar
 
 long ClibaudiofileSaveParametersDialog::onSampleFormatComboBox(FXObject *sender,FXSelector sel,void *ptr)
 {
-	int selected=getComboText("Sample Format")->getValue();
+	int selected=getComboText("Sample Format")->getIntegerValue();
 	if(selected==0 || selected==1)
 	{ // signed or unsigned
 		getComboText("Sample Width")->enable();

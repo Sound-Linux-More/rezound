@@ -47,6 +47,7 @@ ALSA_LIBS = @ALSA_LIBS@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUDIOFILE_CFLAGS = @AUDIOFILE_CFLAGS@
 AUDIOFILE_CONFIG = @AUDIOFILE_CONFIG@
 AUDIOFILE_LIBS = @AUDIOFILE_LIBS@
@@ -74,12 +75,18 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+FFLAGS = @FFLAGS@
 FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
 FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_1_2_CXXFLAGS = @FOX_1_2_CXXFLAGS@
 FOX_1_2_LIBS = @FOX_1_2_LIBS@
 FOX_1_3_CXXFLAGS = @FOX_1_3_CXXFLAGS@
 FOX_1_3_LIBS = @FOX_1_3_LIBS@
+FOX_1_4_CXXFLAGS = @FOX_1_4_CXXFLAGS@
+FOX_1_4_LIBS = @FOX_1_4_LIBS@
+FOX_1_5_CXXFLAGS = @FOX_1_5_CXXFLAGS@
+FOX_1_5_LIBS = @FOX_1_5_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -142,8 +149,10 @@ VORBIS_CFLAGS = @VORBIS_CFLAGS@
 VORBIS_LIBS = @VORBIS_LIBS@
 XGETTEXT = @XGETTEXT@
 YACC = @YACC@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -204,6 +213,7 @@ noinst_HEADERS = \
 		CChangePitchAction.h \
 		CChangeTempoAction.h \
 		CMarkQuietAreasAction.h \
+		CShortenQuietAreasAction.h \
 		RemasterActions.h
 
 
@@ -221,7 +231,8 @@ libRemaster_la_SOURCES = \
 			CResampleAction.cpp \
 			CChangePitchAction.cpp \
 			CChangeTempoAction.cpp \
-			CMarkQuietAreasAction.cpp 
+			CMarkQuietAreasAction.cpp \
+			CShortenQuietAreasAction.cpp 
 
 
 AM_CXXFLAGS = @SOUNDTOUCH_CXXFLAGS@
@@ -241,7 +252,7 @@ am_libRemaster_la_OBJECTS = CBalanceAction.lo CMonoizeAction.lo \
 	CUnclipAction.lo CCompressorAction.lo CNormalizeAction.lo \
 	CAdaptiveNormalizeAction.lo CResampleAction.lo \
 	CChangePitchAction.lo CChangeTempoAction.lo \
-	CMarkQuietAreasAction.lo
+	CMarkQuietAreasAction.lo CShortenQuietAreasAction.lo
 libRemaster_la_OBJECTS = $(am_libRemaster_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
@@ -259,6 +270,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CNormalizeAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRemoveDCAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CResampleAction.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CShortenQuietAreasAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CUnclipAction.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -314,6 +326,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CNormalizeAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRemoveDCAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CResampleAction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CShortenQuietAreasAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CUnclipAction.Plo@am__quote@
 
 .cpp.o:

@@ -46,6 +46,8 @@
 
 #include "../backend/CSoundPlayerChannel.h"
 
+#include "../backend/File/COpenAudioFileAction.h"
+
 #include "CSoundWindow.h"
 
 #include "CMetersWindow.h"
@@ -53,7 +55,13 @@
 #include "CUserNotesDialog.h"
 #include "CCrossfadeEdgesDialog.h"
 
+#include "CKeyBindingsDialog.h"
+
 #include "rememberShow.h"
+
+#define RECORDING_MACRO_TIMER_INTERVAL 1000
+
+extern void enableAutoRepeat(void *display,bool enable); // QQQ defined in main.cpp
 
 /* TODO:
  * 	- it is necesary for the owner to specifically delete the FXMenuPane objects it creates
@@ -65,17 +73,18 @@ FXDEFMAP(CMainWindow) CMainWindowMap[]=
 	FXMAPFUNC(SEL_CLOSE,			0,							CMainWindow::onQuit),
 
 		// file actions
-	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_NEW_FILE,				CMainWindow::onFileAction),
-	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_OPEN_FILE,				CMainWindow::onFileAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_REOPEN_FILE,				CMainWindow::onFileAction),
-	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SAVE_FILE,				CMainWindow::onFileAction),
-	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SAVE_FILE_AS,				CMainWindow::onFileAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_CLOSE_FILE,				CMainWindow::onFileAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_REVERT_FILE,				CMainWindow::onFileAction),
+
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_RECORD_MACRO,				CMainWindow::onFileAction),
+	FXMAPFUNC(SEL_TIMEOUT,			CMainWindow::ID_RECORDING_MACRO_TIMER,			CMainWindow::onRecordingMacroTimer),
 
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_EDIT_USERNOTES,				CMainWindow::onFileAction),
 
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SHOW_ABOUT,				CMainWindow::onFileAction),
+
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SETUP_KEY_BINDINGS,			CMainWindow::onSetupKeyBindings),
 
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_QUIT,					CMainWindow::onQuit),
 	
@@ -90,6 +99,7 @@ FXDEFMAP(CMainWindow) CMainWindowMap[]=
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_LOOPED,			CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_LOOPED_SKIP_MOST,	CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,CMainWindow::onControlAction),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PLAY_LEFT_EDGE_OF_SCREEN_TO_END,	CMainWindow::onControlAction),
 
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_STOP,					CMainWindow::onControlAction),
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_PAUSE,					CMainWindow::onControlAction),
@@ -144,7 +154,18 @@ FXDEFMAP(CMainWindow) CMainWindowMap[]=
 	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_CLIPBOARD_COMBOBOX,			CMainWindow::onClipboardComboBox),
 
 	FXMAPFUNC(SEL_CHANGED,			CMainWindow::ID_SOUND_LIST,				CMainWindow::onSoundListChange),
-	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY,			CMainWindow::onSoundListHotKey),
+
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY_PREV,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY1,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY2,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY3,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY4,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY5,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY6,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY7,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY8,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY9,			CMainWindow::onSoundListHotKey),
+	FXMAPFUNC(SEL_COMMAND,			CMainWindow::ID_SOUND_LIST_HOTKEY10,			CMainWindow::onSoundListHotKey),
 
 	FXMAPFUNC(SEL_KEYPRESS,			CMainWindow::ID_SOUND_LIST,				CMainWindow::onHotKeyFocusFixup),
 	FXMAPFUNC(SEL_KEYPRESS,			CMainWindow::ID_CROSSFADE_EDGES_COMBOBOX,		CMainWindow::onHotKeyFocusFixup),
@@ -196,7 +217,8 @@ CMainWindow::CMainWindow(FXApp* a) :
 		#define PLAY_CONTROLS_BUTTON_STYLE BUTTON_STYLE
 		new FXButton(playControlsFrame,FXString("\t")+_("Play All Once"),FOXIcons->play_all_once,this,ID_PLAY_ALL_ONCE,PLAY_CONTROLS_BUTTON_STYLE, 32,0,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Once"),FOXIcons->play_selection_once,this,ID_PLAY_SELECTION_ONCE,PLAY_CONTROLS_BUTTON_STYLE, 32+32,0,32,32);
-		new FXButton(playControlsFrame,FXString("\t")+_("Play from Selection Start to End"),FOXIcons->play_selection_start_to_end,this,ID_PLAY_SELECTION_START_TO_END,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32,0,32,32);
+		new FXButton(playControlsFrame,FXString("\t")+_("Play From Selection Start to End"),FOXIcons->play_selection_start_to_end,this,ID_PLAY_SELECTION_START_TO_END,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32,0,32,32);
+		new FXButton(playControlsFrame,FXString("\t")+_("Play From Left Edge of Screen to End"),FOXIcons->play_screen,this,ID_PLAY_LEFT_EDGE_OF_SCREEN_TO_END,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32+32,0,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play All Looped"),FOXIcons->play_all_looped,this,ID_PLAY_ALL_LOOPED,PLAY_CONTROLS_BUTTON_STYLE, 32,32,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Looped"),FOXIcons->play_selection_looped,this,ID_PLAY_SELECTION_LOOPED,PLAY_CONTROLS_BUTTON_STYLE, 32+32,32,32,32);
 		new FXButton(playControlsFrame,FXString("\t")+_("Play Selection Looped but Skip Most of the Middle"),FOXIcons->play_selection_looped_skip_most,this,ID_PLAY_SELECTION_LOOPED_SKIP_MOST,PLAY_CONTROLS_BUTTON_STYLE, 32+32+32,32,32,32);
@@ -262,6 +284,11 @@ CMainWindow::CMainWindow(FXApp* a) :
 			new FXButton(t,FXString("...\t")+_("Change Crossfade Times"),NULL,this,ID_CROSSFADE_EDGES_SETTINGS_BUTTON, BUTTON_NORMAL & ~FRAME_THICK);
 		clipboardComboBox=new FXComboBox(miscControlsFrame,8,this,ID_CLIPBOARD_COMBOBOX, FRAME_SUNKEN|FRAME_THICK | COMBOBOX_NORMAL|COMBOBOX_STATIC);
 		clipboardComboBox->setNumVisible(8);
+		recordMacroButton=new FXButton(miscControlsFrame,(_("Record Macro")+string(" ")).c_str(),FOXIcons->OffLED1,this,ID_RECORD_MACRO, BUTTON_NORMAL|ICON_BEFORE_TEXT);
+			// have to 'create' both icons before using them
+			FOXIcons->OffLED1->create();
+			FOXIcons->RedLED1->create();
+
 
 	new FXVerticalSeparator(s);
 
@@ -291,10 +318,13 @@ CMainWindow::CMainWindow(FXApp* a) :
 				soundList->getHeader()->setPadBottom(0);
 
 				soundList->appendHeader(" #",NULL,25);
+				soundList->appendHeader("M",NULL,20);
 				soundList->appendHeader(_("Name"),NULL,200);
 				soundList->appendHeader(_("Path"),NULL,9999);
 
 	soundWindowFrame=new FXPacker(contents,LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_RAISED|FRAME_THICK,0,0,0,0, 0,0,0,0, 0,0);
+
+	reopenActionFactory=new COpenAudioFileActionFactory(NULL);
 }
 
 CMainWindow::~CMainWindow()
@@ -303,6 +333,7 @@ CMainWindow::~CMainWindow()
 	delete shuttleFont;
 	delete soundListFont;
 	delete soundListHeaderFont;
+	delete reopenActionFactory;
 }
 
 void CMainWindow::show()
@@ -358,6 +389,9 @@ void CMainWindow::hide()
 
 void CMainWindow::rebuildSoundWindowList()
 {
+	FXint xpos,ypos;
+	soundList->getPosition(xpos,ypos);
+
 	soundList->clearItems();
 	for(size_t t=0;t<gSoundFileManager->getOpenedCount();t++)
 	{
@@ -369,6 +403,7 @@ void CMainWindow::rebuildSoundWindowList()
 		soundList->appendItem(
 			(
 			istring(t+1,2,false)+"\t"+
+			(win->loadedSound->sound->isModified() ? "*" : "")+"\t"+
 			p.baseName()+"\t"+
 			p.dirName()
 			).c_str(),
@@ -377,6 +412,9 @@ void CMainWindow::rebuildSoundWindowList()
 
 	soundList->forceRefresh();
 
+	soundList->setPosition(xpos,ypos); // scroll to the same position we were at before
+
+	// if it isn't visible make the active sound visible in the sound list
 	CSoundWindow *active=gSoundFileManager->getActiveWindow();
 	if(active!=NULL)
 	{
@@ -398,17 +436,27 @@ long CMainWindow::onSoundListChange(FXObject *sender,FXSelector sel,void *ptr)
 	FXint index=(FXint)ptr;
 
 	if(index>=0 && index<soundList->getNumItems())
+	{
 		((CSoundWindow *)soundList->getItemData(index))->setActiveState(true);
+
+		if(AActionFactory::macroRecorder.isRecording())
+		{
+			Warning(_("You have changed the selected audio file while a macro is being recorded to position: ")+istring(index+1)+"\n\n"+_("Note that when the macro is played back the audio file loaded in the same position in the loaded sounds list will be selected at this step in the macro."));
+			AActionFactory::macroRecorder.pushActiveSoundChange(index);
+		}
+	}
+
 
 	return 1;
 }
 
 extern CSoundWindow *previousActiveWindow;
-long CMainWindow::onSoundListHotKey(FXObject *sender,FXSelector sel,void *ptr)
+long CMainWindow::onSoundListHotKey(FXObject *sender,FXSelector _sel,void *ptr)
 {
 	FXEvent *ev=(FXEvent *)ptr;
+	int sel=FXSELID(_sel);
 	
-	if(ev->code=='`')
+	if(sel==ID_SOUND_LIST_HOTKEY_PREV)
 	{ // switch to previously active window
 		if(previousActiveWindow!=NULL)
 		{
@@ -418,22 +466,31 @@ long CMainWindow::onSoundListHotKey(FXObject *sender,FXSelector sel,void *ptr)
 				if(((CSoundWindow *)soundList->getItemData(index))==previousActiveWindow)
 					break;
 			}
-			previousActiveWindow->setActiveState(true);
 			soundList->setCurrentItem(index);
 			soundList->makeItemVisible(soundList->getCurrentItem());
+			return onSoundListChange(NULL,0,(void *)index);
 		}
 		return 1;
 	}
 	else
 	{
-		FXint index=ev->code-'0';
+		FXint index=0;
+		switch(sel) // not assuming enum assigned continous increasing values (although it would probably be a safe assumption)
+		{
+			case ID_SOUND_LIST_HOTKEY1: index=0; break;
+			case ID_SOUND_LIST_HOTKEY2: index=1; break;
+			case ID_SOUND_LIST_HOTKEY3: index=2; break;
+			case ID_SOUND_LIST_HOTKEY4: index=3; break;
+			case ID_SOUND_LIST_HOTKEY5: index=4; break;
+			case ID_SOUND_LIST_HOTKEY6: index=5; break;
+			case ID_SOUND_LIST_HOTKEY7: index=6; break;
+			case ID_SOUND_LIST_HOTKEY8: index=7; break;
+			case ID_SOUND_LIST_HOTKEY9: index=8; break;
+			case ID_SOUND_LIST_HOTKEY10: index=9; break;
+	 		default: return 0;
+		}
 
-		// take care of 0 meaning 10 actualy (which is index 9)
-		index--;
-		if(index==-1)
-			index=9;
-		
-		if(index>=0 && index<soundList->getNumItems())
+		if(index<soundList->getNumItems())
 		{
 			soundList->setCurrentItem(index);
 			soundList->makeItemVisible(soundList->getCurrentItem());
@@ -654,11 +711,25 @@ void CMainWindow::actionMenuCommandTriggered(CActionMenuCommand *actionMenuComma
 	recentActions.insert(recentActions.begin(),actionMenuCommand);
 }
 
+void CMainWindow::setWhichClipboard(size_t whichClipboard)
+{
+	if(whichClipboard<AAction::clipboards.size())
+	{
+		clipboardComboBox->setCurrentItem(whichClipboard);
+		gWhichClipboard=whichClipboard;
+	}
+}
+
 #include "CChannelSelectDialog.h"
 #include "CPasteChannelsDialog.h"
 
-#include "EditActionDialogs.h"
+#include "../backend/CRunMacroAction.h"
+
+#include "../backend/File/FileActions.h"
+#include "FileActionDialogs.h"
+
 #include "../backend/Edits/EditActions.h"
+#include "EditActionDialogs.h"
 
 #include "../backend/Effects/EffectActions.h"
 #include "EffectActionDialogs.h"
@@ -672,10 +743,11 @@ void CMainWindow::actionMenuCommandTriggered(CActionMenuCommand *actionMenuComma
 #include "../backend/Remaster/RemasterActions.h"
 #include "RemasterActionDialogs.h"
 
-#include "../backend/LADSPA/LADSPAActions.h"
-
 #include "../backend/Generate/GenerateActions.h"
 #include "GenerateActionDialogs.h"
+
+#include "../backend/LADSPA/LADSPAActions.h"
+
 
 static const string stripAmpersand(const string str)
 {
@@ -685,11 +757,19 @@ static const string stripAmpersand(const string str)
 	return stripped;
 }
 
+static const string stripElipsis(const string str)
+{
+	if(str.rfind("...")==str.length()-3 && str.length()>3/*don't strip if that's the whole string*/)
+		return str.substr(0,str.length()-3);
+	return str;
+}
+
 
 /* the usual case -- adding a CActionMenuCommand to the menu item registry */
 static void addToActionMap(CActionMenuCommand *item,map<const string,FXMenuCaption *> &menuItemRegistry)
 {
-	const string strippedItemName=stripAmpersand(item->getUntranslatedText());
+		// I use the text right off the item because I don't want to pass a separate string to addToActionMap() just for the name
+	const string strippedItemName=stripElipsis(stripAmpersand(item->getUntranslatedText()));
 	if(menuItemRegistry.find(strippedItemName)!=menuItemRegistry.end()) // something a developer would want to know
 		printf("NOTE: duplicate item name in menu item registry '%s'\n",strippedItemName.c_str());
 	menuItemRegistry[strippedItemName]=item;
@@ -699,7 +779,8 @@ static void addToActionMap(CActionMenuCommand *item,map<const string,FXMenuCapti
 static void addToActionMap(const char *itemText,FXMenuCaption *item,map<const string,FXMenuCaption *> &menuItemRegistry)
 { 	/* because I can't get the original text of the menu item with the hotkey in it, I pass it in separately and set the menuitem's text to it (prepended to what was already there).*/
 
-	const string strippedItemName=stripAmpersand(string(itemText)+item->getText().text());
+		// I use the text right off the item because I don't want to pass a separate string to addToActionMap() just for the name
+	const string strippedItemName=stripElipsis(stripAmpersand(string(itemText)+item->getText().text()));
 	if(menuItemRegistry.find(strippedItemName)!=menuItemRegistry.end()) // something a developer would want to know
 		printf("NOTE: duplicate item name in menu item registry '%s'\n",strippedItemName.c_str());
 
@@ -707,6 +788,14 @@ static void addToActionMap(const char *itemText,FXMenuCaption *item,map<const st
 		item->setText(gettext(itemText)+item->getText());
 
 	menuItemRegistry[strippedItemName]=item;
+}
+
+// this registry is used to know what menu items exist that we might set key bindings for
+map<string,FXMenuCommand *> gKeyBindingRegistry; // ??? could make this a datamemeber
+
+void CMainWindow::addActionToKeyBindingRegistery(const string name,FXMenuCommand *mc)
+{
+	gKeyBindingRegistry[name]=mc;
 }
 
 void CMainWindow::buildActionMap() 
@@ -717,57 +806,67 @@ void CMainWindow::buildActionMap()
 	// I know it's very wide, but it's (supposed to be) neat (tabs need to be set to 8 for it to look right)
 
 	// File 
-	addToActionMap(N_("&New"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->file_new,						this,	ID_NEW_FILE),					menuItemRegistry);
-	addToActionMap(N_("&Open"),						new FXMenuCommand(dummymenu,														"\tCtrl+O",	FOXIcons->file_open,						this,	ID_OPEN_FILE),					menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CNewAudioFileActionFactory(new CNewAudioFileActionDialog(this)),dummymenu,							FOXIcons->file_new),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new COpenAudioFileActionFactory(new COpenAudioFileActionDialog(this)),dummymenu,							FOXIcons->file_open),													menuItemRegistry);
 	addToActionMap(N_("&Reopen"),						new FXMenuCascade(dummymenu,														"",		FOXIcons->file_open,						new CReopenPopup(this)),				menuItemRegistry);
-	addToActionMap(N_("&Save"),						new FXMenuCommand(dummymenu,														"\tCtrl+S",	FOXIcons->file_save,						this,	ID_SAVE_FILE),					menuItemRegistry);
-	addToActionMap(N_("Save &As"),						new FXMenuCommand(dummymenu,														"...",		FOXIcons->file_save_as,						this,	ID_SAVE_FILE_AS),				menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSaveSelectionAsActionFactory(),dummymenu,									"",		FOXIcons->file_save_as),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSaveAsMultipleFilesActionFactory(new CSaveAsMultipleFilesDialog(this)),dummymenu,				"",		FOXIcons->file_save_as),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CBurnToCDActionFactory(new CBurnToCDDialog(this)),dummymenu,							"",		FOXIcons->file_burn),													menuItemRegistry);
-	addToActionMap(N_("&Close"),						new FXMenuCommand(dummymenu,														"\tCtrl+W",	FOXIcons->file_close,						this,	ID_CLOSE_FILE),					menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSaveAudioFileActionFactory,dummymenu,											FOXIcons->file_save),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSaveAsAudioFileActionFactory(new CSaveAsAudioFileActionDialog(this)),dummymenu,						FOXIcons->file_save_as),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSaveSelectionAsActionFactory(),dummymenu,											FOXIcons->file_save_as),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSaveAsMultipleFilesActionFactory(new CSaveAsMultipleFilesDialog(this)),dummymenu,						FOXIcons->file_save_as),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CBurnToCDActionFactory(new CBurnToCDDialog(this)),dummymenu,									FOXIcons->file_burn),													menuItemRegistry);
+		// not converting close or revert to AAction classes because they pull the sound object out from under the calling code in AAction
+	addToActionMap(N_("&Close"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->file_close,						this,	ID_CLOSE_FILE),					menuItemRegistry);
 	addToActionMap(N_("Re&vert"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->file_revert,						this,	ID_REVERT_FILE),				menuItemRegistry);
 	// -
-	addToActionMap(N_("User No&tes"),					new FXMenuCommand(dummymenu,														"...",		FOXIcons->notes,						this,	ID_EDIT_USERNOTES),				menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CRunMacroActionFactory(new CRunMacroDialog(this)),dummymenu,									NULL),															menuItemRegistry);
+	addToActionMap(N_("Record Macro..."),					new FXMenuCommand(dummymenu,														"",		FOXIcons->normal_action_buff,					this,	ID_RECORD_MACRO),				menuItemRegistry);
 	// -
-	addToActionMap(N_("&About ReZound"),					new FXMenuCommand(dummymenu,														"...\tF1",	NULL,								this,	ID_SHOW_ABOUT),					menuItemRegistry);
+	addToActionMap(N_("User No&tes..."),					new FXMenuCommand(dummymenu,														"",		FOXIcons->notes,						this,	ID_EDIT_USERNOTES),				menuItemRegistry);
 	// -
-	addToActionMap("",							new FXMenuCaption(dummymenu,														"- Just for testing"),															menuItemRegistry);
-	addToActionMap("",							new FXMenuCommand(dummymenu,														"Defrag",	NULL,								this,	ID_DEFRAG_MENUITEM),				menuItemRegistry);
-	addToActionMap("",							new FXMenuCommand(dummymenu,														"PrintSAT",	NULL,								this,	ID_PRINT_SAT_MENUITEM),				menuItemRegistry);
-	addToActionMap("",							new FXMenuCommand(dummymenu,														"VerifySAT",	NULL,								this,	ID_VERIFY_SAT_MENUITEM),			menuItemRegistry);
+	addToActionMap(N_("&About ReZound"),					new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SHOW_ABOUT),					menuItemRegistry);
+	addToActionMap(N_("&Setup Hotkeys..."),					new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SETUP_KEY_BINDINGS),				menuItemRegistry);
 	// -
-	addToActionMap(N_("&Quit"),						new FXMenuCommand(dummymenu,														"\tCtrl+Q",	FOXIcons->exit,							this,	ID_QUIT),					menuItemRegistry);
+	addToActionMap("- Just for testing",					new FXMenuCaption(dummymenu,														""),																	menuItemRegistry);
+	addToActionMap("Defrag",						new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_DEFRAG_MENUITEM),				menuItemRegistry);
+	addToActionMap("PrintSAT",						new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_PRINT_SAT_MENUITEM),				menuItemRegistry);
+	addToActionMap("VerifySAT",						new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_VERIFY_SAT_MENUITEM),			menuItemRegistry);
+	// -
+	addToActionMap(N_("&Quit"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->exit,							this,	ID_QUIT),					menuItemRegistry);
 
 
 	// Control
-	addToActionMap(N_("Zoom Out F&ull"),					new FXMenuCommand(dummymenu,														"\tCtrl-1",	FOXIcons->zoom_out_full,					this,	ID_ZOOM_OUT_FULL),				menuItemRegistry);
-	addToActionMap(N_("Zoom &Out"),						new FXMenuCommand(dummymenu,														"\tCtrl-2",	FOXIcons->zoom_out,						this,	ID_ZOOM_OUT),					menuItemRegistry);
-	addToActionMap(N_("Zoom &In"),						new FXMenuCommand(dummymenu,														"\tCtrl-3",	FOXIcons->zoom_in,						this,	ID_ZOOM_IN),					menuItemRegistry);
-	addToActionMap(N_("Zoom &Fit Selection"),				new FXMenuCommand(dummymenu,														"\tCtrl-4",	FOXIcons->zoom_fit,						this,	ID_ZOOM_FIT_SELECTION),				menuItemRegistry);
-	// -
-	addToActionMap(N_("Find &Start Position"),				new FXMenuCommand(dummymenu,														"\tz",		FOXIcons->normal_action_buff,					this,	ID_FIND_SELECTION_START),			menuItemRegistry);
-	addToActionMap(N_("Find Sto&p Position"),				new FXMenuCommand(dummymenu,														"\tx",		FOXIcons->normal_action_buff,					this,	ID_FIND_SELECTION_STOP),			menuItemRegistry);
-	// -
-	addToActionMap(N_("&Redraw"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->normal_action_buff,					this,	ID_REDRAW),					menuItemRegistry);
-	// -
-	addToActionMap(N_("Record"),						new FXMenuCommand(dummymenu,														"...",		FOXIcons->small_record,						this,	ID_RECORD),					menuItemRegistry);
+	addToActionMap(N_("Record..."),						new FXMenuCommand(dummymenu,														"",		FOXIcons->small_record,						this,	ID_RECORD),					menuItemRegistry);
 	addToActionMap(N_("Play All Once"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_all_once,					this,	ID_PLAY_ALL_ONCE),				menuItemRegistry);
 	addToActionMap(N_("Play All Looped"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_all_looped,				this,	ID_PLAY_ALL_LOOPED),				menuItemRegistry);
 	addToActionMap(N_("Play Selection Once"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_once,				this,	ID_PLAY_SELECTION_ONCE),			menuItemRegistry);
-	addToActionMap(N_("Play from Selection Start to End"),			new FXMenuCommand(dummymenu,														"\ta",		FOXIcons->small_play_selection_start_to_end,			this,	ID_PLAY_SELECTION_START_TO_END),		menuItemRegistry);
+	addToActionMap(N_("Play From Left Edge of Screen to End"),		new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_screen,	 				this,	ID_PLAY_LEFT_EDGE_OF_SCREEN_TO_END),		menuItemRegistry);
+	addToActionMap(N_("Play From Selection Start to End"),			new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_start_to_end,			this,	ID_PLAY_SELECTION_START_TO_END),		menuItemRegistry);
 	addToActionMap(N_("Play Selection Looped"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_looped,				this,	ID_PLAY_SELECTION_LOOPED),			menuItemRegistry);
 	addToActionMap(N_("Loop Selection but Skip Most of the Middle"),	new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_looped_skip_most,		this,	ID_PLAY_SELECTION_LOOPED_SKIP_MOST),		menuItemRegistry);
 	addToActionMap(N_("Loop Selection and Play a Gap Before Repeating"),	new FXMenuCommand(dummymenu,														"",		FOXIcons->small_play_selection_looped_gap_before_repeat,	this,	ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT),	menuItemRegistry);
-	addToActionMap(N_("Stop"),						new FXMenuCommand(dummymenu,														"\ts",		FOXIcons->small_stop,						this,	ID_STOP),					menuItemRegistry);
+	addToActionMap(N_("Stop"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->small_stop,						this,	ID_STOP),					menuItemRegistry);
 	addToActionMap(N_("Pause"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->small_pause,						this,	ID_PAUSE),					menuItemRegistry);
+	// -
 	addToActionMap(N_("Jump to Beginning"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->small_jump_to_beginning,				this,	ID_JUMP_TO_BEGINNING),				menuItemRegistry);
 	addToActionMap(N_("Jump to Selection Start"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->small_jump_to_selection,				this,	ID_JUMP_TO_SELECTION_START),			menuItemRegistry);
 	addToActionMap(N_("Jump to Previous Cue"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->small_jump_to_previous_q,				this,	ID_JUMP_TO_PREV_CUE),				menuItemRegistry);
 	addToActionMap(N_("Jump to Next Cue"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->small_jump_to_next_q,					this,	ID_JUMP_TO_NEXT_CUE),				menuItemRegistry);
-	addToActionMap(N_("Shuttle Rewind"),					new FXMenuCommand(dummymenu,														"\t1",		FOXIcons->shuttle_backward,					this,	ID_SHUTTLE_BACKWARD),				menuItemRegistry);
-	addToActionMap(N_("Shuttle Amount"),					new FXMenuCommand(dummymenu,														"\t2",		FOXIcons->shuttle_normal,					this,	ID_SHUTTLE_INCREASE_RATE),			menuItemRegistry);
-	addToActionMap(N_("Shuttle Forward"),					new FXMenuCommand(dummymenu,														"\t3",		FOXIcons->shuttle_forward,					this,	ID_SHUTTLE_FORWARD),				menuItemRegistry);
+	// -
+	addToActionMap(N_("Shuttle Rewind"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->shuttle_backward,					this,	ID_SHUTTLE_BACKWARD),				menuItemRegistry);
+	addToActionMap(N_("Shuttle Amount"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->shuttle_normal,					this,	ID_SHUTTLE_INCREASE_RATE),			menuItemRegistry);
+	addToActionMap(N_("Shuttle Forward"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->shuttle_forward,					this,	ID_SHUTTLE_FORWARD),				menuItemRegistry);
+
+
+	// View Controls
+	addToActionMap(N_("Zoom Out F&ull"),					new FXMenuCommand(dummymenu,														"",		FOXIcons->zoom_out_full,					this,	ID_ZOOM_OUT_FULL),				menuItemRegistry);
+	addToActionMap(N_("Zoom &Out"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->zoom_out,						this,	ID_ZOOM_OUT),					menuItemRegistry);
+	addToActionMap(N_("Zoom &In"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->zoom_in,						this,	ID_ZOOM_IN),					menuItemRegistry);
+	addToActionMap(N_("Zoom &Fit Selection"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->zoom_fit,						this,	ID_ZOOM_FIT_SELECTION),				menuItemRegistry);
+	// -
+	addToActionMap(N_("Find &Start Position"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->normal_action_buff,					this,	ID_FIND_SELECTION_START),			menuItemRegistry);
+	addToActionMap(N_("Find Sto&p Position"),				new FXMenuCommand(dummymenu,														"",		FOXIcons->normal_action_buff,					this,	ID_FIND_SELECTION_STOP),			menuItemRegistry);
+	// -
+	addToActionMap(N_("&Redraw"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->normal_action_buff,					this,	ID_REDRAW),					menuItemRegistry);
 	// -
 #if REZ_FOX_VERSION>=10119
 	addToActionMap(N_("Toggle &Level Meters"),				toggleLevelMetersMenuItem=new FXMenuCheck(dummymenu,											"",										this,	ID_TOGGLE_LEVEL_METERS),			menuItemRegistry);
@@ -779,136 +878,160 @@ void CMainWindow::buildActionMap()
 	addToActionMap(N_("Toggle Frequency &Analyzer"),			toggleFrequencyAnalyzerMenuItem=new FXMenuCommand(dummymenu,										"",		NULL,								this,	ID_TOGGLE_FREQUENCY_ANALYZER),			menuItemRegistry);
 #endif
 	// -
-		// these don't function, they are just place holders
-	addToActionMap(N_("View Loaded File 1"),				new FXMenuCommand(dummymenu,														"\tAlt+1"),																menuItemRegistry);
-	addToActionMap(N_("View Loaded File 2"),				new FXMenuCommand(dummymenu,														"\tAlt+2"),																menuItemRegistry);
-	addToActionMap("",							new FXMenuCaption(dummymenu,														"..."),																	menuItemRegistry);
-	addToActionMap(N_("View Loaded File 9"),				new FXMenuCommand(dummymenu,														"\tAlt+9"),																menuItemRegistry);
-	addToActionMap(N_("View Loaded File 10"),				new FXMenuCommand(dummymenu,														"\tAlt+0"),																menuItemRegistry);
-	addToActionMap(N_("Previously Viewed File"),				new FXMenuCommand(dummymenu,														"\tAlt+`"),																menuItemRegistry);
+	addToActionMap(N_("Switch to Previously Viewed File"),			new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY_PREV),			menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 1"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY1),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 2"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY2),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 3"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY3),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 4"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY4),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 5"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY5),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 6"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY6),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 7"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY7),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 8"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY8),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 9"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY9),				menuItemRegistry);
+	addToActionMap(N_("Switch to Loaded File 10"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_SOUND_LIST_HOTKEY10),			menuItemRegistry);
 
 
 	// Edit
-	addToActionMap(N_("Undo"),						new FXMenuCommand(dummymenu,														"\tCtrl+Z",	FOXIcons->edit_undo,						this,	ID_UNDO_EDIT),					menuItemRegistry);
+	addToActionMap(N_("Undo"),						new FXMenuCommand(dummymenu,														"",		FOXIcons->edit_undo,						this,	ID_UNDO_EDIT),					menuItemRegistry);
 	addToActionMap(N_("Clear Undo History"),				new FXMenuCommand(dummymenu,														"",		NULL,								this,	ID_CLEAR_UNDO_HISTORY),				menuItemRegistry);
 	// -
 	addToActionMap(N_("&Recent Actions"),					new FXMenuCascade(dummymenu,														"",		NULL,								new CRecentActionsPopup(this)),				menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CCopyEditFactory(gChannelSelectDialog),dummymenu,								"Ctrl+C",	FOXIcons->edit_copy),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCopyToNewEditFactory(gChannelSelectDialog),dummymenu,							"",		FOXIcons->edit_copy),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCutEditFactory(gChannelSelectDialog),dummymenu,								"Ctrl+X",	FOXIcons->edit_cut),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCutToNewEditFactory(gChannelSelectDialog),dummymenu,							"",		FOXIcons->edit_cut),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CDeleteEditFactory(gChannelSelectDialog),dummymenu,								"Ctrl+D",	FOXIcons->edit_delete),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCropEditFactory(gChannelSelectDialog),dummymenu,								"Ctrl+R",	FOXIcons->edit_crop),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCopyEditFactory(gChannelSelectDialog),dummymenu,										FOXIcons->edit_copy),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCopyToNewEditFactory(gChannelSelectDialog),dummymenu,									FOXIcons->edit_copy),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCutEditFactory(gChannelSelectDialog),dummymenu,										FOXIcons->edit_cut),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCutToNewEditFactory(gChannelSelectDialog),dummymenu,									FOXIcons->edit_cut),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CDeleteEditFactory(gChannelSelectDialog),dummymenu,										FOXIcons->edit_delete),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCropEditFactory(gChannelSelectDialog),dummymenu,										FOXIcons->edit_crop),													menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CInsertPasteEditFactory(gPasteChannelsDialog),dummymenu,							"Ctrl+V",	FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CReplacePasteEditFactory(gPasteChannelsDialog),dummymenu,							"",		FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new COverwritePasteEditFactory(gPasteChannelsDialog),dummymenu,							"",		FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CLimitedOverwritePasteEditFactory(gPasteChannelsDialog),dummymenu,						"",		FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CMixPasteEditFactory(gPasteChannelsDialog),dummymenu,							"",		FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CLimitedMixPasteEditFactory(gPasteChannelsDialog),dummymenu,							"",		FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CFitMixPasteEditFactory(gPasteChannelsDialog),dummymenu,							"",		FOXIcons->edit_paste),													menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CPasteAsNewEditFactory,dummymenu,										"",		FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CInsertPasteEditFactory(gPasteChannelsDialog),dummymenu,									FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CReplacePasteEditFactory(gPasteChannelsDialog),dummymenu,									FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new COverwritePasteEditFactory(gPasteChannelsDialog),dummymenu,									FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CLimitedOverwritePasteEditFactory(gPasteChannelsDialog),dummymenu,								FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMixPasteEditFactory(gPasteChannelsDialog),dummymenu,									FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CLimitedMixPasteEditFactory(gPasteChannelsDialog),dummymenu,									FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CFitMixPasteEditFactory(gPasteChannelsDialog),dummymenu,									FOXIcons->edit_paste),													menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CPasteAsNewEditFactory,dummymenu,												FOXIcons->edit_paste),													menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CInsertSilenceEditFactory(gChannelSelectDialog,new CInsertSilenceDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CMuteEditFactory(gChannelSelectDialog),dummymenu,								"Ctrl+M"),																menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CInsertSilenceEditFactory(gChannelSelectDialog,new CInsertSilenceDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMuteEditFactory(gChannelSelectDialog),dummymenu,										NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CAddChannelsEditFactory(new CAddChannelsDialog(this)),dummymenu,						""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CDuplicateChannelEditFactory(new CDuplicateChannelDialog(this)),dummymenu,						""),																menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CRemoveChannelsEditFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSwapChannelsEditFactory(new CSwapChannelsDialog(this)),dummymenu,						""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CAddChannelsEditFactory(new CAddChannelsDialog(this)),dummymenu,								NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CDuplicateChannelEditFactory(new CDuplicateChannelDialog(this)),dummymenu,							NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CRemoveChannelsEditFactory(gChannelSelectDialog),dummymenu,									NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSwapChannelsEditFactory(new CSwapChannelsDialog(this)),dummymenu,								NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CRotateLeftEditFactory(gChannelSelectDialog,new CRotateDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CRotateRightEditFactory(gChannelSelectDialog,new CRotateDialog(this)),dummymenu,				""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CRotateLeftEditFactory(gChannelSelectDialog,new CRotateDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CRotateRightEditFactory(gChannelSelectDialog,new CRotateDialog(this)),dummymenu,						NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectAll),dummymenu,									"Ctrl+A"),																menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CGrowOrSlideSelectionEditFactory(new CGrowOrSlideSelectionDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToBeginning),dummymenu,								""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToEnd),dummymenu,								""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sFlopToBeginning),dummymenu,								""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sFlopToEnd),dummymenu,									""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToSelectStart),dummymenu,							""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToSelectStop),dummymenu,							""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectAll),dummymenu,											NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CGrowOrSlideSelectionEditFactory(new CGrowOrSlideSelectionDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToBeginning),dummymenu,										NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToEnd),dummymenu,										NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sFlopToBeginning),dummymenu,										NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sFlopToEnd),dummymenu,											NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToSelectStart),dummymenu,									NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSelectionEditFactory(sSelectToSelectStop),dummymenu,									NULL),															menuItemRegistry);
 
 
 	// Effects
-	addToActionMap(								new CActionMenuCommand(new CReverseEffectFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CReverseEffectFactory(gChannelSelectDialog),dummymenu,									NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CChangeVolumeEffectFactory(gChannelSelectDialog,new CNormalVolumeChangeDialog(this)),dummymenu,		""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSimpleGainEffectFactory(gChannelSelectDialog,new CNormalGainDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCurvedGainEffectFactory(gChannelSelectDialog,new CAdvancedGainDialog(this)),dummymenu,			""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CChangeVolumeEffectFactory(gChannelSelectDialog,new CNormalVolumeChangeDialog(this)),dummymenu,				NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSimpleGainEffectFactory(gChannelSelectDialog,new CNormalGainDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCurvedGainEffectFactory(gChannelSelectDialog,new CAdvancedGainDialog(this)),dummymenu,					NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CSimpleChangeRateEffectFactory(gChannelSelectDialog,new CNormalRateChangeDialog(this)),dummymenu,		""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCurvedChangeRateEffectFactory(gChannelSelectDialog,new CAdvancedRateChangeDialog(this)),dummymenu,		""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSimpleChangeRateEffectFactory(gChannelSelectDialog,new CNormalRateChangeDialog(this)),dummymenu,				NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCurvedChangeRateEffectFactory(gChannelSelectDialog,new CAdvancedRateChangeDialog(this)),dummymenu,				NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CFlangeEffectFactory(gChannelSelectDialog,new CFlangeDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSimpleDelayEffectFactory(gChannelSelectDialog,new CSimpleDelayDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CQuantizeEffectFactory(gChannelSelectDialog,new CQuantizeDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CDistortionEffectFactory(gChannelSelectDialog,new CDistortionDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CVariedRepeatEffectFactory(gChannelSelectDialog,new CVariedRepeatDialog(this)),dummymenu,			""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CFlangeEffectFactory(gChannelSelectDialog,new CFlangeDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSimpleDelayEffectFactory(gChannelSelectDialog,new CSimpleDelayDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CQuantizeEffectFactory(gChannelSelectDialog,new CQuantizeDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CDistortionEffectFactory(gChannelSelectDialog,new CDistortionDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CVariedRepeatEffectFactory(gChannelSelectDialog,new CVariedRepeatDialog(this)),dummymenu,					NULL),															menuItemRegistry);
 
-	addToActionMap(								new CActionMenuCommand(new CTestEffectFactory(gChannelSelectDialog),dummymenu,								""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CTestEffectFactory(gChannelSelectDialog),dummymenu,										NULL),															menuItemRegistry);
 
 
 	// Filter
-	addToActionMap(								new CActionMenuCommand(new CConvolutionFilterFactory(gChannelSelectDialog,new CConvolutionFilterDialog(this)),dummymenu,		""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CArbitraryFIRFilterFactory(gChannelSelectDialog,new CArbitraryFIRFilterDialog(this)),dummymenu,		"",		FOXIcons->filter_custom),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CMorphingArbitraryFIRFilterFactory(gChannelSelectDialog,new CMorphingArbitraryFIRFilterDialog(this)),dummymenu,"",		FOXIcons->filter_custom),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CConvolutionFilterFactory(gChannelSelectDialog,new CConvolutionFilterDialog(this)),dummymenu,				NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CArbitraryFIRFilterFactory(gChannelSelectDialog,new CArbitraryFIRFilterDialog(this)),dummymenu,				FOXIcons->filter_custom),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMorphingArbitraryFIRFilterFactory(gChannelSelectDialog,new CMorphingArbitraryFIRFilterDialog(this)),dummymenu,		FOXIcons->filter_custom),												menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CSinglePoleLowpassFilterFactory(gChannelSelectDialog,new CSinglePoleLowpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_lowpass),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CSinglePoleHighpassFilterFactory(gChannelSelectDialog,new CSinglePoleHighpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_highpass),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CBandpassFilterFactory(gChannelSelectDialog,new CBandpassFilterDialog(this)),dummymenu,			"",		FOXIcons->filter_bandpass),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CNotchFilterFactory(gChannelSelectDialog,new CNotchFilterDialog(this)),dummymenu,				"",		FOXIcons->filter_notch),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSinglePoleLowpassFilterFactory(gChannelSelectDialog,new CSinglePoleLowpassFilterDialog(this)),dummymenu,			FOXIcons->filter_lowpass),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSinglePoleHighpassFilterFactory(gChannelSelectDialog,new CSinglePoleHighpassFilterDialog(this)),dummymenu,			FOXIcons->filter_highpass),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CBandpassFilterFactory(gChannelSelectDialog,new CBandpassFilterDialog(this)),dummymenu,					FOXIcons->filter_bandpass),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CNotchFilterFactory(gChannelSelectDialog,new CNotchFilterDialog(this)),dummymenu,						FOXIcons->filter_notch),												menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CBiquadResLowpassFilterFactory(gChannelSelectDialog,new CBiquadResLowpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_lowpass),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CBiquadResHighpassFilterFactory(gChannelSelectDialog,new CBiquadResHighpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_highpass),												menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CBiquadResBandpassFilterFactory(gChannelSelectDialog,new CBiquadResBandpassFilterDialog(this)),dummymenu,	"",		FOXIcons->filter_bandpass),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CBiquadResLowpassFilterFactory(gChannelSelectDialog,new CBiquadResLowpassFilterDialog(this)),dummymenu,			FOXIcons->filter_lowpass),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CBiquadResHighpassFilterFactory(gChannelSelectDialog,new CBiquadResHighpassFilterDialog(this)),dummymenu,			FOXIcons->filter_highpass),												menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CBiquadResBandpassFilterFactory(gChannelSelectDialog,new CBiquadResBandpassFilterDialog(this)),dummymenu,			FOXIcons->filter_bandpass),												menuItemRegistry);
 
 
 	// Looping
-	addToActionMap(								new CActionMenuCommand(new CMakeSymetricActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMakeSymetricActionFactory(gChannelSelectDialog),dummymenu,									NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CAddNCuesActionFactory(new CAddNCuesDialog(this)),dummymenu,							""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CAddTimedCuesActionFactory(new CAddTimedCuesDialog(this)),dummymenu,						""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CAddNCuesActionFactory(new CAddNCuesDialog(this)),dummymenu,									NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CAddTimedCuesActionFactory(new CAddTimedCuesDialog(this)),dummymenu,								NULL),															menuItemRegistry);
 
 
 	// Remaster
-	addToActionMap(								new CActionMenuCommand(new CSimpleBalanceActionFactory(NULL,new CSimpleBalanceActionDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCurvedBalanceActionFactory(NULL,new CCurvedBalanceActionDialog(this)),dummymenu,				""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CSimpleBalanceActionFactory(NULL,new CSimpleBalanceActionDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCurvedBalanceActionFactory(NULL,new CCurvedBalanceActionDialog(this)),dummymenu,						NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CMonoizeActionFactory(NULL,new CMonoizeActionDialog(this)),dummymenu,					""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMonoizeActionFactory(NULL,new CMonoizeActionDialog(this)),dummymenu,							NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CNoiseGateActionFactory(gChannelSelectDialog,new CNoiseGateDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CCompressorActionFactory(gChannelSelectDialog,new CCompressorDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CNormalizeActionFactory(gChannelSelectDialog,new CNormalizeDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CAdaptiveNormalizeActionFactory(gChannelSelectDialog,new CAdaptiveNormalizeDialog(this)),dummymenu,		""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CMarkQuietAreasActionFactory(new CMarkQuietAreasDialog(this)),dummymenu,					""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CNoiseGateActionFactory(gChannelSelectDialog,new CNoiseGateDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CCompressorActionFactory(gChannelSelectDialog,new CCompressorDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CNormalizeActionFactory(gChannelSelectDialog,new CNormalizeDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CAdaptiveNormalizeActionFactory(gChannelSelectDialog,new CAdaptiveNormalizeDialog(this)),dummymenu,				NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CMarkQuietAreasActionFactory(new CMarkQuietAreasDialog(this)),dummymenu,							NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CShortenQuietAreasActionFactory(new CShortenQuietAreasDialog(this)),dummymenu,							NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CResampleActionFactory(gChannelSelectDialog,new CResampleDialog(this)),dummymenu,				""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CChangePitchActionFactory(gChannelSelectDialog,new CChangePitchDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CChangeTempoActionFactory(gChannelSelectDialog,new CChangeTempoDialog(this)),dummymenu,			""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CResampleActionFactory(gChannelSelectDialog,new CResampleDialog(this)),dummymenu,						NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CChangePitchActionFactory(gChannelSelectDialog,new CChangePitchDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CChangeTempoActionFactory(gChannelSelectDialog,new CChangeTempoDialog(this)),dummymenu,					NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CRemoveDCActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CInvertPhaseActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CRemoveDCActionFactory(gChannelSelectDialog),dummymenu,									NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CInvertPhaseActionFactory(gChannelSelectDialog),dummymenu,									NULL),															menuItemRegistry);
 	// -
-	addToActionMap(								new CActionMenuCommand(new CUnclipActionFactory(gChannelSelectDialog),dummymenu,							""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CUnclipActionFactory(gChannelSelectDialog),dummymenu,									NULL),															menuItemRegistry);
 
 	// Generate
-	addToActionMap(								new CActionMenuCommand(new CGenerateNoiseActionFactory(gChannelSelectDialog,new CGenerateNoiseDialog(this)),dummymenu,			""),																	menuItemRegistry);
-	addToActionMap(								new CActionMenuCommand(new CGenerateToneActionFactory(gChannelSelectDialog,new CGenerateToneDialog(this)),dummymenu,			""),																	menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CGenerateNoiseActionFactory(gChannelSelectDialog,new CGenerateNoiseDialog(this)),dummymenu,					NULL),															menuItemRegistry);
+	addToActionMap(								new CActionMenuCommand(new CGenerateToneActionFactory(gChannelSelectDialog,new CGenerateToneDialog(this)),dummymenu,					NULL),															menuItemRegistry);
 
 
 
 	// These are here simply so that xgettext will add entries for these in the rezound.pot file
 	N_("&File");
-	N_("&Control");
 	N_("&Edit");
-		N_("Selection");
+	N_("Selection");
+	N_("&View");
+	N_("&Control");
 	N_("Effec&ts");
 	N_("&Looping");
 	N_("F&ilters");
 	N_("&Remaster");
 	N_("&Generate");
+
+	// create registry of all actions (for macros)
+	gRegisteredActionFactories.clear();
+	for(map<const string,FXMenuCaption *>::iterator i=menuItemRegistry.begin();i!=menuItemRegistry.end();i++)
+	{
+		if(dynamic_cast<CActionMenuCommand *>(i->second)!=NULL)
+		{
+			gRegisteredActionFactories[i->first]=((CActionMenuCommand *)i->second)->getActionFactory();
+		}
+	}
+
+	// set key bindings
+	for(map<const string,FXMenuCaption *>::iterator i=menuItemRegistry.begin();i!=menuItemRegistry.end();i++)
+	{
+		if(dynamic_cast<FXMenuCommand *>(i->second)!=NULL)
+			addActionToKeyBindingRegistery(i->first,(FXMenuCommand *)i->second);
+	}
+		
 }
 
 void CMainWindow::buildMenu(FXMenuPane *menu,const CNestedDataFile *menuLayoutFile,const string menuKey,const string itemName)
@@ -1030,6 +1153,16 @@ void CMainWindow::createMenus()
 			printf("NOTE: registered menu item '%s' was not mapped anywhere in '%s' in layout '%s'\n",i->first.c_str(),menuLayoutFilename.c_str(),menuLayout.c_str());
 	}
 
+
+	buildLADSPAMenus();
+
+	setupKeyBindings();
+
+	create(); // it is necessary to call create again which will call it for all new child windows
+}
+
+void CMainWindow::buildLADSPAMenus()
+{
 #ifdef USE_LADSPA
 	// now stick the LADSPA menu in there if it needs to be
 	// ??? (with dynamic menus, maybe let the layout define WHERE the ladspa submenu goes, (except it might not always be compiled for ladspa, so we wouldn't want to add it to the map if USE_LADSPA wasn't defined)
@@ -1047,6 +1180,11 @@ void CMainWindow::createMenus()
 		}
 		else
 		{
+			// register all the LADSPA action so they can be used in macros
+			for(size_t t=0;t<LADSPAActionFactories.size();t++)
+				gRegisteredActionFactories[LADSPAActionFactories[t]->getName()]=LADSPAActionFactories[t];
+			
+
 			// determine number of FXMenuCaption will fit on the screen (msh -> menu screen height)
 			const FXuint msh=(getApp()->getRootWindow()->getHeight()/(7+getApp()->getNormalFont()->getFontHeight()))-1;
 
@@ -1076,7 +1214,10 @@ void CMainWindow::createMenus()
 						new FXMenuCascade(makerMenu,i->first.c_str(),NULL,submenu);
 	
 						for(map<const string,CLADSPAActionFactory *>::iterator t=i->second.begin();t!=i->second.end();t++)
-							new CActionMenuCommand(t->second,submenu,"");
+						{
+							FXMenuCommand *mc=new CActionMenuCommand(t->second,submenu,NULL);
+							addActionToKeyBindingRegistery(t->second->getName(),mc);
+						}
 					}
 				}
 
@@ -1103,22 +1244,63 @@ void CMainWindow::createMenus()
 					new FXMenuCascade(menu,string(&(i->first),1).c_str(),NULL,submenu);
 
 					for(map<const string,CLADSPAActionFactory *>::iterator t=i->second.begin();t!=i->second.end();t++)
-						new CActionMenuCommand(t->second,submenu,"");
+					{
+						FXMenuCommand *mc=new CActionMenuCommand(t->second,submenu,NULL);
+						addActionToKeyBindingRegistery(t->second->getName(),mc);
+					}
 				}
 			}
 			else
 			{
 				for(size_t t=0;t<LADSPAActionFactories.size();t++)
-					new CActionMenuCommand(LADSPAActionFactories[t],menu,"");
+				{
+					FXMenuCommand *mc=new CActionMenuCommand(LADSPAActionFactories[t],menu,NULL);
+					addActionToKeyBindingRegistery(LADSPAActionFactories[t]->getName(),mc);
+				}
 			}
 		}
 #endif
+}
 
-	create(); // it is necessary to call create again which will call it for all new child windows
+/* this function sets a key-binding if one has been defined for the given FXMenuCommand */
+void CMainWindow::setupKeyBindings()
+{
+	
+	// clear existing accelerator table (not doing this now.. see below)
+	//delete getAccelTable();
+	//setAccelTable(new FXAccelTable());
+
+	// reassign all accelerators (would prefer to wipe the slate clean before doing this, but there's no good way to restore the alt-&letter menu key bindings after doing so)
+	for(map<string,FXMenuCommand *>::iterator i=gKeyBindingRegistry.begin(); i!=gKeyBindingRegistry.end(); i++)
+	{
+		const string name=i->first;
+		FXMenuCommand *mc=i->second;
+
+		mc->setAccelText(""); // clear any existing accel text
+
+		if(gKeyBindingsStore->keyExists(name)==CNestedDataFile::ktValue)
+		{
+			string value=gKeyBindingsStore->getValue<string>(name);
+			if(value=="")
+				continue; // no key bound to this action
+
+			FXHotKey acckey=fxparseAccel(value.c_str());
+			mc->setAccelText(value.c_str());
+
+			/* these shuttle controls have to be handle specially because they require key up events to return the shuttle to the middle */
+			if(i->first=="Shuttle Forward")
+				getAccelTable()->addAccel(acckey,this,FXSEL(SEL_COMMAND,ID_SHUTTLE_FORWARD),FXSEL(SEL_COMMAND,ID_SHUTTLE_RETURN));
+			else if(i->first=="Shuttle Rewind")
+				getAccelTable()->addAccel(acckey,this,FXSEL(SEL_COMMAND,ID_SHUTTLE_BACKWARD),FXSEL(SEL_COMMAND,ID_SHUTTLE_RETURN));
+			else
+				getAccelTable()->addAccel(acckey,mc,FXSEL(SEL_COMMAND,FXMenuCommand::ID_ACCEL));
+		}
+	}
 }
 
 long CMainWindow::onQuit(FXObject *sender,FXSelector sel,void *ptr)
 {
+
 	if(getApp()->getModality()==MODAL_FOR_WINDOW)
 	{ // don't allow a quit if there is a modal window showing
 		gStatusComm->beep();
@@ -1127,8 +1309,30 @@ long CMainWindow::onQuit(FXObject *sender,FXSelector sel,void *ptr)
 
 	if(exitReZound(gSoundFileManager))
 	{
+		enableAutoRepeat(getApp()->getDisplay(),true); // QQQ (didn't work just putting this after application->run() in main.cpp)
+
 		hide();
 		getApp()->exit(0);
+	}
+	return 1;
+}
+
+long CMainWindow::onSetupKeyBindings(FXObject *sender,FXSelector sel,void *ptr)
+{
+	// create a list of the keys that are currently bound because we need to remove those from the current accel table before assigning the new key bindings
+	// this is done to avoid having to delete and re-create the accel table each time in setupKeyBindings() which destroys the alt-&letter key bindings that
+	// already exist there.
+	vector<FXHotKey> removeKeyBindingsList;
+	const vector<string> actionsWithKeyBindings=gKeyBindingsStore->getChildKeys("");
+	for(size_t t=0;t<actionsWithKeyBindings.size();t++)
+		removeKeyBindingsList.push_back(fxparseAccel(gKeyBindingsStore->getValue<string>(actionsWithKeyBindings[t]).c_str()));
+
+	if(gKeyBindingsDialog->showIt(gKeyBindingRegistry))
+	{
+		for(size_t t=0;t<removeKeyBindingsList.size();t++)
+			getAccelTable()->removeAccel(removeKeyBindingsList[t]);
+
+		setupKeyBindings();
 	}
 	return 1;
 }
@@ -1180,32 +1384,50 @@ long CMainWindow::onFileAction(FXObject *sender,FXSelector sel,void *ptr)
 {
 	switch(FXSELID(sel))
 	{
-	case ID_NEW_FILE:
-		newSound(gSoundFileManager);
-		break;
-	
-	case ID_OPEN_FILE:
-		openSound(gSoundFileManager);
-		break;
-
 	case ID_REOPEN_FILE:
-		openSound(gSoundFileManager,dynamic_cast<FXMenuCommand *>(sender)->getText().text());
+	{
+		vector<string> filenames;
+		filenames.push_back(dynamic_cast<FXMenuCommand *>(sender)->getText().text());
+
+		CActionParameters actionParameters(gSoundFileManager);
+		actionParameters.setValue<vector<string> >("filenames",filenames);
+
+		reopenActionFactory->performAction(NULL,&actionParameters,false);
 		break;
+	}
 	
-	case ID_SAVE_FILE:
-		saveSound(gSoundFileManager);
-		break;
-
-	case ID_SAVE_FILE_AS:
-		saveAsSound(gSoundFileManager);
-		break;
-
 	case ID_CLOSE_FILE:
+		if(AActionFactory::macroRecorder.isRecording())
+		{
+			Message(_("Cannot close a file while recording a macro"));
+			return 1;
+		}
 		closeSound(gSoundFileManager);
 		break;
 
 	case ID_REVERT_FILE:
+		if(AActionFactory::macroRecorder.isRecording())
+		{
+			Message(_("Cannot revert a file while recording a macro"));
+			return 1;
+		}
 		revertSound(gSoundFileManager);
+		break;
+
+	case ID_RECORD_MACRO:
+		recordMacro();
+		if(AActionFactory::macroRecorder.isRecording())
+		{
+			recordMacroButton->setState(1);
+			recordMacroButton->setIcon(FOXIcons->RedLED1);
+			// start blinking LED timer
+			getApp()->addTimeout(this,CMainWindow::ID_RECORDING_MACRO_TIMER,RECORDING_MACRO_TIMER_INTERVAL);
+		}
+		else
+		{
+			recordMacroButton->setIcon(FOXIcons->OffLED1);
+			recordMacroButton->setState(0);
+		}
 		break;
 
 	case ID_SHOW_ABOUT:
@@ -1214,6 +1436,7 @@ long CMainWindow::onFileAction(FXObject *sender,FXSelector sel,void *ptr)
 
 
 	case ID_EDIT_USERNOTES:
+#warning ??? make this an action?
 		try
 		{
 			CLoadedSound *s=gSoundFileManager->getActive();
@@ -1231,6 +1454,23 @@ long CMainWindow::onFileAction(FXObject *sender,FXSelector sel,void *ptr)
 	default:
 		throw runtime_error(string(__func__)+" -- unhandled file button selector");
 	}
+	return 1;
+}
+
+long CMainWindow::onRecordingMacroTimer(FXObject *sender,FXSelector sel,void *ptr)
+{
+	static int counter=0;
+	if(AActionFactory::macroRecorder.isRecording())
+	{
+		recordMacroButton->setIcon( (counter%2) ? FOXIcons->RedLED1 : FOXIcons->OffLED1);
+		counter++;
+
+		// schedule for the next timer
+		getApp()->addTimeout(this,CMainWindow::ID_RECORDING_MACRO_TIMER,RECORDING_MACRO_TIMER_INTERVAL);
+	}
+	else 
+		counter=0; 
+
 	return 1;
 }
 
@@ -1275,6 +1515,14 @@ long CMainWindow::onControlAction(FXObject *sender,FXSelector sel,void *ptr)
 		play(gSoundFileManager,CSoundPlayerChannel::ltLoopGapBeforeRepeat,true);
 		break;
 
+	case ID_PLAY_LEFT_EDGE_OF_SCREEN_TO_END:
+		if(gSoundFileManager->getActiveWindow())
+		{
+			metersWindow->resetGrandMaxPeakLevels();
+			play(gSoundFileManager,gSoundFileManager->getActiveWindow()->getLeftEdgePosition());
+		}
+		break;
+
 	case ID_STOP:
 		stop(gSoundFileManager);
 		break;
@@ -1284,6 +1532,11 @@ long CMainWindow::onControlAction(FXObject *sender,FXSelector sel,void *ptr)
 		break;
 
 	case ID_RECORD:
+		if(AActionFactory::macroRecorder.isRecording())
+		{
+			Message(_("Cannot record audio while recording a macro"));
+			return 1;
+		}
 		recordSound(gSoundFileManager);
 		break;
 
@@ -1397,6 +1650,8 @@ long CMainWindow::onShuttleReturn(FXObject *sender,FXSelector sel,void *ptr)
 {
 	if(((FXEvent *)ptr)->code==LEFTBUTTON && !shuttleDialSpringButton->getState())
 		return 1; // this wasn't a left click release and where we're in spring-back mode
+
+	enableAutoRepeat(getApp()->getDisplay(),true); // QQQ
 
 	// return shuttle control to the middle
 	shuttleDial->setValue(0);
@@ -1579,11 +1834,13 @@ long CMainWindow::onKeyboardShuttle(FXObject *sender,FXSelector sel,void *ptr)
 
 	if(pos==0 && FXSELID(sel)==ID_SHUTTLE_BACKWARD)
 	{
+		if((unsigned)ptr > 1/*came from keyboard event*/) enableAutoRepeat(getApp()->getDisplay(),false); // QQQ
 		shuttleDial->setValue(pos-inc);
 		onShuttleChange(sender,sel,ptr);
 	}
 	else if(pos==0 && FXSELID(sel)==ID_SHUTTLE_FORWARD)
 	{
+		if((unsigned)ptr > 1/*came from keyboard event*/) enableAutoRepeat(getApp()->getDisplay(),false); // QQQ
 		shuttleDial->setValue(pos+inc);
 		onShuttleChange(sender,sel,ptr);
 	}

@@ -45,8 +45,8 @@ static const char *gSelectionDescriptions[]=
 };
 
 
-CSelectionEdit::CSelectionEdit(const CActionSound actionSound,Selections _selection) :
-	AAction(actionSound),
+CSelectionEdit::CSelectionEdit(const AActionFactory *factory,const CActionSound *actionSound,Selections _selection) :
+	AAction(factory,actionSound),
 	selection(_selection),
 	amount(-1.0),
 	selectStart(NIL_SAMPLE_POS),
@@ -54,8 +54,8 @@ CSelectionEdit::CSelectionEdit(const CActionSound actionSound,Selections _select
 {
 }
 
-CSelectionEdit::CSelectionEdit(const CActionSound actionSound,Selections _selection,const double _amount) :
-	AAction(actionSound),
+CSelectionEdit::CSelectionEdit(const AActionFactory *factory,const CActionSound *actionSound,Selections _selection,const double _amount) :
+	AAction(factory,actionSound),
 	selection(_selection),
 	amount(_amount),
 	selectStart(NIL_SAMPLE_POS),
@@ -63,9 +63,9 @@ CSelectionEdit::CSelectionEdit(const CActionSound actionSound,Selections _select
 {
 }
 
-CSelectionEdit::CSelectionEdit(const CActionSound actionSound,sample_pos_t _selectStart,sample_pos_t _selectStop) :
-	AAction(actionSound),
-	selection((Selections)-1),
+CSelectionEdit::CSelectionEdit(const AActionFactory *factory,const CActionSound *actionSound,sample_pos_t _selectStart,sample_pos_t _selectStop) :
+	AAction(factory,actionSound),
+	selection(sSetSelectionPositions),
 	amount(-1.0),
 	selectStart(_selectStart),
 	selectStop(_selectStop)
@@ -77,7 +77,7 @@ CSelectionEdit::~CSelectionEdit()
 {
 }
 
-AAction::CanUndoResults CSelectionEdit::canUndo(const CActionSound &actionSound) const
+AAction::CanUndoResults CSelectionEdit::canUndo(const CActionSound *actionSound) const
 {
 	return curYes;
 }
@@ -87,137 +87,136 @@ bool CSelectionEdit::doesWarrantSaving() const
 	return false;
 }
 
-bool CSelectionEdit::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
+bool CSelectionEdit::doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)
 {
 	sample_pos_t i;
-	sample_pos_t start=actionSound.start;
-	sample_pos_t stop=actionSound.stop;
+	sample_pos_t start=actionSound->start;
+	sample_pos_t stop=actionSound->stop;
 
 	// convert amount (in seconds) to a number of samples
-	const sample_pos_t samplesAmount=(sample_pos_t)sample_fpos_floor((sample_fpos_t)amount*actionSound.sound->getSampleRate());
+	const sample_pos_t samplesAmount=(sample_pos_t)sample_fpos_floor((sample_fpos_t)amount*actionSound->sound->getSampleRate());
 
-	if(selection!=-1)
+	switch(selection)
 	{
-		switch(selection)
+	case sSelectAll:
+		start=0;
+		stop=actionSound->sound->getLength()-1;
+		break;
+
+	case sSelectToBeginning:
+		start=0;
+		break;
+
+	case sSelectToEnd:
+		stop=actionSound->sound->getLength()-1;
+		break;
+
+	case sFlopToBeginning:
+		i=start;
+		start=0;
+		stop=(i - (i>0 ? 1 : 0));
+		break;
+
+	case sFlopToEnd:
+		i=stop;
+		stop=(actionSound->sound->getLength()-1);
+		start=(i+ (i<actionSound->sound->getLength() ? 1 : 0));
+		break;
+
+	case sSelectToSelectStart:
+		stop=start;
+		break;
+
+	case sSelectToSelectStop:
+		start=stop;
+		break;
+
+	// ----------------------------------------
+
+	case sSetSelectionPositions:
+		start=selectStart;
+		stop=selectStop;
+		break;
+
+	// ----------------------------------------
+
+	case sGrowSelectionToTheLeft:
+		if(start>samplesAmount)
+			start-=samplesAmount;
+		else
+			start=0;
+		break;
+
+	case sGrowSelectionToTheRight:
+		if((actionSound->sound->getLength()-stop)>samplesAmount)
+			stop+=samplesAmount;
+		else
+			stop=actionSound->sound->getLength()-1;
+		break;
+
+	case sGrowSelectionInBothDirections:
+		if(start>samplesAmount)
+			start-=samplesAmount;
+		else
+			start=0;
+
+		if((actionSound->sound->getLength()-stop)>samplesAmount)
+			stop+=samplesAmount;
+		else
+			stop=actionSound->sound->getLength()-1;
+		break;
+
+	case sSlideSelectionToTheLeft:
+		if(start>samplesAmount)
 		{
-		case sSelectAll:
-			start=0;
-			stop=actionSound.sound->getLength()-1;
-			break;
-
-		case sSelectToBeginning:
-			start=0;
-			break;
-
-		case sSelectToEnd:
-			stop=actionSound.sound->getLength()-1;
-			break;
-
-		case sFlopToBeginning:
-			i=start;
-			start=0;
-			stop=(i - (i>0 ? 1 : 0));
-			break;
-
-		case sFlopToEnd:
-			i=stop;
-			stop=(actionSound.sound->getLength()-1);
-			start=(i+ (i<actionSound.sound->getLength() ? 1 : 0));
-			break;
-
-		case sSelectToSelectStart:
-			stop=start;
-			break;
-
-		case sSelectToSelectStop:
-			start=stop;
-			break;
-
-		// ----------------------------------------
-
-		case sGrowSelectionToTheLeft:
-			if(start>samplesAmount)
-				start-=samplesAmount;
-			else
-				start=0;
-			break;
-
-		case sGrowSelectionToTheRight:
-			if((actionSound.sound->getLength()-stop)>samplesAmount)
-				stop+=samplesAmount;
-			else
-				stop=actionSound.sound->getLength()-1;
-			break;
-
-		case sGrowSelectionInBothDirections:
-			if(start>samplesAmount)
-				start-=samplesAmount;
-			else
-				start=0;
-
-			if((actionSound.sound->getLength()-stop)>samplesAmount)
-				stop+=samplesAmount;
-			else
-				stop=actionSound.sound->getLength()-1;
-			break;
-
-		case sSlideSelectionToTheLeft:
-			if(start>samplesAmount)
+			start-=samplesAmount;
+			stop-=samplesAmount;
+		}
+		else
+		{
+			if(stop>samplesAmount)
 			{
-				start-=samplesAmount;
+				start=0;
 				stop-=samplesAmount;
 			}
 			else
-			{
-				if(stop>samplesAmount)
-				{
-					start=0;
-					stop-=samplesAmount;
-				}
-				else
-					start=stop=0;
-			}
-			break;
+				start=stop=0;
+		}
+		break;
 
-		case sSlideSelectionToTheRight:
-			if((actionSound.sound->getLength()-stop)>samplesAmount)
+	case sSlideSelectionToTheRight:
+		if((actionSound->sound->getLength()-stop)>samplesAmount)
+		{
+			stop+=samplesAmount;
+			start+=samplesAmount;
+		}
+		else
+		{
+			if((actionSound->sound->getLength()-start)>samplesAmount)
 			{
-				stop+=samplesAmount;
+				stop=actionSound->sound->getLength()-1;
 				start+=samplesAmount;
 			}
 			else
-			{
-				if((actionSound.sound->getLength()-start)>samplesAmount)
-				{
-					stop=actionSound.sound->getLength()-1;
-					start+=samplesAmount;
-				}
-				else
-					start=stop=actionSound.sound->getLength()-1;
-			}
-			break;
-
-		default:
-			throw runtime_error(string(__func__)+" -- invalid selection type: "+istring(selection));
+				start=stop=actionSound->sound->getLength()-1;
 		}
-	}
-	else
-	{
-		start=selectStart;
-		stop=selectStop;
+		break;
+
+	default:
+		throw runtime_error(string(__func__)+" -- invalid selection type: "+istring(selection));
 	}
 
-	actionSound.start=start;
-	actionSound.stop=stop;
+	actionSound->start=start;
+	actionSound->stop=stop;
 
 	return true;
 }
 
-void CSelectionEdit::undoActionSizeSafe(const CActionSound &actionSound)
+void CSelectionEdit::undoActionSizeSafe(const CActionSound *actionSound)
 {
 	/* the undo logic should take care of this
-	actionSound.channel->setStartPosition(oldStart);
-	actionSound.channel->setStopPosition(oldStop);
+	actionSound->channel->setStartPosition(oldStart);
+	actionSound->channel->setStopPosition(oldStop);
 	*/
 }
 
@@ -231,15 +230,16 @@ CSelectionEditFactory::CSelectionEditFactory(Selections _selection) :
 
 	selection(_selection)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CSelectionEditFactory::~CSelectionEditFactory()
 {
 }
 
-CSelectionEdit *CSelectionEditFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CSelectionEdit *CSelectionEditFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
-	return new CSelectionEdit(actionSound,selection);
+	return new CSelectionEdit(this,actionSound,selection);
 }
 
 
@@ -252,15 +252,16 @@ CSelectionEditPositionFactory::CSelectionEditPositionFactory() :
 	selectStart(0),
 	selectStop(0)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CSelectionEditPositionFactory::~CSelectionEditPositionFactory()
 {
 }
 
-CSelectionEdit *CSelectionEditPositionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CSelectionEdit *CSelectionEditPositionFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
-	return new CSelectionEdit(actionSound,selectStart,selectStop);
+	return new CSelectionEdit(this,actionSound,selectStart,selectStop);
 }
 
 
@@ -269,16 +270,17 @@ CSelectionEdit *CSelectionEditPositionFactory::manufactureAction(const CActionSo
 CGrowOrSlideSelectionEditFactory::CGrowOrSlideSelectionEditFactory(AActionDialog *normalDialog) :
 	AActionFactory(N_("Grow or Slide Selection"),"",NULL,normalDialog,false,false)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CGrowOrSlideSelectionEditFactory::~CGrowOrSlideSelectionEditFactory()
 {
 }
 
-CSelectionEdit *CGrowOrSlideSelectionEditFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CSelectionEdit *CGrowOrSlideSelectionEditFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
 	Selections selection;
-	switch(actionParameters->getUnsignedParameter("How"))
+	switch(actionParameters->getValue<unsigned>("How"))
 	{
 	case 0:
 		selection=sGrowSelectionToTheLeft;
@@ -296,10 +298,10 @@ CSelectionEdit *CGrowOrSlideSelectionEditFactory::manufactureAction(const CActio
 		selection=sSlideSelectionToTheRight;
 		break;
 	default:
-		throw runtime_error(string(__func__)+" -- unhandled How value: "+istring(actionParameters->getUnsignedParameter("How")));
+		throw runtime_error(string(__func__)+" -- unhandled How value: "+istring(actionParameters->getValue<unsigned>("How")));
 	};
 	
-	return new CSelectionEdit(actionSound,selection,actionParameters->getDoubleParameter("Amount"));
+	return new CSelectionEdit(this,actionSound,selection,actionParameters->getValue<double>("Amount"));
 }
 
 

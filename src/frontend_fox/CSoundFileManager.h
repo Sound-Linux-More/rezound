@@ -50,6 +50,7 @@ public:
 	const size_t getOpenedCount() const;
 	CLoadedSound *getSound(size_t index);
 	CSoundWindow *getSoundWindow(size_t index);
+	void setActiveSound(size_t index);
 
 	CSoundWindow *getSoundWindow(CLoadedSound *loadedSound);
 
@@ -63,6 +64,8 @@ public:
 	bool isValidLoadedSound(const CLoadedSound *sound) const;
 
 	CMainWindow *getMainWindow() const { return mainWindow; }
+
+	void updateModifiedStatusIndicators();
 
 protected:
 	void createWindow(CLoadedSound *loaded);

@@ -35,7 +35,9 @@ class AFrontendHooks;
 	#include "LADSPA/ladspa.h"
 #endif
 
+class AActionFactory;
 class ASoundRecorder;
+class CLoadedSound;
 
 extern AFrontendHooks *gFrontendHooks;
 
@@ -45,6 +47,8 @@ public:
 
 	AFrontendHooks() { }
 	virtual ~AFrontendHooks() { }
+
+	virtual void setWhichClipboard(size_t whichClipboard)=0;
 
 	// prompt with an open file dialog (return false if the prompt was cancelled)
 	virtual bool promptForOpenSoundFilename(string &filename,bool &readOnly,bool &openAsRaw)=0;
@@ -62,6 +66,48 @@ public:
 	// prompt for recording, this function will have to be more than just an interface and do work 
 	// since it should probably show level meters and be able to insert cues while recording etc.
 	virtual bool promptForRecord(ASoundRecorder *recorder)=0;
+
+	// prompt for parameters for recording a macro
+	virtual bool showRecordMacroDialog(string &macroName)=0;
+
+	// prompt for the information needed to store with the macro after each action of the recording macro is recorded
+	struct MacroActionParameters
+	{
+		// true if at playback time the user should be prompted for the action parameters rather than it using the ones defined at record time
+	 	bool askToPromptForActionParametersAtPlayback;
+
+		enum SelectionPositioning
+		{
+			spLeaveAlone=1,
+
+			spAbsoluteTimeFromBeginning=2,
+			spAbsoluteTimeFromEnd=3,
+			spProportionateTimeFromBeginning=4,
+
+			spAbsoluteTimeFromStopPosition=5, 	// only allowed for the startPosPositioning
+			spProportionateTimeFromStopPosition=6,	// only allowed for the startPosPositioning
+
+			spAbsoluteTimeFromStartPosition=7, 	// only allowed for the stopPosPositioning
+			spProportionateTimeFromStartPosition=8,	// only allowed for the stopPosPositioning
+
+			// NOTE: 5 or 6 for a startPosPositioning cannot be used at the same time that 7 or 8 is used for the stopPosPositioning
+			// the positionsAreRelativeToEachOther() method can conveniently be called to test for this condition
+
+			spSameCueName=9,
+		};
+
+		SelectionPositioning startPosPositioning;
+		SelectionPositioning stopPosPositioning;
+
+		bool positionsAreRelativeToEachOther() const
+		{
+			return (startPosPositioning==5 || startPosPositioning==6) && (stopPosPositioning==7 || stopPosPositioning==8);
+		}
+
+		string startPosCueName;
+		string stopPosCueName;
+	};
+	virtual bool showMacroActionParamsDialog(const AActionFactory *actionFactory,MacroActionParameters &macroActionParams,CLoadedSound *loadedSound)=0; // loadedSound may be NULL
 
 
 #ifdef ENABLE_JACK
@@ -107,7 +153,7 @@ public:
 		unsigned dataLength; // in frames; can be 0 for no user limit
 
 	};
-	virtual bool promptForRawParameters(RawParameters &parameters,bool showOffsetAndLengthParameters)=0;
+	virtual bool promptForRawParameters(RawParameters &parameters,bool showLoadRawParameters)=0;
 
 
 	// called when the user is saving an ogg file and compression parameters are needed
@@ -189,16 +235,19 @@ public:
 	struct libaudiofileSaveParameters
 	{
 		int sampleFormat;	// AF_SAMPFMT_xxx
-			int defaultSampleFormatIndex; // of signed, unsigned, float, double
+		int defaultSampleFormatIndex; // of signed, unsigned, float, double
 		int sampleWidth;	// bit rate
-			int defaultSampleWidthIndex; // of 8, 16, 24, 32
+		int defaultSampleWidthIndex; // of 8, 16, 24, 32
 
 		// this is an input value that indicates which compression types are supported
 		// pair: name of compression type, audiofiles enum value for it
 		vector<pair<string,int> > supportedCompressionTypes; 
 
-			int defaultCompressionTypeIndex; // of the items in the vector
+		int defaultCompressionTypeIndex; // of the items in the vector
 		int compressionType;	// AF_COMPRESSION_xxx
+
+		bool saveCues;
+		bool saveUserNotes;
 	};
 	virtual bool promptForlibaudiofileSaveParameters(libaudiofileSaveParameters &parameters,const string formatName)=0;
 };

@@ -32,6 +32,7 @@ class CSoundWindow;
 class CMetersWindow;
 class CActionMenuCommand;
 class CNestedDataFile;
+class AActionFactory;
 
 class CMainWindow : public FXMainWindow
 {
@@ -48,6 +49,8 @@ public:
 
 	long onQuit(FXObject *sender,FXSelector sel,void *ptr);
 
+	long onSetupKeyBindings(FXObject *sender,FXSelector sel,void *ptr);
+
 	long onFollowPlayPositionButton(FXObject *sender,FXSelector sel,void *ptr);
 
 	long onRenderClippingWarningButton(FXObject *sender,FXSelector sel,void *ptr);
@@ -61,6 +64,7 @@ public:
 
 	// file action events
 	long onFileAction(FXObject *sender,FXSelector sel,void *ptr);
+	long onRecordingMacroTimer(FXObject *sender,FXSelector sel,void *ptr);
 
 	// play/record/transport/misc control events
 	long onControlAction(FXObject *sender,FXSelector sel,void *ptr);
@@ -90,19 +94,20 @@ public:
 
 	enum
 	{
-		ID_NEW_FILE=FXMainWindow::ID_LAST,
-		ID_OPEN_FILE,
-		ID_REOPEN_FILE,
-		ID_SAVE_FILE,
-		ID_SAVE_FILE_AS,
+		ID_REOPEN_FILE=FXMainWindow::ID_LAST,
 		ID_CLOSE_FILE,
 		ID_REVERT_FILE,
+
+		ID_RECORD_MACRO,
+		ID_RECORDING_MACRO_TIMER,
 
 		ID_EDIT_USERNOTES,
 
 		ID_RECENT_ACTION,
 
 		ID_SHOW_ABOUT,
+
+		ID_SETUP_KEY_BINDINGS,
 
 		ID_QUIT,
 
@@ -115,6 +120,7 @@ public:
 		ID_PLAY_SELECTION_LOOPED_SKIP_MOST,
 		ID_PLAY_SELECTION_LOOPED_GAP_BEFORE_REPEAT,
 		ID_PLAY_SELECTION_START_TO_END,
+		ID_PLAY_LEFT_EDGE_OF_SCREEN_TO_END,
 
 		ID_STOP,
 		ID_PAUSE,
@@ -169,7 +175,18 @@ public:
 		ID_CLIPBOARD_COMBOBOX,
 
 		ID_SOUND_LIST,
-		ID_SOUND_LIST_HOTKEY,
+
+		ID_SOUND_LIST_HOTKEY_PREV,
+		ID_SOUND_LIST_HOTKEY1,
+		ID_SOUND_LIST_HOTKEY2,
+		ID_SOUND_LIST_HOTKEY3,
+		ID_SOUND_LIST_HOTKEY4,
+		ID_SOUND_LIST_HOTKEY5,
+		ID_SOUND_LIST_HOTKEY6,
+		ID_SOUND_LIST_HOTKEY7,
+		ID_SOUND_LIST_HOTKEY8,
+		ID_SOUND_LIST_HOTKEY9,
+		ID_SOUND_LIST_HOTKEY10,
 
 		ID_LAST
 	};
@@ -180,6 +197,8 @@ public:
 	CMetersWindow *getMetersWindow() { return metersWindow; }
 
 	void actionMenuCommandTriggered(CActionMenuCommand *actionMenuCommand);
+
+	void setWhichClipboard(size_t whichClipboard);
 
 protected:
 
@@ -210,7 +229,8 @@ private:
 	FXCheckButton	*renderClippingWarningButton;
 	FXCheckButton	*drawVerticalCuePositionsButton;
 	FXComboBox	*crossfadeEdgesComboBox;
-	FXComboBox	*clipboardComboBox; // ??? it would however make sense to put this on the edit dialog.. it's just a little wide
+	FXComboBox	*clipboardComboBox;
+	FXButton	*recordMacroButton;
 
 	FXIconList *soundList;
 
@@ -225,6 +245,12 @@ private:
 	friend class CRecentActionsPopup;
 	vector<CActionMenuCommand *> recentActions;
 
+	AActionFactory *reopenActionFactory;
+
+	void addActionToKeyBindingRegistery(const string name,FXMenuCommand *mc);
+	void setupKeyBindings();
+
+	void buildLADSPAMenus();
 };
 
 

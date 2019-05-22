@@ -47,6 +47,7 @@ ALSA_LIBS = @ALSA_LIBS@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUDIOFILE_CFLAGS = @AUDIOFILE_CFLAGS@
 AUDIOFILE_CONFIG = @AUDIOFILE_CONFIG@
 AUDIOFILE_LIBS = @AUDIOFILE_LIBS@
@@ -74,12 +75,18 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+FFLAGS = @FFLAGS@
 FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
 FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_1_2_CXXFLAGS = @FOX_1_2_CXXFLAGS@
 FOX_1_2_LIBS = @FOX_1_2_LIBS@
 FOX_1_3_CXXFLAGS = @FOX_1_3_CXXFLAGS@
 FOX_1_3_LIBS = @FOX_1_3_LIBS@
+FOX_1_4_CXXFLAGS = @FOX_1_4_CXXFLAGS@
+FOX_1_4_LIBS = @FOX_1_4_LIBS@
+FOX_1_5_CXXFLAGS = @FOX_1_5_CXXFLAGS@
+FOX_1_5_LIBS = @FOX_1_5_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -142,8 +149,10 @@ VORBIS_CFLAGS = @VORBIS_CFLAGS@
 VORBIS_LIBS = @VORBIS_LIBS@
 XGETTEXT = @XGETTEXT@
 YACC = @YACC@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -192,6 +201,7 @@ pkgdocdir = $(prefix)/doc/@PACKAGE@
 
 SUBDIRS = \
 	DSP  \
+	File  \
 	Edits  \
 	Effects \
 	Filters \
@@ -247,6 +257,9 @@ noinst_HEADERS = \
 	   CSoundPlayerChannel.h \
 	   CTrigger.h \
 	   CPluginMapping.h \
+	   CMacroPlayer.h \
+	   CMacroRecorder.h \
+	   CRunMacroAction.h \
 	   CvoxSoundTranslator.h \
 	   initialize.h \
 	   license.h \
@@ -295,6 +308,9 @@ libbackend_la_SOURCES = \
 			CSoundPlayerChannel.cpp \
 			CTrigger.cpp \
 			CPluginMapping.cpp \
+			CMacroPlayer.cpp \
+			CMacroRecorder.cpp \
+			CRunMacroAction.cpp \
 			CvoxSoundTranslator.cpp \
 		        initialize.cpp \
 			main_controls.cpp \
@@ -330,8 +346,9 @@ am_libbackend_la_OBJECTS = AAction.lo AActionDialog.lo AFrontendHooks.lo \
 	CJACKSoundPlayer.lo CJACKSoundRecorder.lo \
 	CrawSoundTranslator.lo CRecordSoundClipboard.lo \
 	CrezSoundTranslator.lo CSound.lo CSoundPlayerChannel.lo \
-	CTrigger.lo CPluginMapping.lo CvoxSoundTranslator.lo \
-	initialize.lo main_controls.lo mypopen.lo settings.lo
+	CTrigger.lo CPluginMapping.lo CMacroPlayer.lo CMacroRecorder.lo \
+	CRunMacroAction.lo CvoxSoundTranslator.lo initialize.lo \
+	main_controls.lo mypopen.lo settings.lo
 libbackend_la_OBJECTS = $(am_libbackend_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
@@ -357,6 +374,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CJACKSoundRecorder.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CLoadedSound.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMIDISDSSoundTranslator.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CMacroPlayer.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CMacroRecorder.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CNativeSoundClipboard.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/COSSSoundPlayer.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/COSSSoundRecorder.Plo \
@@ -364,6 +383,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CPortAudioSoundPlayer.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CPortAudioSoundRecorder.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRecordSoundClipboard.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CRunMacroAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSound.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSoundPlayerChannel.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CTrigger.Plo \
@@ -447,6 +467,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CJACKSoundRecorder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLoadedSound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMIDISDSSoundTranslator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMacroPlayer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMacroRecorder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CNativeSoundClipboard.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/COSSSoundPlayer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/COSSSoundRecorder.Plo@am__quote@
@@ -454,6 +476,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPortAudioSoundPlayer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPortAudioSoundRecorder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRecordSoundClipboard.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRunMacroAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSoundPlayerChannel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CTrigger.Plo@am__quote@

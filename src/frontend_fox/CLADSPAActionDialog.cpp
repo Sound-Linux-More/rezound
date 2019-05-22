@@ -205,7 +205,7 @@ bool CLADSPAActionDialog::show(CActionSound *actionSound,CActionParameters *acti
 	// warn user about fftw and LADSPA combined
 	if(gSettingsRegistry->getValue<bool>("LADSPA_FFTW_warning_shown")!=true)
 	{
-		gSettingsRegistry->createValue<bool>("LADSPA_FFTW_warning_shown","true");
+		gSettingsRegistry->setValue<bool>("LADSPA_FFTW_warning_shown","true");
 		Warning(_("THIS IS THE ONLY TIME THIS WARNING WILL BE SHOWN. SO READ IT!!!\n\nSOME LADSPA plugins use libfftw.  libfftw can be configured to use either floats or doubles as its native sample format (but not both at the same time).  If the LADSPA plugins on this system were compiled with a differently configured libfftw than ReZound was built with, then you may receive garbage from the LADSPA plugin.  If this is the case, then either rebuild ReZound or the LADSPA plugins to make the types match."));
 	}
 
@@ -224,9 +224,9 @@ bool CLADSPAActionDialog::show(CActionSound *actionSound,CActionParameters *acti
 		// divide values that are sample rates by the sample rate
 		for(size_t t=0;t<sampleRateMappers.size();t++)
 		{
-			actionParameters->setDoubleParameter(
+			actionParameters->setValue<double>(
 				sampleRateMappers[t].first,
-				actionParameters->getDoubleParameter(sampleRateMappers[t].first)/actionSound->sound->getSampleRate()
+				actionParameters->getValue<double>(sampleRateMappers[t].first)/actionSound->sound->getSampleRate()
 			);
 		}
 

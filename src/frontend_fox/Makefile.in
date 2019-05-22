@@ -48,6 +48,7 @@ ALSA_LIBS = @ALSA_LIBS@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUDIOFILE_CFLAGS = @AUDIOFILE_CFLAGS@
 AUDIOFILE_CONFIG = @AUDIOFILE_CONFIG@
 AUDIOFILE_LIBS = @AUDIOFILE_LIBS@
@@ -75,12 +76,18 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+FFLAGS = @FFLAGS@
 FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
 FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_1_2_CXXFLAGS = @FOX_1_2_CXXFLAGS@
 FOX_1_2_LIBS = @FOX_1_2_LIBS@
 FOX_1_3_CXXFLAGS = @FOX_1_3_CXXFLAGS@
 FOX_1_3_LIBS = @FOX_1_3_LIBS@
+FOX_1_4_CXXFLAGS = @FOX_1_4_CXXFLAGS@
+FOX_1_4_LIBS = @FOX_1_4_LIBS@
+FOX_1_5_CXXFLAGS = @FOX_1_5_CXXFLAGS@
+FOX_1_5_LIBS = @FOX_1_5_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -143,8 +150,10 @@ VORBIS_CFLAGS = @VORBIS_CFLAGS@
 VORBIS_LIBS = @VORBIS_LIBS@
 XGETTEXT = @XGETTEXT@
 YACC = @YACC@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -206,6 +215,8 @@ libfrontend_la_SOURCES = \
 			CMainWindow.cpp \
 			CNewSoundDialog.cpp \
 			CRecordDialog.cpp \
+			CRecordMacroDialog.cpp \
+			CMacroActionParamsDialog.cpp \
 			CPasteChannelsDialog.cpp \
 			CProgressDialog.cpp \
 			CSoundFileManager.cpp \
@@ -223,6 +234,7 @@ libfrontend_la_SOURCES = \
 			CMIDIDumpSampleIdDialog.cpp \
 			ClibaudiofileSaveParametersDialog.cpp \
 			drawPortion.cpp \
+			FileActionDialogs.cpp \
 			EditActionDialogs.cpp \
 			EffectActionDialogs.cpp \
 			FilterActionDialogs.cpp \
@@ -243,6 +255,7 @@ libfrontend_la_SOURCES = \
 			FXWaveScrollArea.cpp \
 			FXWaveCanvas.cpp \
 			CLADSPAActionDialog.cpp \
+			CKeyBindingsDialog.cpp \
 			rememberShow.cpp \
 			settings.cpp
 
@@ -253,6 +266,7 @@ rezound_SOURCES = main.cpp
 
 _rezound_LDADD = libfrontend.la\
 	$(top_builddir)/src/backend/libbackend.la \
+	$(top_builddir)/src/backend/File/libFile.la \
 	$(top_builddir)/src/backend/Edits/libEdits.la \
 	$(top_builddir)/src/backend/Effects/libEffects.la \
 	$(top_builddir)/src/backend/Filters/libFilters.la \
@@ -264,11 +278,11 @@ _rezound_LDADD = libfrontend.la\
 	$(top_builddir)/src/PoolFile/libPoolFile.la
 
 
-rezound_LDADD = $(_rezound_LDADD) @FOX_1_3_LIBS@ @FOX_1_2_LIBS@ @FOX_1_1_LIBS@ @FOX_LIBS@
+rezound_LDADD = $(_rezound_LDADD) @FOX_1_5_LIBS@  @FOX_1_4_LIBS@ @FOX_1_3_LIBS@ @FOX_1_2_LIBS@ @FOX_1_1_LIBS@ @FOX_LIBS@
 
 rezound_DEPENDENCIES = $(_rezound_LDADD)
 
-AM_CXXFLAGS = @FOX_1_3_CXXFLAGS@ @FOX_1_2_CXXFLAGS@ @FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
+AM_CXXFLAGS = @FOX_1_5_CXXFLAGS@ @FOX_1_4_CXXFLAGS@ @FOX_1_3_CXXFLAGS@ @FOX_1_2_CXXFLAGS@ @FOX_1_1_CXXFLAGS@ @FOX_CXXFLAGS@
 
 noinst_HEADERS = \
 	fox_compat.h \
@@ -283,6 +297,8 @@ noinst_HEADERS = \
 	CMainWindow.h \
 	CNewSoundDialog.h \
 	CRecordDialog.h \
+	CRecordMacroDialog.h \
+	CMacroActionParamsDialog.h \
 	CPasteChannelsDialog.h \
 	CProgressDialog.h \
 	CSoundFileManager.h \
@@ -299,6 +315,7 @@ noinst_HEADERS = \
 	CJACKPortChoiceDialog.h \
 	CMIDIDumpSampleIdDialog.h \
 	ClibaudiofileSaveParametersDialog.h \
+	FileActionDialogs.h \
 	EditActionDialogs.h \
 	EffectActionDialogs.h \
 	FilterActionDialogs.h \
@@ -319,6 +336,7 @@ noinst_HEADERS = \
 	FXWaveScrollArea.h \
 	FXWaveCanvas.h \
 	CLADSPAActionDialog.h \
+	CKeyBindingsDialog.h \
 	FXPopupHint.h \
 	FXBackBufferedCanvas.h \
 	drawPortion.h \
@@ -344,21 +362,24 @@ am_libfrontend_la_OBJECTS = CFOXIcons.lo CFOXIcons.lo \
 	CCrossfadeEdgesDialog.lo CActionParamDialog.lo \
 	AActionParamMapper.lo CCueDialog.lo CCueListDialog.lo \
 	CMainWindow.lo CNewSoundDialog.lo CRecordDialog.lo \
+	CRecordMacroDialog.lo CMacroActionParamsDialog.lo \
 	CPasteChannelsDialog.lo CProgressDialog.lo CSoundFileManager.lo \
 	CFrontendHooks.lo CSoundWindow.lo CMetersWindow.lo \
 	CStatusComm.lo CUserNotesDialog.lo CRezSaveParametersDialog.lo \
 	CRawDialog.lo CVoxDialog.lo COggDialog.lo CMp3Dialog.lo \
 	CJACKPortChoiceDialog.lo CMIDIDumpSampleIdDialog.lo \
 	ClibaudiofileSaveParametersDialog.lo drawPortion.lo \
-	EditActionDialogs.lo EffectActionDialogs.lo \
-	FilterActionDialogs.lo GenerateActionDialogs.lo \
-	RemasterActionDialogs.lo LoopingActionDialogs.lo \
-	CAboutDialog.lo FXConstantParamValue.lo FXTextParamValue.lo \
-	FXDiskEntityParamValue.lo FXComboTextParamValue.lo \
-	FXCheckBoxParamValue.lo FXGraphParamValue.lo FXLFOParamValue.lo \
+	FileActionDialogs.lo EditActionDialogs.lo \
+	EffectActionDialogs.lo FilterActionDialogs.lo \
+	GenerateActionDialogs.lo RemasterActionDialogs.lo \
+	LoopingActionDialogs.lo CAboutDialog.lo FXConstantParamValue.lo \
+	FXTextParamValue.lo FXDiskEntityParamValue.lo \
+	FXComboTextParamValue.lo FXCheckBoxParamValue.lo \
+	FXGraphParamValue.lo FXLFOParamValue.lo \
 	FXPluginRoutingParamValue.lo FXModalDialogBox.lo \
 	FXRezWaveView.lo FXWaveScrollArea.lo FXWaveCanvas.lo \
-	CLADSPAActionDialog.lo rememberShow.lo settings.lo
+	CLADSPAActionDialog.lo CKeyBindingsDialog.lo rememberShow.lo \
+	settings.lo
 libfrontend_la_OBJECTS = $(am_libfrontend_la_OBJECTS)
 bin_PROGRAMS = rezound$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
@@ -381,8 +402,10 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CFOXIcons.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CFrontendHooks.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CJACKPortChoiceDialog.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CKeyBindingsDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CLADSPAActionDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMIDIDumpSampleIdDialog.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CMacroActionParamsDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMainWindow.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMetersWindow.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CMp3Dialog.Plo \
@@ -392,6 +415,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CProgressDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRawDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRecordDialog.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/CRecordMacroDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRezSaveParametersDialog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSoundFileManager.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSoundWindow.Plo \
@@ -413,6 +437,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/FXTextParamValue.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXWaveCanvas.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FXWaveScrollArea.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/FileActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/FilterActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/GenerateActionDialogs.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/LoopingActionDialogs.Plo \
@@ -505,8 +530,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CFOXIcons.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CFrontendHooks.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CJACKPortChoiceDialog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CKeyBindingsDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLADSPAActionDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMIDIDumpSampleIdDialog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMacroActionParamsDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMainWindow.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMetersWindow.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CMp3Dialog.Plo@am__quote@
@@ -516,6 +543,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CProgressDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRawDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRecordDialog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRecordMacroDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRezSaveParametersDialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSoundFileManager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSoundWindow.Plo@am__quote@
@@ -537,6 +565,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXTextParamValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXWaveCanvas.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FXWaveScrollArea.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FileActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/FilterActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GenerateActionDialogs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LoopingActionDialogs.Plo@am__quote@

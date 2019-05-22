@@ -47,6 +47,7 @@ ALSA_LIBS = @ALSA_LIBS@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUDIOFILE_CFLAGS = @AUDIOFILE_CFLAGS@
 AUDIOFILE_CONFIG = @AUDIOFILE_CONFIG@
 AUDIOFILE_LIBS = @AUDIOFILE_LIBS@
@@ -74,12 +75,18 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+FFLAGS = @FFLAGS@
 FOX_1_1_CXXFLAGS = @FOX_1_1_CXXFLAGS@
 FOX_1_1_LIBS = @FOX_1_1_LIBS@
 FOX_1_2_CXXFLAGS = @FOX_1_2_CXXFLAGS@
 FOX_1_2_LIBS = @FOX_1_2_LIBS@
 FOX_1_3_CXXFLAGS = @FOX_1_3_CXXFLAGS@
 FOX_1_3_LIBS = @FOX_1_3_LIBS@
+FOX_1_4_CXXFLAGS = @FOX_1_4_CXXFLAGS@
+FOX_1_4_LIBS = @FOX_1_4_LIBS@
+FOX_1_5_CXXFLAGS = @FOX_1_5_CXXFLAGS@
+FOX_1_5_LIBS = @FOX_1_5_LIBS@
 FOX_CXXFLAGS = @FOX_CXXFLAGS@
 FOX_LIBS = @FOX_LIBS@
 GMSGFMT = @GMSGFMT@
@@ -142,8 +149,10 @@ VORBIS_CFLAGS = @VORBIS_CFLAGS@
 VORBIS_LIBS = @VORBIS_LIBS@
 XGETTEXT = @XGETTEXT@
 YACC = @YACC@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -205,10 +214,6 @@ noinst_HEADERS = \
 		CDuplicateChannelEdit.h \
 		CRemoveChannelsEdit.h \
 		CSelectionEdit.h \
-		CSaveSelectionAsAction.h \
-		CSaveAsMultipleFilesAction.h \
-		CBurnToCDAction.h \
-		parse_segment_cues.h \
 		EditActions.h
 
 
@@ -227,9 +232,6 @@ libEdits_la_SOURCES = \
 		CAddChannelsEdit.cpp \
 		CDuplicateChannelEdit.cpp \
 		CRemoveChannelsEdit.cpp \
-		CSaveSelectionAsAction.cpp \
-		CSaveAsMultipleFilesAction.cpp \
-		CBurnToCDAction.cpp \
 		CSelectionEdit.cpp 
 
 subdir = src/backend/Edits
@@ -246,15 +248,13 @@ am_libEdits_la_OBJECTS = CCopyCutDeleteEdit.lo CCopyCutToNewEdit.lo \
 	CPasteEdit.lo CPasteAsNewEdit.lo CRotateEdit.lo \
 	CSwapChannelsEdit.lo CAddChannelsEdit.lo \
 	CDuplicateChannelEdit.lo CRemoveChannelsEdit.lo \
-	CSaveSelectionAsAction.lo CSaveAsMultipleFilesAction.lo \
-	CBurnToCDAction.lo CSelectionEdit.lo
+	CSelectionEdit.lo
 libEdits_la_OBJECTS = $(am_libEdits_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/CAddChannelsEdit.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/CBurnToCDAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCopyCutDeleteEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCopyCutToNewEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CCropEdit.Plo \
@@ -266,8 +266,6 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/CPasteEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRemoveChannelsEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CRotateEdit.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/CSaveAsMultipleFilesAction.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/CSaveSelectionAsAction.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSelectionEdit.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/CSwapChannelsEdit.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -313,7 +311,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CAddChannelsEdit.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CBurnToCDAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCopyCutDeleteEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCopyCutToNewEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCropEdit.Plo@am__quote@
@@ -325,8 +322,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CPasteEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRemoveChannelsEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CRotateEdit.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSaveAsMultipleFilesAction.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSaveSelectionAsAction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSelectionEdit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CSwapChannelsEdit.Plo@am__quote@
 

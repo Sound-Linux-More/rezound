@@ -256,6 +256,11 @@ void FXRezWaveView::updateRulerFromScroll(int deltaX,FXEvent *event)
 	rulerPanel->onMouseMove(NULL,0,&e);
 }
 
+sample_pos_t FXRezWaveView::getSamplePosForScreenX(FXint X) const
+{
+	return waveScrollArea->getSamplePosForScreenX(X);
+}
+
 void FXRezWaveView::getWaveSize(int &top,int &height)
 {
 	top=waveScrollArea->getY();
@@ -524,7 +529,7 @@ long FXWaveRuler::onPopupMenu(FXObject *object,FXSelector sel,void *ptr)
 	}
 	else
 	{
-		addCueTime=  parent->waveScrollArea->getCueTimeFromX(event->win_x);
+		addCueTime=  parent->waveScrollArea->getSamplePosForScreenX(event->win_x);
 
 		FXMenuPane gotoMenu(this);
 			// ??? make sure that these get deleted when gotoMenu is deleted
@@ -689,7 +694,7 @@ long FXWaveRuler::onMouseMove(FXObject *object,FXSelector sel,void *ptr)
 		}
 
 
-		sample_pos_t newTime=parent->waveScrollArea->getCueTimeFromX(event->win_x-cueClickedOffset);
+		sample_pos_t newTime=parent->waveScrollArea->getSamplePosForScreenX(event->win_x-cueClickedOffset);
 		
 		if(draggingSelectionToo)
 		{
@@ -776,10 +781,10 @@ long FXWaveRuler::onLeftBtnRelease(FXObject *object,FXSelector sel,void *ptr)
 
 			// set cue to new position except use an AAction object so it goes on the undo stack
 			CActionParameters actionParameters(NULL);
-			actionParameters.addUnsignedParameter("index",cueClicked);
-			actionParameters.addSamplePosParameter("position",newCueTime);
-			actionParameters.addSamplePosParameter("restoreStartPosition",origStartPosition);
-			actionParameters.addSamplePosParameter("restoreStopPosition",origStopPosition);
+			actionParameters.setValue<unsigned>("index",cueClicked);
+			actionParameters.setValue<sample_pos_t>("position",newCueTime);
+			actionParameters.setValue<sample_pos_t>("restoreStartPosition",origStartPosition);
+			actionParameters.setValue<sample_pos_t>("restoreStopPosition",origStopPosition);
 			moveCueActionFactory->performAction(loadedSound,&actionParameters,false);
 		}
 
@@ -796,7 +801,7 @@ long FXWaveRuler::onLeftBtnRelease(FXObject *object,FXSelector sel,void *ptr)
 			size_t index;
 			sample_pos_t startPos=0;
 			sample_pos_t stopPos=sound->getLength()-1;
-			sample_pos_t clickedPos=parent->waveScrollArea->getCueTimeFromX(event->win_x);
+			sample_pos_t clickedPos=parent->waveScrollArea->getSamplePosForScreenX(event->win_x);
 
 			if(sound->findPrevCueInTime(clickedPos,index))
 				startPos=sound->getCueTime(index);
@@ -807,12 +812,11 @@ long FXWaveRuler::onLeftBtnRelease(FXObject *object,FXSelector sel,void *ptr)
 			if(stopPos<startPos) // safety
 				stopPos=startPos;
 
-			// could make this a real action so that it could be undone
 			CActionParameters actionParameters(NULL);
 			selectionEditPositionFactory->selectStart=startPos;
 			selectionEditPositionFactory->selectStop=stopPos;
 			selectionEditPositionFactory->performAction(loadedSound,&actionParameters,false);
-			parent->updateFromEdit();
+			gSoundFileManager->getActiveWindow()->updateFromEdit(); // would prefer to call this for the very window that owns us, but I suppose the user couldn't have clicked it if it wasn't active
 		}
 	}
 
@@ -867,7 +871,7 @@ long FXWaveRuler::onKeyPress(FXObject *object,FXSelector sel,void *ptr)
 		focusNextCue();
 
 		CActionParameters actionParameters(NULL);
-		actionParameters.addUnsignedParameter("index",removeCueIndex);
+		actionParameters.setValue<unsigned>("index",removeCueIndex);
 		removeCueActionFactory->performAction(loadedSound,&actionParameters,false);
 		if(removeCueIndex<focusedCueIndex)
 			focusedCueIndex--; // decrement since we just remove one below it

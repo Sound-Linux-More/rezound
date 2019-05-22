@@ -25,8 +25,8 @@
 
 
 // -----------------------------------
-CAddCueAction::CAddCueAction(const CActionSound actionSound,const string _cueName,const sample_pos_t _cueTime,const bool _isAnchored) :
-	AAction(actionSound),
+CAddCueAction::CAddCueAction(const AActionFactory *factory,const CActionSound *actionSound,const string _cueName,const sample_pos_t _cueTime,const bool _isAnchored) :
+	AAction(factory,actionSound),
 	
 // ??? maybe change this to an ASound::RCue object
 	cueName(_cueName),
@@ -40,18 +40,18 @@ CAddCueAction::~CAddCueAction()
 }
 
 
-bool CAddCueAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
+bool CAddCueAction::doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)
 {
-	actionSound.sound->addCue(cueName,cueTime,isAnchored);
+	actionSound->sound->addCue(cueName,cueTime,isAnchored);
 	return true;
 }
 
-void CAddCueAction::undoActionSizeSafe(const CActionSound &actionSound)
+void CAddCueAction::undoActionSizeSafe(const CActionSound *actionSound)
 {
 	// it is not necessary to do anything here because AAction handles restoring all the cues
 }
 
-AAction::CanUndoResults CAddCueAction::canUndo(const CActionSound &actionSound) const
+AAction::CanUndoResults CAddCueAction::canUndo(const CActionSound *actionSound) const
 {
 	return curYes;
 }
@@ -62,27 +62,29 @@ AAction::CanUndoResults CAddCueAction::canUndo(const CActionSound &actionSound) 
 CAddCueActionFactory::CAddCueActionFactory(AActionDialog *dialog) :
 	AActionFactory(N_("Add Cue"),"",NULL,dialog,false,false)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CAddCueActionFactory::~CAddCueActionFactory()
 {
 }
 
-CAddCueAction *CAddCueActionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CAddCueAction *CAddCueActionFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
 	return new CAddCueAction(
+		this,
 		actionSound,
-		actionParameters->getStringParameter("name"),
-		actionParameters->getSamplePosParameter("position"),
-		actionParameters->getBoolParameter("isAnchored")
+		actionParameters->getValue<string>("name"),
+		actionParameters->getValue<sample_pos_t>("position"),
+		actionParameters->getValue<bool>("isAnchored")
 	);
 }
 
 
 // ----------------------------------- 
 
-CRemoveCueAction::CRemoveCueAction(const CActionSound actionSound,const size_t cueIndex) :
-	AAction(actionSound),
+CRemoveCueAction::CRemoveCueAction(const AActionFactory *factory,const CActionSound *actionSound,const size_t cueIndex) :
+	AAction(factory,actionSound),
 	removeCueIndex(cueIndex)
 {
 }
@@ -91,18 +93,18 @@ CRemoveCueAction::~CRemoveCueAction()
 {
 }
 
-bool CRemoveCueAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
+bool CRemoveCueAction::doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)
 {
-	actionSound.sound->removeCue(removeCueIndex);
+	actionSound->sound->removeCue(removeCueIndex);
 	return true;
 }
 
-void CRemoveCueAction::undoActionSizeSafe(const CActionSound &actionSound)
+void CRemoveCueAction::undoActionSizeSafe(const CActionSound *actionSound)
 {
 	// it is not necessary to do anything here because AAction handles restoring all the cues
 }
 
-AAction::CanUndoResults CRemoveCueAction::canUndo(const CActionSound &actionSound) const
+AAction::CanUndoResults CRemoveCueAction::canUndo(const CActionSound *actionSound) const
 {
 	return curYes;
 }
@@ -113,25 +115,27 @@ AAction::CanUndoResults CRemoveCueAction::canUndo(const CActionSound &actionSoun
 CRemoveCueActionFactory::CRemoveCueActionFactory() :
 	AActionFactory(N_("Remove Cue"),"",NULL,NULL,false,false)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CRemoveCueActionFactory::~CRemoveCueActionFactory()
 {
 }
 
-CRemoveCueAction *CRemoveCueActionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CRemoveCueAction *CRemoveCueActionFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
 	return new CRemoveCueAction(
+		this,
 		actionSound,
-		actionParameters->getUnsignedParameter("index")
+		actionParameters->getValue<unsigned>("index")
 	);
 }
 
 
 
 // -----------------------------------
-CReplaceCueAction::CReplaceCueAction(const CActionSound actionSound,const size_t _cueIndex,const string _cueName,const sample_pos_t _cueTime,const bool _isAnchored) :
-	AAction(actionSound),
+CReplaceCueAction::CReplaceCueAction(const AActionFactory *factory,const CActionSound *actionSound,const size_t _cueIndex,const string _cueName,const sample_pos_t _cueTime,const bool _isAnchored) :
+	AAction(factory,actionSound),
 	
 	cueIndex(_cueIndex),
 
@@ -147,19 +151,19 @@ CReplaceCueAction::~CReplaceCueAction()
 }
 
 
-bool CReplaceCueAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
+bool CReplaceCueAction::doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)
 {
-	actionSound.sound->removeCue(cueIndex);
-	actionSound.sound->insertCue(cueIndex,cueName,cueTime,isAnchored);
+	actionSound->sound->removeCue(cueIndex);
+	actionSound->sound->insertCue(cueIndex,cueName,cueTime,isAnchored);
 	return true;
 }
 
-void CReplaceCueAction::undoActionSizeSafe(const CActionSound &actionSound)
+void CReplaceCueAction::undoActionSizeSafe(const CActionSound *actionSound)
 {
 	// it is not necessary to do anything here because AAction handles restoring all the cues
 }
 
-AAction::CanUndoResults CReplaceCueAction::canUndo(const CActionSound &actionSound) const
+AAction::CanUndoResults CReplaceCueAction::canUndo(const CActionSound *actionSound) const
 {
 	return curYes;
 }
@@ -170,27 +174,29 @@ AAction::CanUndoResults CReplaceCueAction::canUndo(const CActionSound &actionSou
 CReplaceCueActionFactory::CReplaceCueActionFactory(AActionDialog *dialog) :
 	AActionFactory(N_("Replace Cue"),"",NULL,dialog,false,false)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CReplaceCueActionFactory::~CReplaceCueActionFactory()
 {
 }
 
-CReplaceCueAction *CReplaceCueActionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CReplaceCueAction *CReplaceCueActionFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
 	return new CReplaceCueAction(
+		this,
 		actionSound,
-		actionParameters->getUnsignedParameter("index"),
-		actionParameters->getStringParameter("name"),
-		actionParameters->getSamplePosParameter("position"),
-		actionParameters->getBoolParameter("isAnchored")
+		actionParameters->getValue<unsigned>("index"),
+		actionParameters->getValue<string>("name"),
+		actionParameters->getValue<sample_pos_t>("position"),
+		actionParameters->getValue<bool>("isAnchored")
 	);
 }
 
 
 // -----------------------------------
-CMoveCueAction::CMoveCueAction(const CActionSound actionSound,const size_t _cueIndex,const sample_pos_t _cueTime,const sample_pos_t _restoreStartPosition,const sample_pos_t _restoreStopPosition) :
-	AAction(actionSound),
+CMoveCueAction::CMoveCueAction(const AActionFactory *factory,const CActionSound *actionSound,const size_t _cueIndex,const sample_pos_t _cueTime,const sample_pos_t _restoreStartPosition,const sample_pos_t _restoreStopPosition) :
+	AAction(factory,actionSound),
 	
 	cueIndex(_cueIndex),
 	cueTime(_cueTime),
@@ -205,26 +211,26 @@ CMoveCueAction::~CMoveCueAction()
 }
 
 
-bool CMoveCueAction::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
+bool CMoveCueAction::doActionSizeSafe(CActionSound *actionSound,bool prepareForUndo)
 {
-	actionSound.sound->setCueTime(cueIndex,cueTime);
+	actionSound->sound->setCueTime(cueIndex,cueTime);
 	return true;
 }
 
-void CMoveCueAction::undoActionSizeSafe(const CActionSound &actionSound)
+void CMoveCueAction::undoActionSizeSafe(const CActionSound *actionSound)
 {
 	// it is not necessary to do anything with cues here because AAction handles restoring all the cues
 	
 	clearSavedSelectionPositions(); // so it won't restore them after this function is called
 
 	if(restoreStartPosition!=NIL_SAMPLE_POS)
-		actionSound.start=restoreStartPosition;
+		actionSound->start=restoreStartPosition;
 
 	if(restoreStopPosition!=NIL_SAMPLE_POS)
-		actionSound.stop=restoreStopPosition;
+		actionSound->stop=restoreStopPosition;
 }
 
-AAction::CanUndoResults CMoveCueAction::canUndo(const CActionSound &actionSound) const
+AAction::CanUndoResults CMoveCueAction::canUndo(const CActionSound *actionSound) const
 {
 	return curYes;
 }
@@ -235,24 +241,26 @@ AAction::CanUndoResults CMoveCueAction::canUndo(const CActionSound &actionSound)
 CMoveCueActionFactory::CMoveCueActionFactory() :
 	AActionFactory(N_("Move Cue"),"",NULL,NULL,false,false)
 {
+	selectionPositionsAreApplicable=false;
 }
 
 CMoveCueActionFactory::~CMoveCueActionFactory()
 {
 }
 
-CMoveCueAction *CMoveCueActionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters) const
+CMoveCueAction *CMoveCueActionFactory::manufactureAction(const CActionSound *actionSound,const CActionParameters *actionParameters) const
 {
 	return new CMoveCueAction(
+		this,
 		actionSound,
-		actionParameters->getUnsignedParameter("index"),
-		actionParameters->getSamplePosParameter("position"),
+		actionParameters->getValue<unsigned>("index"),
+		actionParameters->getValue<sample_pos_t>("position"),
 		
-		(actionParameters->containsParameter("restoreStartPosition") ? 
-			actionParameters->getSamplePosParameter("restoreStartPosition") : NIL_SAMPLE_POS),
+		(actionParameters->keyExists("restoreStartPosition") ? 
+			actionParameters->getValue<sample_pos_t>("restoreStartPosition") : NIL_SAMPLE_POS),
 
-		(actionParameters->containsParameter("restoreStopPosition") ? 
-			actionParameters->getSamplePosParameter("restoreStopPosition") : NIL_SAMPLE_POS)
+		(actionParameters->keyExists("restoreStopPosition") ? 
+			actionParameters->getValue<sample_pos_t>("restoreStopPosition") : NIL_SAMPLE_POS)
 	);
 }
 

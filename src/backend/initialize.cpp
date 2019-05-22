@@ -106,9 +106,9 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 			// the files that were being edited (since the pool files will
 			// still exist for all previously open files)
 		const string registryFilename=gUserDataDirectory+istring(CPath::dirDelim)+"registry.dat";
+			// ??? this can be more easily handled with a createIfMissing flag 
 		try
 		{
-			CPath(registryFilename).touch();
 			gSettingsRegistry=new CNestedDataFile(registryFilename,true);
 		}
 		catch(exception &e)
@@ -125,6 +125,28 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 		// read backend setting variables from registry
 		readBackendSettings();
 		readFrontendSettings();
+
+		// instantiate the user macro store
+		try
+		{
+			gUserMacroStore=new CNestedDataFile(gUserDataDirectory+istring(CPath::dirDelim)+"macros.dat",false);
+		}
+		catch(exception &e)
+		{
+			Error(string("Error reading user macro store -- ")+e.what());
+		}
+
+		// instantiate the key bindings store
+		try
+		{
+			gKeyBindingsStore=new CNestedDataFile(gUserDataDirectory+istring(CPath::dirDelim)+"key_bindings.dat",false);
+			gDefaultKeyBindingsStore=new CNestedDataFile(gSysDataDirectory+istring(CPath::dirDelim)+"key_bindings.dat",false);
+			gKeyBindingsStore->setAlternateReadFile(gDefaultKeyBindingsStore);
+		}
+		catch(exception &e)
+		{
+			Error(string("Error reading user macro store -- ")+e.what());
+		}
 
 
 		// -- 2
@@ -262,6 +284,14 @@ void deinitializeBackend()
 
 
 	// -- 1
+
+	gKeyBindingsStore->save();
+	delete gKeyBindingsStore;
+	delete gDefaultKeyBindingsStore;
+
+	gUserMacroStore->save();
+	delete gUserMacroStore;
+
 	writeFrontendSettings();
 	writeBackendSettings();
 

@@ -1101,9 +1101,15 @@ void FXGraphParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
 		// ??? I could either save the node x and values as [0,1], or I could use save the actual values ( <-- currently)
 		for(size_t t=0;t<positions.size();t++)
 			nodes.push_back(CGraphParamValueNode(positions[t],values[t]));
+
 	}
 	else
 		clearNodes();
+
+	if(f->keyExists(key DOT "horzDeformSlider")==CNestedDataFile::ktValue)
+		horzDeformSlider->setValue(f->getValue<int>(key DOT "horzDeformSlider"));
+	if(f->keyExists(key DOT "vertDeformSlider")==CNestedDataFile::ktValue)
+		vertDeformSlider->setValue(f->getValue<int>(key DOT "vertDeformSlider"));
 
 	updateNumbers();
 	update();
@@ -1115,7 +1121,7 @@ void FXGraphParamValue::writeToFile(const string &prefix,CNestedDataFile *f) con
 	const string key=prefix DOT getName();
 
 	if(getMinScalar()!=getMaxScalar())
-		f->createValue<int>(key DOT "scalar",getScalar());
+		f->setValue<int>(key DOT "scalar",getScalar());
 
 	vector<double> positions,values;
 	for(size_t t=0;t<nodes.size();t++)
@@ -1125,12 +1131,15 @@ void FXGraphParamValue::writeToFile(const string &prefix,CNestedDataFile *f) con
 	}
 
 	const string k1=key DOT "node_positions";
-	f->createValue<vector<double> >(k1,positions);
+	f->setValue<vector<double> >(k1,positions);
 
 	const string k2=key DOT "node_values";
-	f->createValue<vector<double> >(k2,values);
+	f->setValue<vector<double> >(k2,values);
 
 	if(getMinScalar()!=getMaxScalar())
-		f->createValue<int>(key DOT "scalar",getScalar());
+		f->setValue<int>(key DOT "scalar",getScalar());
+
+	f->setValue<int>(key DOT "horzDeformSlider",horzDeformSlider->getValue());
+	f->setValue<int>(key DOT "vertDeformSlider",vertDeformSlider->getValue());
 }
 

@@ -62,7 +62,7 @@ CLoadedSound *ASoundFileManager::prvCreateNew(sample_pos_t _length,bool askForLe
 	return NULL;
 }
 
-CLoadedSound *ASoundFileManager::createNew(const string filename,unsigned channelCount,unsigned sampleRate,unsigned length,bool rawFormat)
+CLoadedSound *ASoundFileManager::createNew(const string filename,unsigned channelCount,unsigned sampleRate,sample_pos_t length,bool rawFormat)
 {
 	CSound *sound=NULL;
 	CSoundPlayerChannel *channel=NULL;
@@ -97,18 +97,22 @@ CLoadedSound *ASoundFileManager::createNew(const string filename,unsigned channe
 	return loaded;
 }
 
-bool ASoundFileManager::open(const string _filename,bool openAsRaw)
+bool ASoundFileManager::open(const string filename,bool openAsRaw)
 {
 	vector<string> filenames;
-	string filename=_filename;
+	filenames.push_back(filename);
+	return open(filenames);
+}
+
+bool ASoundFileManager::open(const vector<string> &_filenames,bool openAsRaw)
+{
+	vector<string> filenames(_filenames);
 	bool readOnly=false;
-	if(filename=="")
+	if(filenames.size()<=0)
 	{
 		if(!gFrontendHooks->promptForOpenSoundFilenames(filenames,readOnly,openAsRaw))
 			return false;
 	}
-	else
-		filenames.push_back(filename);
 
 	for(size_t t=0;t<filenames.size();t++)
 	{
@@ -131,7 +135,7 @@ bool ASoundFileManager::open(const string _filename,bool openAsRaw)
  * when we are loading the registered files from a previous sessions, so they would already be
  * in the registry
  */
-void ASoundFileManager::prvOpen(const string filename,bool readOnly,bool doRegisterFilename,bool asRaw,const ASoundTranslator *translatorToUse)
+bool ASoundFileManager::prvOpen(const string filename,bool readOnly,bool doRegisterFilename,bool asRaw,const ASoundTranslator *translatorToUse)
 {
 	if(doRegisterFilename && isFilenameRegistered(filename))
 		throw(runtime_error(string(__func__)+_(_(" -- file already opened"))));
@@ -155,7 +159,7 @@ void ASoundFileManager::prvOpen(const string filename,bool readOnly,bool doRegis
 		if(!translatorToUse->loadSound(filename,sound))
 		{ // cancelled
 			delete sound;
-			return;
+			return false;
 		}
 
 		channel=soundPlayer->newSoundPlayerChannel(sound);
@@ -176,6 +180,7 @@ void ASoundFileManager::prvOpen(const string filename,bool readOnly,bool doRegis
 	if(doRegisterFilename)
 		registerFilename(filename);
 
+	return true;
 }
 
 /*
@@ -228,16 +233,25 @@ bool ASoundFileManager::save()
 }
 
 
-bool ASoundFileManager::saveAs()
+bool ASoundFileManager::saveAs(const string _filename,bool _saveAsRaw)
 {
 	CLoadedSound *loaded=getActive();
 	if(loaded)
 	{
-		string filename=loaded->getFilename();
-askAgain:
+		string filename;
 		bool saveAsRaw=false;
-		if(!gFrontendHooks->promptForSaveSoundFilename(filename,saveAsRaw))
-			return false;
+
+		if(_filename=="")
+		{ // prompt user
+			filename=loaded->getFilename();
+			if(!gFrontendHooks->promptForSaveSoundFilename(filename,saveAsRaw))
+				return false;
+		}
+		else
+		{ // don't prompt user
+			saveAsRaw=_saveAsRaw;
+			filename=_filename;
+		}
 
 		bool reregisterFilenameOnError=false;
 		if(loaded->getFilename()==filename && compareBool(loaded->translator->handlesRaw(),saveAsRaw))
@@ -261,7 +275,7 @@ askAgain:
 				{
 					if(reregisterFilenameOnError)
 						registerFilename(filename);
-					goto askAgain;
+					return false;
 				}
 			}
 
@@ -511,7 +525,8 @@ const vector<string> ASoundFileManager::loadFilesInRegistry()
 			if(Question(_("Load sound from previous session?")+string("\n   ")+filename,yesnoQues)==yesAns)
 			{
 						// ??? readOnly and asRaw really need to be whatever the last value was, when it was originally loaded
-				prvOpen(filename,false,false,false);
+				if(!prvOpen(filename,false,false,false))
+					unregisterFilename(filename);
 			}
 			else
 				unregisterFilename(filename);
@@ -534,7 +549,7 @@ void ASoundFileManager::registerFilename(const string filename)
 
 	vector<string> reg=loadedRegistryFile->getValue<vector<string> >(LOADED_REG_KEY);
 	reg.push_back(filename);
-	loadedRegistryFile->createValue<vector<string> >(LOADED_REG_KEY,reg);
+	loadedRegistryFile->setValue<vector<string> >(LOADED_REG_KEY,reg);
 }
 
 void ASoundFileManager::unregisterFilename(const string filename)
@@ -545,7 +560,7 @@ void ASoundFileManager::unregisterFilename(const string filename)
 		if(reg[t]==filename)
 		{
 			reg.erase(reg.begin()+t);
-			loadedRegistryFile->createValue<vector<string> >(LOADED_REG_KEY,reg);
+			loadedRegistryFile->setValue<vector<string> >(LOADED_REG_KEY,reg);
 			break;
 		}
 	}
@@ -580,7 +595,7 @@ void ASoundFileManager::updateReopenHistory(const string filename)
 	reopenFilenames.insert(reopenFilenames.begin(),filename);
 
 	for(size_t t=0;t<reopenFilenames.size();t++)
-		gSettingsRegistry->createValue<string>("ReopenHistory" DOT "item"+istring(t),reopenFilenames[t]);
+		gSettingsRegistry->setValue<string>("ReopenHistory" DOT "item"+istring(t),reopenFilenames[t]);
 }
 
 const size_t ASoundFileManager::getReopenHistorySize() const

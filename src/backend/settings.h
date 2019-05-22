@@ -24,6 +24,7 @@
 #include "../../config/common.h"
 
 #include <string>
+using namespace std;
 
 /*
  * This is a repository to which settings can be saved
@@ -34,6 +35,16 @@ extern CNestedDataFile *gSettingsRegistry;
 	if(gSettingsRegistry->keyExists((key)))				\
 		variable= gSettingsRegistry->getValue<type>((key));
 
+/*
+ * Used to store macros that the user defines
+ */
+extern CNestedDataFile *gUserMacroStore;
+
+/*
+ * Used to store key bindings to actions that the user defines, or that may be defined by default
+ */
+extern CNestedDataFile *gKeyBindingsStore;
+extern const CNestedDataFile *gDefaultKeyBindingsStore;
 
 
 /*
@@ -180,5 +191,13 @@ extern CrossfadeFadeMethods gCrossfadeFadeMethod;
  */
 void readBackendSettings();
 void writeBackendSettings();
+
+
+/*
+ * For lack of a better place, here is defined the registry of action factories
+ */
+#include <map>
+class AActionFactory;
+extern map<string,AActionFactory *> gRegisteredActionFactories;
 
 #endif

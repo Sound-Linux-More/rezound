@@ -46,7 +46,7 @@ CRezSaveParametersDialog::CRezSaveParametersDialog(FXWindow *mainWindow) :
 			sampleFormats.push_back(_("24 Bit Integer"));
 			sampleFormats.push_back(_("32 Bit Integer"));
 			sampleFormats.push_back(_("32 Bit Float"));
-		FXComboTextParamValue *sampleFormat=addComboTextEntry(p,N_("Sample Format"),sampleFormats,"");
+		FXComboTextParamValue *sampleFormat=addComboTextEntry(p,N_("Sample Format"),sampleFormats,CActionParamDialog::cpvtAsInteger,"");
 }
 
 static AudioEncodingTypes indexToSampleFormat(int index)
@@ -84,7 +84,7 @@ bool CRezSaveParametersDialog::show(AFrontendHooks::RezSaveParameters &parameter
 
 	if(CActionParamDialog::show(NULL,&actionParameters))
 	{
-		parameters.audioEncodingType=indexToSampleFormat(actionParameters.getUnsignedParameter("Sample Format"));
+		parameters.audioEncodingType=indexToSampleFormat(actionParameters.getValue<unsigned>("Sample Format"));
 		return true;
 	}
 	else
