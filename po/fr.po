@@ -2087,8 +2087,8 @@ msgid "plugin .so file at least once.  Or"
 msgstr ""
 
 #: src/frontend_fox/CMainWindow.cpp:1201
-msgid "edit the value in ~/.rezound/registry.dat"
-msgstr "Editer la valeur dans ~/.rezound/registry.dat"
+msgid "edit the value in ~/.config/rezound/registry.dat"
+msgstr "Editer la valeur dans ~/.config/rezound/registry.dat"
 
 #: src/frontend_fox/CMainWindow.cpp:1424
 msgid "Cannot close a file while recording a macro"

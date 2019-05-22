@@ -2143,8 +2143,8 @@ msgid "plugin .so file at least once.  Or"
 msgstr "přídavný modul, soubor .so alespoň jednou. Nebo"
 
 #: src/frontend_fox/CMainWindow.cpp:1201
-msgid "edit the value in ~/.rezound/registry.dat"
-msgstr "upravit hodnotu v ~/.rezound/registry.dat"
+msgid "edit the value in ~/.config/rezound/registry.dat"
+msgstr "upravit hodnotu v ~/.config/rezound/registry.dat"
 
 #: src/frontend_fox/CMainWindow.cpp:1424
 msgid "Cannot close a file while recording a macro"

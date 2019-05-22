@@ -23,7 +23,7 @@
 # Place - Suite 330, Boston, MA  02111-1307, USA
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(rezound, 0.13.1beta, [https://sourceforge.net/p/rezound/bugs/])
+AC_INIT(rezound, 0.13.2beta, [https://sourceforge.net/p/rezound/bugs/])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config/m4])
 AM_CONFIG_HEADER([config/config.h])
@@ -308,7 +308,7 @@ AC_CHECK_LIB(
 ############################################################################
 audioIOMethod=""
 
-AC_MSG_NOTICE([Tests for methods to use for audio I/O will follow below.  The method actually used will be determined at run-time depending on the order of the values in the ~/.rezound/registry.dat file in AudioOutput(or Input)Methods and will depend on which method first initializes successfully.  Alternatively, there is an --audio-method=... flag to the rezound binary to choose which method to try first.  See 'rezound --help' for more information.])
+AC_MSG_NOTICE([Tests for methods to use for audio I/O will follow below.  The method actually used will be determined at run-time depending on the order of the values in the ~/.config/rezound/registry.dat file in AudioOutput(or Input)Methods and will depend on which method first initializes successfully.  Alternatively, there is an --audio-method=... flag to the rezound binary to choose which method to try first.  See 'rezound --help' for more information.])
 
 # handle the --enable-oss flag
 AH_TEMPLATE(ENABLE_OSS)

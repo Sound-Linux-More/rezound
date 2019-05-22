@@ -89,8 +89,8 @@ bool initializeBackend(ASoundPlayer *&soundPlayer,int argc,char *argv[])
 		checkForAudioMethodFlag(argc,argv);
 
 
-		// make sure that ~/.rezound exists
-		gUserDataDirectory=string(getenv("HOME"))+istring(CPath::dirDelim)+".rezound";
+		// make sure that ~/.config/rezound exists
+		gUserDataDirectory=string(getenv("HOME"))+istring(CPath::dirDelim)+".config/rezound";
 		const int mkdirResult=mkdir(gUserDataDirectory.c_str(),0700);
 		const int mkdirErrno=errno;
 		if(mkdirResult!=0 && mkdirErrno!=EEXIST)
@@ -384,7 +384,7 @@ static void printUsage(const string app)
 	printf("\n");
 	printf("Notes:\n");
 	printf("\t- Anything after a '--' flag will be assumed as a filename to load\n");
-	printf("\t- The file ~/.rezound/registry.dat does contain some settings that\n\t  can only be changed by editing the file (right now)\n");
+	printf("\t- The file ~/.config/rezound/registry.dat does contain some settings that\n\t  can only be changed by editing the file (right now)\n");
 
 	printf("\n");
 	printf("Project homepage:\n\thttp://rezound.sourceforge.net\n");

@@ -2093,7 +2093,7 @@ msgid "plugin .so file at least once.  Or"
 msgstr ""
 
 #: src/frontend_fox/CMainWindow.cpp:1201
-msgid "edit the value in ~/.rezound/registry.dat"
+msgid "edit the value in ~/.config/rezound/registry.dat"
 msgstr ""
 
 #: src/frontend_fox/CMainWindow.cpp:1424

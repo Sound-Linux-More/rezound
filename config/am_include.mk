@@ -49,6 +49,6 @@ LDFLAGS=@LDFLAGS@ -Xlinker --allow-multiple-definition
 
 
 # doc directory
-pkgdocdir=$(prefix)/doc/@PACKAGE@
+pkgdocdir=$(prefix)/share/doc/@PACKAGE@
 
 
