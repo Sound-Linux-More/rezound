@@ -1,5 +1,5 @@
 # vim:tw=78
-# $Id: Makefile.am,v 1.5 2003/05/05 06:39:02 ddurham Exp $
+# $Id: Makefile.am,v 1.6 2005/06/07 16:16:43 ddurham Exp $
 ## Process this file with automake to create Makefile.in
 ##
 ##
@@ -26,4 +26,5 @@ include $(top_srcdir)/config/am_include.mk
 pkgdata_DATA= \
 	presets.dat \
 	menu.dat \
+	key_bindings.dat \
 	impulse_hall1.wav

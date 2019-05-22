@@ -250,7 +250,7 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	check-recursive installcheck-recursive
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure \
 	$(top_srcdir)/config/am_include.mk ./config/config.h.in \
-	ABOUT-NLS ChangeLog Makefile.am aclocal.m4 config/config.guess \
+	ABOUT-NLS Makefile.am aclocal.m4 config/config.guess \
 	config/config.rpath config/config.sub config/depcomp \
 	config/install-sh config/ltmain.sh config/missing \
 	config/mkinstalldirs configure configure.ac
