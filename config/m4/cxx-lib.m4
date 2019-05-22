@@ -157,11 +157,15 @@ AC_DEFUN(ajv_CHECK_LIB_ABORT, dnl
 [AC_ARG_WITH($1-include, dnl
 [  --with-$1-include	  Specify path to $1 header files], dnl
 [ 	ajv_inc$1_path=-I$withval
-	enable_$1_check="no"  ],
+# I'm commenting this out, so passing the with option won't override check.
+#	enable_$1_check="no"  
+],
 ajv_inc$1_path="")] dnl
 [AC_ARG_WITH($1-path,[  --with-$1-path	  Specify path to $1 libraries], dnl
 [	ajv_lib$1_path=-L$withval
-	enable_$1_check="no" ], dnl
+# I'm commenting this out, so passing the with option won't override check.
+#	enable_$1_check="no" 
+], dnl
 ajv_lib$1_path="")] 
 LDFLAGS="$ajv_lib$1_path $LDFLAGS"
 CXXFLAGS="$ajv_inc$1_path $CXXFLAGS"
@@ -187,9 +191,10 @@ EOF
 		cat ajv_ck_lib_$1.c
 		echo
 		echo compile errors were:
-		cat ajv_chk_cxx_lib_$1.err
+		cat ajv_ck_lib_$1.err
 		echo
-
+		echo Also check config.log for the source file that failed to compile which probably caused the compile error above
+		echo
 		rm -f ajv_ck_lib_$1.c
 		rm -f ajv_ck_lib_$1.err
 		[AC_MSG_ERROR([ 

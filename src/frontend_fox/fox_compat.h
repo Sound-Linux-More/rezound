@@ -3,14 +3,14 @@
 
 #include <fox/fxver.h>
 
-#define REZ_FOX_VERSION ((FOX_MAJOR*100000)+(FOX_MINOR*1000)+FOX_LEVEL)
+#define REZ_FOX_VERSION ((FOX_MAJOR*10000)+(FOX_MINOR*100)+FOX_LEVEL)
 
 /*
  * FOX renamed some things at version 1.1.8 and added namespaces
  * so if the version is older then I rename them back.
  * Some few years and I can remove these defines
  */
-#if REZ_FOX_VERSION<101008
+#if REZ_FOX_VERSION<10108
 
 	#define FOX_NO_NAMESPACE
 
@@ -24,12 +24,16 @@
 	#define FXToolBarGrip FXToolbarGrip
 	#define horizontalScrollBar horizontalScrollbar
 	#define verticalScrollBar verticalScrollbar
-
 #else
 	
 	#define FOX_RESTORE_WINDOW_POSITIONS
 
 #endif
+
+#if REZ_FOX_VERSION<10110
+	#define getModality modalModality
+#endif
+
 
 
 

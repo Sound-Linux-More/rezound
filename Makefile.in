@@ -88,7 +88,7 @@ AUTOHEADER = @AUTOHEADER@ -l config
 ACLOCAL = @ACLOCAL@ -I config/m4
 AUTOMAKE = @AUTOMAKE@ --foreign
 
-INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing 	 -I$(top_srcdir)/src/PoolFile 	 -I$(top_srcdir)/src/PoolFile/DiskTable
+INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing/generated 	 -I$(top_srcdir)/src/PoolFile 	 -I$(top_srcdir)/src/PoolFile/DiskTable
 
 
 CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
@@ -108,7 +108,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ./config/config.h
 CONFIG_CLEAN_FILES = 
-DIST_COMMON =  README Makefile.am Makefile.in aclocal.m4 \
+DIST_COMMON =  README ChangeLog Makefile.am Makefile.in aclocal.m4 \
 config/config.h.in config/stamp-h.in configure configure.in
 
 
@@ -384,7 +384,9 @@ maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 dist-hook:
 	rm -rf `find $(distdir) -type d -name CVS`	# remove all CVS directories
 	rm -rf `find $(distdir) -type f -name Makefile` # from including docs and share on the EXTRA_DIST line
+	echo rm -rf `find $(distdir) -type f -name \.\#\*`	# CVS revision files left around for some reason
 	rm -rf $(distdir)/src/images/WORK		# makes the tarball much smaller
+	rm -rf $(distdir)/src/misc/missing/generated	# doesn't need to go with the distro
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

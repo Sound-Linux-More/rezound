@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.9 2002/06/14 22:09:13 ddurham Exp $
+/* $Id: common.h,v 1.10 2002/06/23 01:58:10 ddurham Exp $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -67,5 +67,17 @@ static const char *REZOUND_VERSION=VERSION;
  */
 # define __func__ __func__
 #endif //__GNUC__
+
+
+/*
+ * This should really be a configure test because 'nearbyint() and round()' might 
+ * exist one day on BSD I could also just use rint, but nearbyint is supposed to 
+ * be slightly faster because it doesn't raise the inexact math exception.
+ */
+#ifdef __FreeBSD__
+#define nearbyint rint
+#define round rintf
+#endif
+
 
 #endif /* COMMON_H */

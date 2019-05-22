@@ -16,11 +16,12 @@
 /* Define if you have the ANSI C header files.  */
 #define STDC_HEADERS 1
 
+/* Define if your processor stores words with the most significant
+   byte first (like Motorola and SPARC, unlike Intel and VAX).  */
+/* #undef WORDS_BIGENDIAN */
+
 /* Define if lex declares yytext as a char * by default, not a char[].  */
 #define YYTEXT_POINTER 1
-
-/* This is defined only if the check for sstream passes */
-#define HAVE_SSTREAM 1 
 
 /* Define if you have the <dlfcn.h> header file.  */
 #define HAVE_DLFCN_H 1
@@ -38,16 +39,14 @@
 #define PACKAGE "ReZound"
 
 /* Version number of package */
-#define VERSION "0.1.0alpha"
+#define VERSION "0.1.1alpha"
 
 /*  This is the prefix passed to configure */
 #define INSTALL_PREFIX "/usr/local"
 
-/*  This is the top source directory for
-pre-installed testing */
-#define SOURCE_DIR "/home/ddurham/code/rezound/."
+/*  This is the top source directory for pre-installed testing */
+#define SOURCE_DIR "/home/ddurham/code/rezound"
 
-/*  This the --datadir (share) set
-by configure  */
+/*  This the --datadir (share) set by configure  */
 #define DATA_DIR "/usr/local/share"
 

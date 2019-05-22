@@ -1,4 +1,4 @@
-$Id: TODO_release,v 1.6 2002/06/21 20:55:24 ddurham Exp $
+$Id: TODO_release,v 1.7 2002/06/24 17:20:08 ddurham Exp $
 
 This is a todo list for things we need to do for an official release. In
 other words, it's what we'll want to change between the cvs sources and a
@@ -7,11 +7,13 @@ distro tarball(eg: removing warning flags)
 1. Remove -Wall and all -W flags from CXXFLAGS -- comment out checks for
 -Wno... flags in configure.in and remove -Wall from am_include.mk CXXFLAGS
 
-2. Revise AUTHORS to give proper credit, and only list files included in final release. Might want to save separate version to keep in CVS.
+2. Revise docs/AUTHORS to give proper credit, and only list files included in final release. Might want to save separate version to keep in CVS.
 
-3. Make a cvs release tag
+3. Revise docs/NEWS use cvs2cl.pl to determine what significant things have changed since the previous release
+
+4. Make a cvs release tag
 	- cvs tag ReZound-1_2_3alpha
 
-4. Update the version number in configure.in and docs/INSTALL
+5. Update the version number in configure.in and docs/INSTALL
 	- and then do a bootstrap
 

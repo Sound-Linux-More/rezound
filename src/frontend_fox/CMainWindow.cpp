@@ -405,7 +405,7 @@ void CMainWindow::createMenus()
 
 long CMainWindow::onQuit(FXObject *sender,FXSelector sel,void *ptr)
 {
-	if(getApp()->modalModality()==MODAL_FOR_WINDOW)
+	if(getApp()->getModality()==MODAL_FOR_WINDOW)
 	{ // don't allow a quit if there is a modal window showing
 		gStatusComm->beep();
 		return(1);
@@ -593,9 +593,9 @@ long CMainWindow::onShuttleChange(FXObject *sender,FXSelector sel,void *ptr)
 		if(shuttlePos==0)
 			playSpeed=1.0;
 		else if(shuttlePos>0)
-			playSpeed=(pow((float)shuttlePos/(float)maxValue,2.0)*100.0)+1.0;
+			playSpeed=(pow((double)shuttlePos/(double)maxValue,2.0)*100.0)+1.0;
 		else if(shuttlePos<0)
-			playSpeed=(pow((float)shuttlePos/(float)minValue,2.0)*-100.0)-1.0;
+			playSpeed=(pow((double)shuttlePos/(double)minValue,2.0)*-100.0)-1.0;
 
 		s->channel->setPlaySpeed(playSpeed);	
 	}
