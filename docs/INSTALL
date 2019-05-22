@@ -1,4 +1,4 @@
-ReZound 0.8.0beta Installation instructions 
+ReZound 0.8.1beta Installation instructions 
 
 If building/installing directly from the CVS repository see CVS-INSTALL
 	
@@ -33,6 +33,9 @@ Before attempting to build ReZound you will need to have (or are encouraged to h
 
 	- libogg, libvorbis, libvorbisfile and libvorbisenc -- http://www.xiph.org/ogg/vorbis/ 
 	These are required for loading and saving .ogg files
+
+	- libFLAC, libFLAC++ -- http://flac.sourceforge.net/
+	These are required for loading and saving FLAC files
 
 	- libportaudio -- http://www.portaudio.com -- This can be used if you know what 
 	you're doing and need it for some reason.  Support for it can be enabled with 
