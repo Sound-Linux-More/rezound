@@ -18,22 +18,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __ClibaudiofileSoundTranslator_H__
-#define __ClibaudiofileSoundTranslator_H__
+#ifndef __ClameSoundTranslator_H__
+#define __ClameSoundTranslator_H__
 
 #include "../../config/common.h"
 
-#ifdef HAVE_LIBAUDIOFILE
-
 #include "ASoundTranslator.h"
 
-#include <audiofile.h>
-
-class ClibaudiofileSoundTranslator : public ASoundTranslator
+class ClameSoundTranslator : public ASoundTranslator
 {
 public:
-	ClibaudiofileSoundTranslator();
-	virtual ~ClibaudiofileSoundTranslator();
+	ClameSoundTranslator();
+	virtual ~ClameSoundTranslator();
+
+	static bool checkForLame();
 
 	bool handlesExtension(const string extension) const;
 	bool supportsFormat(const string filename) const;
@@ -46,13 +44,8 @@ protected:
 	void onLoadSound(const string filename,CSound *sound) const;
 	bool onSaveSound(const string filename,CSound *sound) const;
 
-	void loadSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup) const;
-	void saveSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup,int fileFormatType) const;
-
 private:
 
 };
-
-#endif // HAVE_LIBAUDIOFILE
 
 #endif

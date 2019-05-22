@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.10 2002/06/23 01:58:10 ddurham Exp $
+/* $Id: common.h,v 1.11 2002/06/26 01:51:16 lergnom Exp $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -38,7 +38,7 @@ using namespace std;
 static const char *REZOUND_PACKAGE=PACKAGE;
 # undef PACKAGE
 #else
-# define REZOUND_PACKAGE "ReZound"	
+# define REZOUND_PACKAGE "rezound"	
 /* Just in case it wasn't defined, the only time this should happen if for some reason someone would decide to compile without an automake built Makefile*/
 #endif
 

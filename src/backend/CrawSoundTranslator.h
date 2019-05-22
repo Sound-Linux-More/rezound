@@ -23,6 +23,8 @@
 
 #include "../../config/common.h"
 
+#ifdef HAVE_LIBAUDIOFILE
+
 #include "ClibaudiofileSoundTranslator.h"
 
 class CrawSoundTranslator : public ClibaudiofileSoundTranslator
@@ -41,10 +43,12 @@ public:
 protected:
 
 	void onLoadSound(const string filename,CSound *sound) const;
-	void onSaveSound(const string filename,CSound *sound) const;
+	bool onSaveSound(const string filename,CSound *sound) const;
 
 private:
 
 };
+
+#endif // HAVE_LIBAUDIOFILE
 
 #endif

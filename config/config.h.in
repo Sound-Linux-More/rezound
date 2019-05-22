@@ -22,6 +22,10 @@
 /* Define if lex declares yytext as a char * by default, not a char[].  */
 #undef YYTEXT_POINTER
 
+#undef HAVE_LIBOGG
+
+#undef HAVE_LIBVORBIS
+
 /* Define if you have the <dlfcn.h> header file.  */
 #undef HAVE_DLFCN_H
 
@@ -33,6 +37,12 @@
 
 /* Define if you have the pthread library (-lpthread).  */
 #undef HAVE_LIBPTHREAD
+
+/* Define if you have the vorbisenc library (-lvorbisenc).  */
+#undef HAVE_LIBVORBISENC
+
+/* Define if you have the vorbisfile library (-lvorbisfile).  */
+#undef HAVE_LIBVORBISFILE
 
 /* Name of package */
 #undef PACKAGE

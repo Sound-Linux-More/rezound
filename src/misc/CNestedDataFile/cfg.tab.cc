@@ -1059,7 +1059,7 @@ case 3:
 
 		free(yyvsp[-1].stringValue);
 
-		// now continue parsing for new scope's body
+		/* now continue parsing for new scope's body */
 	}
     break;
 case 4:

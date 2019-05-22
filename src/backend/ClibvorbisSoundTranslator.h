@@ -18,22 +18,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __ClibaudiofileSoundTranslator_H__
-#define __ClibaudiofileSoundTranslator_H__
+#ifndef __ClibvorbisSoundTranslator_H__
+#define __ClibvorbisSoundTranslator_H__
 
 #include "../../config/common.h"
 
-#ifdef HAVE_LIBAUDIOFILE
+#ifdef HAVE_LIBVORBIS
 
 #include "ASoundTranslator.h"
 
-#include <audiofile.h>
-
-class ClibaudiofileSoundTranslator : public ASoundTranslator
+class ClibvorbisSoundTranslator : public ASoundTranslator
 {
 public:
-	ClibaudiofileSoundTranslator();
-	virtual ~ClibaudiofileSoundTranslator();
+	ClibvorbisSoundTranslator();
+	virtual ~ClibvorbisSoundTranslator();
 
 	bool handlesExtension(const string extension) const;
 	bool supportsFormat(const string filename) const;
@@ -46,13 +44,10 @@ protected:
 	void onLoadSound(const string filename,CSound *sound) const;
 	bool onSaveSound(const string filename,CSound *sound) const;
 
-	void loadSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup) const;
-	void saveSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup,int fileFormatType) const;
-
 private:
 
 };
 
-#endif // HAVE_LIBAUDIOFILE
+#endif // HAVE_LIBVORBIS
 
 #endif

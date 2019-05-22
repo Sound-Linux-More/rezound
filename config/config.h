@@ -23,6 +23,10 @@
 /* Define if lex declares yytext as a char * by default, not a char[].  */
 #define YYTEXT_POINTER 1
 
+#define HAVE_LIBOGG 1
+
+#define HAVE_LIBVORBIS 1
+
 /* Define if you have the <dlfcn.h> header file.  */
 #define HAVE_DLFCN_H 1
 
@@ -35,18 +39,24 @@
 /* Define if you have the pthread library (-lpthread).  */
 #define HAVE_LIBPTHREAD 1
 
+/* Define if you have the vorbisenc library (-lvorbisenc).  */
+#define HAVE_LIBVORBISENC 1
+
+/* Define if you have the vorbisfile library (-lvorbisfile).  */
+#define HAVE_LIBVORBISFILE 1
+
 /* Name of package */
-#define PACKAGE "ReZound"
+#define PACKAGE "rezound"
 
 /* Version number of package */
-#define VERSION "0.1.2alpha"
+#define VERSION "0.2.0alpha"
 
 /*  This is the prefix passed to configure */
-#define INSTALL_PREFIX "/usr/local"
+#define INSTALL_PREFIX "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.2.0alpha"
 
 /*  This is the top source directory for pre-installed testing */
 #define SOURCE_DIR "/home/ddurham/code/rezound"
 
 /*  This the --datadir (share) set by configure  */
-#define DATA_DIR "/usr/local/share"
+#define DATA_DIR "/home/ddurham/code/rezound/rezound-bin-x86-linux-0.2.0alpha/share"
 

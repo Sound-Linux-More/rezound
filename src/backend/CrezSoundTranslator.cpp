@@ -202,12 +202,10 @@ void CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 			throw(runtime_error(string(__func__)+" -- unhandled format conversion while loading"));
 	}
 
-
-	sound->setIsModified(false);
 	loadFromFile.closeFile(false,false);
 }
 
-void CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
+bool CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 {
 	// ??? The user still needs to be able to choose what format the data will be saved in... whether 16bit float.. etc.. and the import/export process needs to convert to and from the working format
 
@@ -282,6 +280,8 @@ void CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 	
 
 	saveToFile.closeFile(false,false);
+
+	return(true);
 }
 
 

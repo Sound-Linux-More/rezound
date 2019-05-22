@@ -20,6 +20,8 @@
 
 #include "ClibaudiofileSoundTranslator.h"
 
+#ifdef HAVE_LIBAUDIOFILE
+
 #include <unistd.h> // for unlink
 
 #include <stdexcept>
@@ -33,12 +35,22 @@
 #include "CSound.h"
 #include "AStatusComm.h"
 
+#ifndef LIBAUDIOFILE_MICRO_VERSION // this didn't start getting defined until 0.2.4
+	#define LIBAUDIOFILE_MICRO_VERSION 0
+#endif
+
+#if (LIBAUDIOFILE_MAJOR_VERSION*10000+LIBAUDIOFILE_MINOR_VERSION*100+LIBAUDIOFILE_MICRO_VERSION) >= /*000204*/204
+	#define HANDLE_CUES_AND_MISC
+#else
+	#warning LIBAUDIOFILE VERSION IS LESS THAN 0.2.4 AND SAVING AND LOADING OF CUES AND USER NOTES WILL BE DISABLED
+#endif
+
 static int getUserNotesMiscType(int type)
 {
-	if(type==AF_FILE_AIFFC || type==AF_FILE_AIFF)
-		return(AF_MISC_ANNO);
-	else if(type==AF_FILE_WAVE)
+	if(type==AF_FILE_WAVE)
 		return(AF_MISC_ICMT);
+	else if(type==AF_FILE_AIFFC || type==AF_FILE_AIFF)
+		return(AF_MISC_ANNO);
 
 	return(0);
 }
@@ -122,6 +134,8 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 
 	sound->createWorkingPoolFile(filename,sampleRate,channelCount,size);
 
+#ifdef HANDLE_CUES_AND_MISC
+
 	// load the cues
 	const size_t cueCount=afGetMarkIDs(h,AF_DEFAULT_TRACK,NULL);
 	if(cueCount<4096) // check for a sane amount
@@ -134,7 +148,7 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 		{
 			string name=afGetMarkName(h,AF_DEFAULT_TRACK,markIDs[t]);
 			if(name=="")
-				name=sound->getAvailableCueName("cue"); // give it a unique name
+				name=sound->getUnusedCueName("cue"); // give it a unique name
 
 			const sample_pos_t time=afGetMarkPosition(h,AF_DEFAULT_TRACK,markIDs[t]);
 
@@ -190,6 +204,7 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 		}
 	}
 	
+#endif // HANDLE_CUES_AND_MISC
 
 	// load the audio data
 
@@ -203,7 +218,7 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 		TAutoBuffer<sample_t> buffer((size_t)(afGetVirtualFrameSize(h,AF_DEFAULT_TRACK,1)*4096/sizeof(sample_t)));
 		sample_pos_t pos=0;
 		AFframecount count=size/4096+1;
-		BEGIN_PROGRESS_BAR("Loading Sound",0,count);
+		BEGIN_PROGRESS_BAR("Loading Sound",0,size);
 		for(AFframecount t=0;t<count;t++)
 		{
 			const int chunkSize=  (t==count-1 ) ? size%4096 : 4096;
@@ -224,7 +239,7 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 				pos+=chunkSize;
 			}
 
-			UPDATE_PROGRESS_BAR(t);
+			UPDATE_PROGRESS_BAR(pos);
 		}
 
 		END_PROGRESS_BAR();
@@ -245,19 +260,17 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 			delete accessers[t];
 		throw;
 	}
-
-	sound->setIsModified(false);
 }
 
-void ClibaudiofileSoundTranslator::onSaveSound(const string filename,CSound *sound) const
+bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 {
 	int fileType;
 
 	const string extension=istring(CPath(filename).extension()).lower();
-	if(extension=="aiff")
-		fileType=AF_FILE_AIFF;
-	else if(extension=="wav")
+	if(extension=="wav")
 		fileType=AF_FILE_WAVE;
+	else if(extension=="aiff")
+		fileType=AF_FILE_AIFF;
 	else if(extension=="snd" || extension=="au")
 		fileType=AF_FILE_NEXTSND;
 	else if(extension=="sf")
@@ -289,7 +302,7 @@ void ClibaudiofileSoundTranslator::onSaveSound(const string filename,CSound *sou
 		throw;
 	}
 
-	
+	return(true);
 }
 
 
@@ -301,6 +314,8 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 	const unsigned channelCount=sound->getChannelCount();
 	const unsigned sampleRate=sound->getSampleRate();
 	const sample_pos_t size=sound->getLength();
+
+#ifdef HANDLE_CUES_AND_MISC
 
 	// setup for saving the cues (except for positions)
 	TAutoBuffer<int> markIDs(sound->getCueCount());
@@ -329,7 +344,6 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 	}
 
 
-
 	// prepare to save the user notes
 	const string userNotes=sound->getUserNotes();
 	int userNotesMiscID=1;
@@ -337,6 +351,7 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 	if(userNotes.length()>0)
 	{
 		/* this is not implemented in libaudiofile yet
+		 *  ??? if this is changed in cvs before the verison is bumped to 0.2.4, then I can just add this in because it would be disabled if the version wasn't >0.2.4
 		if(!afQueryLong(AF_QUERYTYPE_MISC,AF_QUERY_SUPPORTED,fileFormatType,0,0))
 			Warning("This format does not support saving user notes");
 		else
@@ -347,6 +362,9 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 			afInitMiscSize(initialSetup,userNotesMiscID,userNotes.length());
 		}
 	}
+
+#endif // HANDLE_CUES_AND_MISC
+
 
 	unlink(filename.c_str());
 	AFfilehandle h=afOpenFile(filename.c_str(),"w",initialSetup);
@@ -375,16 +393,14 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 	CRezPoolAccesser *accessers[MAX_CHANNELS]={0};
 	try
 	{
-
 		for(unsigned t=0;t<channelCount;t++)
 			accessers[t]=new CRezPoolAccesser(sound->getAudio(t));
-
 		
 		// save the audio data
 		TAutoBuffer<sample_t> buffer((size_t)(channelCount*4096));
 		sample_pos_t pos=0;
 		AFframecount count=size/4096+1;
-		BEGIN_PROGRESS_BAR("Saving Sound",0,count);
+		BEGIN_PROGRESS_BAR("Saving Sound",0,size);
 		for(AFframecount t=0;t<count;t++)
 		{
 			const int chunkSize=  (t==count-1 ) ? size%4096 : 4096;
@@ -400,10 +416,13 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 				pos+=chunkSize;
 			}
 
-			UPDATE_PROGRESS_BAR(t);
+			UPDATE_PROGRESS_BAR(pos);
 		}
 
 		END_PROGRESS_BAR();
+
+
+#ifdef HANDLE_CUES_AND_MISC
 		
 		// write the cue's positions
 		if(afQueryLong(AF_QUERYTYPE_MARK,AF_QUERY_SUPPORTED,fileFormatType,0,0))
@@ -424,6 +443,8 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 				afWriteMisc(h,userNotesMiscID,(void *)userNotes.c_str(),userNotes.length());
 			}
 		}
+
+#endif // HANDLE_CUES_AND_MISC
 
 
 		afCloseFile(h);
@@ -472,8 +493,8 @@ const vector<string> ClibaudiofileSoundTranslator::getFormatNames() const
 {
 	vector<string> names;
 
-	names.push_back("AIFF");
 	names.push_back("Wave/RIFF");
+	names.push_back("AIFF");
 	names.push_back("NeXT/Sun");
 	names.push_back("Berkeley/IRCAM/CARL");
 
@@ -486,11 +507,11 @@ const vector<vector<string> > ClibaudiofileSoundTranslator::getFormatExtensions(
 	vector<string> extensions;
 
 	extensions.clear();
-	extensions.push_back("aiff");
+	extensions.push_back("wav");
 	list.push_back(extensions);
 
 	extensions.clear();
-	extensions.push_back("wav");
+	extensions.push_back("aiff");
 	list.push_back(extensions);
 
 	extensions.clear();
@@ -505,4 +526,4 @@ const vector<vector<string> > ClibaudiofileSoundTranslator::getFormatExtensions(
 	return(list);
 }
 
-
+#endif // HAVE_LIBAUDIOFILE

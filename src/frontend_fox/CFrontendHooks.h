@@ -29,16 +29,24 @@
 #ifdef FOX_NO_NAMESPACE
 	class FXWindow;
 	class FXFileDialog;
+	class FXDirDialog;
 #else
-	namespace FX { class FXWindow; class FXFileDialog; }
+	namespace FX { class FXWindow; class FXFileDialog; class FXDirDialog; }
 	using namespace FX;
 #endif
+
+class CNewSoundDialog;
+class CRecordDialog;
+class COggDialog;
+class CMp3Dialog;
 
 class CFrontendHooks : public AFrontendHooks
 {
 public:
 	CFrontendHooks(FXWindow *mainWindow);
 	virtual ~CFrontendHooks();
+
+	void doSetupAfterBackendIsSetup();
 
 	const string getFOXFileTypes() const; // returns a string to pass as the file types drop-down in FOX file dialogs
 
@@ -49,13 +57,24 @@ public:
 	bool promptForNewSoundParameters(string &filename,unsigned &channelCount,unsigned &sampleRate);
 	bool promptForNewSoundParameters(unsigned &channelCount,unsigned &sampleRate);
 
+	bool promptForDirectory(string &dirname,const string title);
+
 	bool promptForRecord(ASoundRecorder *recorder);
+
+	bool promptForOggCompressionParameters(OggCompressionParameters &parameters);
+	bool promptForMp3CompressionParameters(Mp3CompressionParameters &parameters);
 
 private:
 	FXWindow *mainWindow;
 
 	FXFileDialog *openDialog;
 	FXFileDialog *saveDialog;
+	FXDirDialog *dirDialog;
+
+	CNewSoundDialog *newSoundDialog;
+	CRecordDialog *recordDialog;
+	COggDialog *oggDialog;
+	CMp3Dialog *mp3Dialog;
 };
 
 #endif

@@ -1,7 +1,7 @@
 # vim:tw=78
 # ReZound config/am_include.mk Written by Anthony Ventimiglia
 ## Process this file with automake to create Makefile.in
-## $Id: am_include.mk,v 1.13 2002/06/22 23:41:37 ddurham Exp $
+## $Id: am_include.mk,v 1.14 2002/06/26 19:44:11 ddurham Exp $
 ##
 ## Copyright (C) 2002 - Anthony Ventimiglia
 ## 
@@ -41,8 +41,7 @@ INCLUDES=\
 	 -I$(top_srcdir)/src/misc \
 	 -I$(top_srcdir)/src/misc/cc++ \
 	 -I$(top_srcdir)/src/misc/missing/generated \
-	 -I$(top_srcdir)/src/PoolFile \
-	 -I$(top_srcdir)/src/PoolFile/DiskTable
+	 -I$(top_srcdir)/src/PoolFile
 
 ## CXXFLAGS is also automatically added to the $(CXX) macro at compile time, and
 ## is passed down to the children as well

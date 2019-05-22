@@ -18,41 +18,53 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __ClibaudiofileSoundTranslator_H__
-#define __ClibaudiofileSoundTranslator_H__
+#ifndef __COggDialog_H__
+#define __COggDialog_H__
 
 #include "../../config/common.h"
+#include "fox_compat.h"
 
-#ifdef HAVE_LIBAUDIOFILE
+class COggDialog;
 
-#include "ASoundTranslator.h"
+#include "FXModalDialogBox.h"
 
-#include <audiofile.h>
+#include "../backend/AFrontendHooks.h"
 
-class ClibaudiofileSoundTranslator : public ASoundTranslator
+class COggDialog : public FXModalDialogBox
 {
+	FXDECLARE(COggDialog);
 public:
-	ClibaudiofileSoundTranslator();
-	virtual ~ClibaudiofileSoundTranslator();
 
-	bool handlesExtension(const string extension) const;
-	bool supportsFormat(const string filename) const;
+	COggDialog(FXWindow *mainWindow);
 
-	const vector<string> getFormatNames() const;
-	const vector<vector<string> > getFormatExtensions() const;
+	bool show(AFrontendHooks::OggCompressionParameters &parameters);
+
+	long onRadioButton(FXObject *sender,FXSelector sel,void *ptr);
+
+	enum 
+	{
+		ID_WHICH_BUTTON=FXModalDialogBox::ID_LAST,
+		ID_LAST
+	};
 
 protected:
-
-	void onLoadSound(const string filename,CSound *sound) const;
-	bool onSaveSound(const string filename,CSound *sound) const;
-
-	void loadSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup) const;
-	void saveSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup,int fileFormatType) const;
+	COggDialog() {}
 
 private:
 
-};
+	FXRadioButton *CBRButton;
+	FXComposite *CBRFrame;
+		FXComboBox *bitRateComboBox;
 
-#endif // HAVE_LIBAUDIOFILE
+	FXRadioButton *VBRButton;
+	FXComposite *VBRFrame;
+		FXComboBox *minRateComboBox;
+		FXComboBox *normRateComboBox;
+		FXComboBox *maxRateComboBox;
+
+	FXRadioButton *qualityButton;
+	FXComposite *qualityFrame;
+		FXTextField *qualityTextBox;
+};
 
 #endif

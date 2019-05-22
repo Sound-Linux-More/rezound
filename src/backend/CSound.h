@@ -293,7 +293,7 @@ public:
 		// finds the cue nearest to the given time
 	bool findNearestCue(const sample_pos_t time,size_t &index,sample_pos_t &distance) const;
 
-	const string getAvailableCueName(const string &prefix="noname") const;
+	const string getUnusedCueName(const string &prefix="noname") const;
 
 	// --------------------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -326,6 +326,7 @@ public:
 
 	void defragPoolFile();
 	void printSAT(); // temporary for debugging ???
+	void verifySAT(); // temporary for debugging ???
 
 protected:
 
@@ -346,6 +347,7 @@ protected:
 
 private:
 
+	friend class ASoundTranslator; // so it can verify some things
 	friend class CrezSoundTranslator;
 	friend class ASoundRecorder; // so it can backupSAT() on the pool file when recording is done
 

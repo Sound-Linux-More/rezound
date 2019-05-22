@@ -88,7 +88,7 @@ AUTOHEADER = @AUTOHEADER@ -l config
 ACLOCAL = @ACLOCAL@ -I config/m4
 AUTOMAKE = @AUTOMAKE@ --foreign
 
-INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing/generated 	 -I$(top_srcdir)/src/PoolFile 	 -I$(top_srcdir)/src/PoolFile/DiskTable
+INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing/generated 	 -I$(top_srcdir)/src/PoolFile
 
 
 CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
@@ -100,25 +100,20 @@ LDFLAGS = @LDFLAGS@
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
 noinst_LTLIBRARIES = libfrontend.la
-libfrontend_la_SOURCES =  			CFOXIcons.cpp 			CActionMenuCommand.cpp 			CChannelSelectDialog.cpp 			CCrossfadeEdgesDialog.cpp 			CActionParamDialog.cpp 			CCueDialog.cpp 			CCueListDialog.cpp 			CMainWindow.cpp 			CNewSoundDialog.cpp 			CRecordDialog.cpp 			CPasteChannelsDialog.cpp 			CProgressDialog.cpp 			CSoundFileManager.cpp 			CFrontendHooks.cpp 			CSoundListWindow.cpp 			CSoundWindow.cpp 			CStatusComm.cpp 			CUserNotesDialog.cpp 			drawPortion.cpp 			EditActionDialogs.cpp 			EffectActionDialogs.cpp 			FilterActionDialogs.cpp 			RemasterActionDialogs.cpp 			CAboutDialog.cpp 			FXConstantParamValue.cpp 			FXTextParamValue.cpp 			FXComboTextParamValue.cpp 			FXGraphParamValue.cpp 			FXModalDialogBox.cpp 			FXRezWaveView.cpp 			rememberShow.cpp 			settings.cpp
+libfrontend_la_SOURCES =  			CFOXIcons.cpp 			CActionMenuCommand.cpp 			CChannelSelectDialog.cpp 			CCrossfadeEdgesDialog.cpp 			CActionParamDialog.cpp 			CCueDialog.cpp 			CCueListDialog.cpp 			CMainWindow.cpp 			CNewSoundDialog.cpp 			CRecordDialog.cpp 			CPasteChannelsDialog.cpp 			CProgressDialog.cpp 			CSoundFileManager.cpp 			CFrontendHooks.cpp 			CSoundListWindow.cpp 			CSoundWindow.cpp 			CStatusComm.cpp 			CUserNotesDialog.cpp 			COggDialog.cpp 			CMp3Dialog.cpp 			drawPortion.cpp 			EditActionDialogs.cpp 			EffectActionDialogs.cpp 			FilterActionDialogs.cpp 			RemasterActionDialogs.cpp 			CAboutDialog.cpp 			FXConstantParamValue.cpp 			FXTextParamValue.cpp 			FXComboTextParamValue.cpp 			FXGraphParamValue.cpp 			FXModalDialogBox.cpp 			FXRezWaveView.cpp 			rememberShow.cpp 			settings.cpp
 
 
-bin_PROGRAMS = ReZound
+bin_PROGRAMS = rezound
 
-ReZound_SOURCES = main.cpp 
+rezound_SOURCES = main.cpp 
 
-ReZound_LDADD = libfrontend.la 	$(top_builddir)/src/backend/libbackend.la 	$(top_builddir)/src/backend/Edits/libEdits.la 	$(top_builddir)/src/backend/Effects/libEffects.la 	$(top_builddir)/src/backend/Filters/libFilters.la 	$(top_builddir)/src/backend/Looping/libLooping.la 	$(top_builddir)/src/backend/Remaster/libRemaster.la 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la 	$(top_builddir)/src/PoolFile/libPoolFile.la
+rezound_LDADD = libfrontend.la 	$(top_builddir)/src/backend/libbackend.la 	$(top_builddir)/src/backend/Edits/libEdits.la 	$(top_builddir)/src/backend/Effects/libEffects.la 	$(top_builddir)/src/backend/Filters/libFilters.la 	$(top_builddir)/src/backend/Looping/libLooping.la 	$(top_builddir)/src/backend/Remaster/libRemaster.la 	$(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la 	$(top_builddir)/src/PoolFile/libPoolFile.la
 
 
-noinst_HEADERS =  	fox_compat.h 	CFOXIcons.h 	CActionMenuCommand.h 	CChannelSelectDialog.h 	CCrossfadeEdgesDialog.h 	CActionParamDialog.h 	CCueDialog.h 	CCueListDialog.h 	CMainWindow.h 	CNewSoundDialog.h 	CRecordDialog.h 	CPasteChannelsDialog.h 	CProgressDialog.h 	CSoundFileManager.h 	CFrontendHooks.h 	CSoundListWindow.h 	CSoundWindow.h 	CStatusComm.h 	CUserNotesDialog.h 	EditActionDialogs.h 	EffectActionDialogs.h 	FilterActionDialogs.h 	RemasterActionDialogs.h 	CAboutDialog.h 	FXConstantParamValue.h 	FXTextParamValue.h 	FXComboTextParamValue.h 	FXGraphParamValue.h 	FXModalDialogBox.h 	FXRezWaveView.h 	drawPortion.h 	rememberShow.h 	settings.h 
+noinst_HEADERS =  	fox_compat.h 	CFOXIcons.h 	CActionMenuCommand.h 	CChannelSelectDialog.h 	CCrossfadeEdgesDialog.h 	CActionParamDialog.h 	CCueDialog.h 	CCueListDialog.h 	CMainWindow.h 	CNewSoundDialog.h 	CRecordDialog.h 	CPasteChannelsDialog.h 	CProgressDialog.h 	CSoundFileManager.h 	CFrontendHooks.h 	CSoundListWindow.h 	CSoundWindow.h 	CStatusComm.h 	CUserNotesDialog.h 	COggDialog.h 	CMp3Dialog.h 	EditActionDialogs.h 	EffectActionDialogs.h 	FilterActionDialogs.h 	RemasterActionDialogs.h 	CAboutDialog.h 	FXConstantParamValue.h 	FXTextParamValue.h 	FXComboTextParamValue.h 	FXGraphParamValue.h 	FXModalDialogBox.h 	FXRezWaveView.h 	drawPortion.h 	rememberShow.h 	settings.h 
 
 
 EXTRA_DIST = convert_images.sh
-
-# Have some rules to manage creating and removing a soft-link 
-# called 'rezound' to the 'ReZound' binary because lower case 
-# is the norm.
-LINK_NAME = rezound
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../config/config.h
 CONFIG_CLEAN_FILES = 
@@ -135,16 +130,17 @@ CChannelSelectDialog.lo CCrossfadeEdgesDialog.lo CActionParamDialog.lo \
 CCueDialog.lo CCueListDialog.lo CMainWindow.lo CNewSoundDialog.lo \
 CRecordDialog.lo CPasteChannelsDialog.lo CProgressDialog.lo \
 CSoundFileManager.lo CFrontendHooks.lo CSoundListWindow.lo \
-CSoundWindow.lo CStatusComm.lo CUserNotesDialog.lo drawPortion.lo \
-EditActionDialogs.lo EffectActionDialogs.lo FilterActionDialogs.lo \
-RemasterActionDialogs.lo CAboutDialog.lo FXConstantParamValue.lo \
-FXTextParamValue.lo FXComboTextParamValue.lo FXGraphParamValue.lo \
-FXModalDialogBox.lo FXRezWaveView.lo rememberShow.lo settings.lo
-bin_PROGRAMS =  ReZound$(EXEEXT)
+CSoundWindow.lo CStatusComm.lo CUserNotesDialog.lo COggDialog.lo \
+CMp3Dialog.lo drawPortion.lo EditActionDialogs.lo \
+EffectActionDialogs.lo FilterActionDialogs.lo RemasterActionDialogs.lo \
+CAboutDialog.lo FXConstantParamValue.lo FXTextParamValue.lo \
+FXComboTextParamValue.lo FXGraphParamValue.lo FXModalDialogBox.lo \
+FXRezWaveView.lo rememberShow.lo settings.lo
+bin_PROGRAMS =  rezound$(EXEEXT)
 PROGRAMS =  $(bin_PROGRAMS)
 
-ReZound_OBJECTS =  main.$(OBJEXT)
-ReZound_DEPENDENCIES =  libfrontend.la \
+rezound_OBJECTS =  main.$(OBJEXT)
+rezound_DEPENDENCIES =  libfrontend.la \
 $(top_builddir)/src/backend/libbackend.la \
 $(top_builddir)/src/backend/Edits/libEdits.la \
 $(top_builddir)/src/backend/Effects/libEffects.la \
@@ -153,7 +149,7 @@ $(top_builddir)/src/backend/Looping/libLooping.la \
 $(top_builddir)/src/backend/Remaster/libRemaster.la \
 $(top_builddir)/src/misc/CNestedDataFile/libmiscCN.la \
 $(top_builddir)/src/PoolFile/libPoolFile.la
-ReZound_LDFLAGS = 
+rezound_LDFLAGS = 
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -167,8 +163,8 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-SOURCES = $(libfrontend_la_SOURCES) $(ReZound_SOURCES)
-OBJECTS = $(libfrontend_la_OBJECTS) $(ReZound_OBJECTS)
+SOURCES = $(libfrontend_la_SOURCES) $(rezound_SOURCES)
+OBJECTS = $(libfrontend_la_OBJECTS) $(rezound_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
@@ -262,9 +258,9 @@ uninstall-binPROGRAMS:
 	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	done
 
-ReZound$(EXEEXT): $(ReZound_OBJECTS) $(ReZound_DEPENDENCIES)
-	@rm -f ReZound$(EXEEXT)
-	$(CXXLINK) $(ReZound_LDFLAGS) $(ReZound_OBJECTS) $(ReZound_LDADD) $(LIBS)
+rezound$(EXEEXT): $(rezound_OBJECTS) $(rezound_DEPENDENCIES)
+	@rm -f rezound$(EXEEXT)
+	$(CXXLINK) $(rezound_LDFLAGS) $(rezound_OBJECTS) $(rezound_LDADD) $(LIBS)
 .cpp.o:
 	$(CXXCOMPILE) -c $<
 .cpp.obj:
@@ -402,8 +398,9 @@ CFOXIcons.lo CFOXIcons.o : CFOXIcons.cpp CFOXIcons.h \
 CFrontendHooks.lo CFrontendHooks.o : CFrontendHooks.cpp CFrontendHooks.h \
 	../../config/common.h ../../config/config.h fox_compat.h \
 	../backend/AFrontendHooks.h ../backend/CSound_defs.h \
-	../../src/misc/istring settings.h ../backend/settings.h \
-	CNewSoundDialog.h FXModalDialogBox.h CRecordDialog.h \
+	../../src/misc/istring ../../src/misc/CPath.h settings.h \
+	../backend/settings.h CNewSoundDialog.h FXModalDialogBox.h \
+	CRecordDialog.h COggDialog.h CMp3Dialog.h \
 	../backend/ASoundTranslator.h
 CMainWindow.lo CMainWindow.o : CMainWindow.cpp CMainWindow.h \
 	../../config/common.h ../../config/config.h fox_compat.h \
@@ -454,11 +451,19 @@ CMainWindow.lo CMainWindow.o : CMainWindow.cpp CMainWindow.h \
 	../backend/Remaster/CRemoveDCAction.h \
 	../backend/Remaster/CNoiseGateAction.h \
 	../backend/Remaster/CCompressorAction.h RemasterActionDialogs.h
+CMp3Dialog.lo CMp3Dialog.o : CMp3Dialog.cpp CMp3Dialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../backend/AFrontendHooks.h \
+	../backend/CSound_defs.h ../../src/misc/istring
 CNewSoundDialog.lo CNewSoundDialog.o : CNewSoundDialog.cpp \
 	CNewSoundDialog.h ../../config/common.h ../../config/config.h \
 	fox_compat.h FXModalDialogBox.h ../backend/CSound_defs.h \
 	../../src/misc/CPath.h ../../src/misc/istring CFrontendHooks.h \
 	../backend/AFrontendHooks.h ../backend/AStatusComm.h
+COggDialog.lo COggDialog.o : COggDialog.cpp COggDialog.h \
+	../../config/common.h ../../config/config.h fox_compat.h \
+	FXModalDialogBox.h ../backend/AFrontendHooks.h \
+	../backend/CSound_defs.h ../../src/misc/istring
 CPasteChannelsDialog.lo CPasteChannelsDialog.o : \
 	CPasteChannelsDialog.cpp CPasteChannelsDialog.h \
 	../../config/common.h ../../config/config.h fox_compat.h \
@@ -618,10 +623,9 @@ main.o: main.cpp ../../config/common.h ../../config/config.h \
 	../backend/initialize.h settings.h ../backend/settings.h \
 	CFOXIcons.h CAboutDialog.h CChannelSelectDialog.h \
 	FXModalDialogBox.h ../backend/AActionDialog.h \
-	../backend/CActionSound.h CPasteChannelsDialog.h \
-	CNewSoundDialog.h CRecordDialog.h CCueDialog.h CCueListDialog.h \
-	CUserNotesDialog.h CCrossfadeEdgesDialog.h CActionParamDialog.h \
-	FXConstantParamValue.h FXTextParamValue.h \
+	../backend/CActionSound.h CPasteChannelsDialog.h CCueDialog.h \
+	CCueListDialog.h CUserNotesDialog.h CCrossfadeEdgesDialog.h \
+	CActionParamDialog.h FXConstantParamValue.h FXTextParamValue.h \
 	FXComboTextParamValue.h FXGraphParamValue.h \
 	../backend/CGraphParamValueNode.h CSoundListWindow.h
 RemasterActionDialogs.lo RemasterActionDialogs.o : \
@@ -648,7 +652,7 @@ check-am: all-am
 check: check-am
 installcheck-am:
 installcheck: installcheck-am
-install-exec-am: install-binPROGRAMS install-exec-local
+install-exec-am: install-binPROGRAMS
 install-exec: install-exec-am
 
 install-data-am:
@@ -657,7 +661,7 @@ install-data: install-data-am
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 install: install-am
-uninstall-am: uninstall-binPROGRAMS uninstall-local
+uninstall-am: uninstall-binPROGRAMS
 uninstall: uninstall-am
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
 all-redirect: all-am
@@ -712,12 +716,11 @@ clean-libtool maintainer-clean-libtool mostlyclean-binPROGRAMS \
 distclean-binPROGRAMS clean-binPROGRAMS maintainer-clean-binPROGRAMS \
 uninstall-binPROGRAMS install-binPROGRAMS tags mostlyclean-tags \
 distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
-dvi-am dvi check check-am installcheck-am installcheck \
-install-exec-local install-exec-am install-exec install-data-am \
-install-data install-am install uninstall-local uninstall-am uninstall \
-all-redirect all-am all installdirs mostlyclean-generic \
-distclean-generic clean-generic maintainer-clean-generic clean \
-mostlyclean distclean maintainer-clean
+dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
+install-exec install-data-am install-data install-am install \
+uninstall-am uninstall all-redirect all-am all installdirs \
+mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
 
 $(top_srcdir)/src/frontend_fox/CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.cpp
@@ -729,11 +732,6 @@ CFOXIcons.h: $(top_srcdir)/src/frontend_fox/CFOXIcons.h
 
 clean-local: 
 	-rm -f CFOXIcons.cpp CFOXIcons.h
-
-install-exec-local:
-	cd $(bindir) && rm -f $(LINK_NAME) && $(LN_S) ReZound $(LINK_NAME)
-uninstall-local:
-	cd $(bindir) && rm -f $(LINK_NAME)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

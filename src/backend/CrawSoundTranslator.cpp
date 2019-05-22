@@ -19,6 +19,9 @@
  */
 
 #include "CrawSoundTranslator.h"
+
+#ifdef HAVE_LIBAUDIOFILE
+
 #include "CSound.h"
 
 #include <stdexcept>
@@ -70,7 +73,7 @@ void CrawSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 	}
 }
 
-void CrawSoundTranslator::onSaveSound(const string filename,CSound *sound) const
+bool CrawSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 {
 	throw(runtime_error(string(__func__)+" -- unimplemented"));
 }
@@ -105,3 +108,5 @@ const vector<vector<string> > CrawSoundTranslator::getFormatExtensions() const
 
 	return(list);
 }
+
+#endif // HAVE_LIBAUDIOFILE

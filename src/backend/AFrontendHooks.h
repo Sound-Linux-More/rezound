@@ -51,9 +51,58 @@ public:
 	virtual bool promptForNewSoundParameters(string &filename,unsigned &channelCount,unsigned &sampleRate)=0;
 	virtual bool promptForNewSoundParameters(unsigned &channelCount,unsigned &sampleRate)=0;
 
+	// should prompt for the user to choose a directory
+	virtual bool promptForDirectory(string &dirname,const string title)=0;
+
 	// prompt for recording, this function will have to be more than just an interface and do work 
 	// since it should probably show level meters and be able to insert cues while recording etc.
 	virtual bool promptForRecord(ASoundRecorder *recorder)=0;
+
+
+	// called when the user is saving an ogg file and compression parameters are needed
+	struct OggCompressionParameters
+	{
+		enum 
+		{
+			brVBR, 
+			brQuality 
+		} method;
+
+		// method==brVBR
+		int minBitRate;
+		int normBitRate;
+		int maxBitRate;
+
+		// method==brQuality
+		float quality;
+	};
+	virtual bool promptForOggCompressionParameters(OggCompressionParameters &parameters)=0;
+
+	// called when the user is saving an mp3 file and compression parameters are needed
+	struct Mp3CompressionParameters
+	{
+		enum 
+		{
+			brCBR, 
+			brABR, 
+			brQuality 
+		} method;
+
+		// method==brCBR
+		int constantBitRate;
+
+		// method==brABR
+		int minBitRate;
+		int normBitRate;
+		int maxBitRate;
+
+		// method==brQuality
+		int quality; // 0(highest quality) -> 9(lowest quality)
+
+		bool useFlagsOnly;
+		string additionalFlags;
+	};
+	virtual bool promptForMp3CompressionParameters(Mp3CompressionParameters &parameters)=0;
 
 };
 

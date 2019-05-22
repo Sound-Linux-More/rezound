@@ -18,58 +18,57 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
-#ifndef __FXComboTextParamValue_H__
-#define __FXComboTextParamValue_H__
+#ifndef __CMp3Dialog_H__
+#define __CMp3Dialog_H__
 
 #include "../../config/common.h"
 #include "fox_compat.h"
 
-#include <vector>
-#include <string>
+class CMp3Dialog;
 
-#include <fox/fx.h>
+#include "FXModalDialogBox.h"
 
-class CNestedDataFile;
+#include "../backend/AFrontendHooks.h"
 
-class FXComboTextParamValue : public FXVerticalFrame
+class CMp3Dialog : public FXModalDialogBox
 {
-	FXDECLARE(FXComboTextParamValue);
+	FXDECLARE(CMp3Dialog);
 public:
-	FXComboTextParamValue(FXComposite *p,int opts,const char *title,const vector<string> &items);
 
-	const FXint getValue(); // returns the index into the items given at construction of the selected item
-	void setValue(const FXint value);
+	CMp3Dialog(FXWindow *mainWindow);
 
-	void setItems(const vector<string> &items);
+	bool show(AFrontendHooks::Mp3CompressionParameters &parameters);
 
-	const string getTitle() const;
+	long onRadioButton(FXObject *sender,FXSelector sel,void *ptr);
 
-	void setHelpText(const FXString &text);
-	FXString getHelpText() const;
-
-	void readFromFile(const string &prefix,CNestedDataFile *f);
-	void writeToFile(const string &prefix,CNestedDataFile *f);
-
-/*
-	enum
+	enum 
 	{
-		ID_SLIDER=FXPacker::ID_LAST,
-
-		ID_VALUE_TEXTBOX,
-		ID_VALUE_SPINNER,
-
+		ID_WHICH_BUTTON=FXModalDialogBox::ID_LAST,
 		ID_LAST
 	};
-*/
-
 
 protected:
-	FXComboTextParamValue() {}
+	CMp3Dialog() {}
 
 private:
 
-	FXLabel *titleLabel;
-	FXComboBox *valueComboBox;
+	FXRadioButton *CBRButton;
+	FXComposite *CBRFrame;
+		FXComboBox *bitRateComboBox;
+
+	FXRadioButton *ABRButton;
+	FXComposite *ABRFrame;
+		FXComboBox *minRateComboBox;
+		FXComboBox *normRateComboBox;
+		FXComboBox *maxRateComboBox;
+
+	FXRadioButton *qualityButton;
+	FXComposite *qualityFrame;
+		FXComboBox *qualityComboBox;
+
+	FXComposite *flagsFrame;
+		FXCheckButton *useOnlyFlagsButton;
+		FXTextField *additionalFlagsTextBox;
 };
 
 #endif

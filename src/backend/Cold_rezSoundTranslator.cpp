@@ -122,11 +122,9 @@ void Cold_rezSoundTranslator::onLoadSound(const string filename,CSound *sound) c
 			delete accessers[t];
 		throw;
 	}
-
-	sound->setIsModified(false);
 }
 
-void Cold_rezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
+bool Cold_rezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 {
 	throw(runtime_error(string(__func__)+" -- unimplemented"));
 }

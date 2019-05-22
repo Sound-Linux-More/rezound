@@ -1,9 +1,6 @@
 
 --- THINGS TO DO FOR SURE ---
 
-	- need to put some #if version_checks in ClibaudiofileSoundTranslator when the patch is in production
-		- and unstick the 1.9 revision number on ClibaudiofileSoundTranslator (cvs update -A)
-
 	- create separate CDSPLevelDetectorRMS and CDSPPeakLevelDetectorPeak dsp blocks
 
 	- create a template method in DSPBlocks which is a mean finder given an accessor and a range to find the mean for removing DC
@@ -58,6 +55,10 @@
 
 
 --- POSSIBLE THINGS TO DO ---
+
+	- could warn the user if they are saving a file that was loaded from a lossy format then saving again to a lossy format that the loss will start to build up and become quite audible rather quickly
+
+	- in order to implement a "Save Selection" under the editing menu, I should make the sound translator objects accept a start and stop paramater in the save methods (and even later, a vector of starts and stops for multiple selected regions or something)
 
 	- use TSoundStretcher in CSoundPlayerChannel
 		- the checks in the inner loop are not necessary... I should be able to determine before hand, how many loops to do and when the loop point will be.... just use TSoundStretcher in the mean time of each loop
@@ -240,4 +241,7 @@
 
 	- research and create DSP blocks for filters.. it should use a delay line multiplied by some vector of coefficients
 		- which is just time-domain convolution
+
+	- need to put some #if version_checks in ClibaudiofileSoundTranslator when the patch is in production
+		- and unstick the 1.9 revision number on ClibaudiofileSoundTranslator (cvs update -A)
 
