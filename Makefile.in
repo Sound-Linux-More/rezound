@@ -217,6 +217,7 @@ pkgdoc_DATA = \
 pkgdata_DATA = \
 	share/presets.dat \
 	share/menu.dat \
+	share/key_bindings.dat \
 	share/impulse_hall1.wav \
 	src/images/icon_logo_32.gif
 
@@ -249,11 +250,11 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure \
-	$(top_srcdir)/config/am_include.mk ./config/config.h.in \
-	ABOUT-NLS Makefile.am aclocal.m4 config/config.guess \
-	config/config.rpath config/config.sub config/depcomp \
-	config/install-sh config/ltmain.sh config/missing \
-	config/mkinstalldirs configure configure.ac
+	$(top_srcdir)/config/am_include.mk ././config/config.h.in \
+	./config/config.h.in ABOUT-NLS Makefile.am aclocal.m4 \
+	config/config.guess config/config.rpath config/config.sub \
+	config/depcomp config/install-sh config/ltmain.sh \
+	config/missing config/mkinstalldirs configure configure.ac
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 
@@ -478,7 +479,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/./config $(distdir)/config $(distdir)/po
+	$(mkinstalldirs) $(distdir)/././config $(distdir)/./config $(distdir)/config $(distdir)/po
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
