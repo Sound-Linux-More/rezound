@@ -23,7 +23,7 @@ dnl this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 dnl Place - Suite 330, Boston, MA  02111-1307, USA
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(rezound, 0.8.1beta, [http://sourceforge.net/tracker/?group_id=5056&atid=105056])
+AC_INIT(rezound, 0.8.2beta, [http://sourceforge.net/tracker/?group_id=5056&atid=105056])
 AC_CONFIG_AUX_DIR(config)
 dnl ??? AC_CONFIG_SRCDIR([config/config.h])
 AM_CONFIG_HEADER([config/config.h])
@@ -505,4 +505,8 @@ rm -f a.out #autoconf  is leaving this around for some reason
 echo
 echo "Please consider joining the ReZound-users mailing list: 
 	http://lists.sourceforge.net/lists/listinfo/rezound-users"
+echo
+echo "You may also want to click the 'Monitor' icon on the 'Latest File Releases'"
+echo "section on http://sourceforge.net/projects/rezound/ to be informed when new"
+echo "releases are made."
 echo

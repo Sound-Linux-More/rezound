@@ -1,4 +1,4 @@
-$Id: AUTHORS,v 1.8 2003/05/09 05:12:10 ddurham Exp $
+$Id: AUTHORS,v 1.9 2003/07/01 04:14:57 ddurham Exp $
 #
 # Master author manifest for ReZound
 # 
@@ -15,7 +15,7 @@ $Id: AUTHORS,v 1.8 2003/05/09 05:12:10 ddurham Exp $
 # 
 # Please refer to individual Files for author credit
 # 
-# Small changes or add ons may be credited internally.
+# Small changes or add ons may be credited internally or in this document.
 # 
 # ReZound is free software; you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -28,4 +28,7 @@ $Id: AUTHORS,v 1.8 2003/05/09 05:12:10 ddurham Exp $
 # Marc R. J. Brevoort - Initial development of dynamic menu configuration
 # Marc R. J. Brevoort - Original coding of Generate Noise and R&D of colors' algorithms
 
+# Gerhard Zintel - Implementation of semitone shuttle wheel feature (src/frontend_foxCMainWindow.cpp)
+
 # David W. Durham - Pretty much everything else
+

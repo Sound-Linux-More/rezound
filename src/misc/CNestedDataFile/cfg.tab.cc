@@ -62,8 +62,10 @@
  * datafile... But, currently I see no reason for that to happen (unless I one day
  * implement array subscripting in the arithmetic expression stuff.)
  */
+#include "../../../config/common.h"
 
 #include <math.h>
+#include <string.h>
 
 #include <stack>
 #include <stdexcept>
@@ -220,13 +222,13 @@ static const short yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined. */
 static const short yyrline[] =
 {
-       0,   147,   151,   158,   167,   167,   183,   184,   187,   188,
-     198,   199,   203,   205,   216,   221,   225,   229,   240,   246,
-     258,   262,   273,   278,   283,   287,   293,   300,   333,   340,
-     349,   351,   362,   377,   378,   379,   380,   385,   386,   387,
-     392,   393,   394,   395,   396,   400,   401,   402,   406,   407,
-     411,   412,   417,   418,   423,   429,   433,   448,   449,   450,
-     454,   459,   468,   469
+       0,   149,   153,   160,   169,   169,   185,   186,   189,   190,
+     200,   201,   205,   207,   218,   223,   227,   231,   242,   248,
+     260,   264,   275,   280,   285,   289,   295,   302,   335,   342,
+     351,   353,   364,   379,   380,   381,   382,   387,   388,   389,
+     394,   395,   396,   397,   398,   402,   403,   404,   408,   409,
+     413,   414,   419,   420,   425,   431,   435,   450,   451,   452,
+     456,   461,   470,   471
 };
 #endif
 
@@ -1067,11 +1069,11 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 147 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 149 "../../../src/misc/CNestedDataFile/cfg.y"
 { cfg_init(); }
     break;
 case 2:
-#line 152 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 154 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		cfg_deinit();
 
@@ -1079,14 +1081,14 @@ case 2:
 	}
     break;
 case 3:
-#line 159 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 161 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		cfg_deinit();
 		return myyynerrs!=0;
 	}
     break;
 case 4:
-#line 168 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 170 "../../../src/misc/CNestedDataFile/cfg.y"
 { /* mid-rule action */
 
 		checkForDupMember(yylsp[-1].first_line,yyvsp[-1].stringValue);
@@ -1099,13 +1101,13 @@ case 4:
 	}
     break;
 case 5:
-#line 177 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 179 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		scopeStack.pop();
 	}
     break;
 case 13:
-#line 206 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 208 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		checkForDupMember(yylsp[-4].first_line,yyvsp[-4].stringValue);
 		if(yyvsp[-1].variant->type==CNestedDataFile::ktValue)
@@ -1118,20 +1120,20 @@ case 13:
 	}
     break;
 case 14:
-#line 217 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 219 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		cfg_includeFile(yyvsp[0].stringValue);
 		free(yyvsp[0].stringValue);
 	}
     break;
 case 16:
-#line 226 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 228 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=strdup("{}");
 	}
     break;
 case 17:
-#line 230 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 232 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=(char *)malloc((1+strlen(yyvsp[-1].stringValue)+1)+1);
 		strcpy(yyval.stringValue,"{");
@@ -1141,14 +1143,14 @@ case 17:
 	}
     break;
 case 18:
-#line 241 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 243 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=strdup(yyvsp[0].variant->stringValue.c_str());
 		delete yyvsp[0].variant;
 	}
     break;
 case 19:
-#line 247 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 249 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=(char *)malloc((strlen(yyvsp[-2].stringValue)+1+yyvsp[0].variant->stringValue.size())+1);
 		strcpy(yyval.stringValue,yyvsp[-2].stringValue);
@@ -1160,52 +1162,52 @@ case 19:
 	}
     break;
 case 20:
-#line 259 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 261 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=strdup("");
 	}
     break;
 case 21:
-#line 263 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 265 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=yyvsp[-2].stringValue;
 	}
     break;
 case 22:
-#line 274 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 276 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=new CNestedDataFile::CVariant(yyvsp[0].stringValue);
 		free(yyvsp[0].stringValue);
 	}
     break;
 case 23:
-#line 279 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 281 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=new CNestedDataFile::CVariant(anytype_to_string<string>(yyvsp[0].stringValue));
 		free(yyvsp[0].stringValue);
 	}
     break;
 case 24:
-#line 284 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 286 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=new CNestedDataFile::CVariant("true");
 	}
     break;
 case 25:
-#line 288 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 290 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=new CNestedDataFile::CVariant("false");
 	}
     break;
 case 26:
-#line 294 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 296 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=new CNestedDataFile::CVariant(yyvsp[0].stringValue);
 		free(yyvsp[0].stringValue);
 	}
     break;
 case 27:
-#line 301 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 303 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		if(CNestedDataFile::parseTree==NULL)
 		{
@@ -1238,24 +1240,24 @@ case 27:
 	}
     break;
 case 28:
-#line 334 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 336 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=yyvsp[-1].variant;
 	}
     break;
 case 29:
-#line 341 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 343 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyclearin;
 		yyval.variant=new CNestedDataFile::CVariant("");
 	}
     break;
 case 30:
-#line 349 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 351 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 31:
-#line 352 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 354 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=yyvsp[0].variant;
 		if(yyvsp[0].variant->type!=CNestedDataFile::ktValue)
@@ -1268,7 +1270,7 @@ case 31:
 	}
     break;
 case 32:
-#line 363 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 365 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.variant=yyvsp[0].variant;
 		if(yyvsp[0].variant->type!=CNestedDataFile::ktValue)
@@ -1281,101 +1283,101 @@ case 32:
 	}
     break;
 case 33:
-#line 377 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 379 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 34:
-#line 378 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 380 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,*) }
     break;
 case 35:
-#line 379 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 381 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,/) }
     break;
 case 36:
-#line 380 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 382 "../../../src/misc/CNestedDataFile/cfg.y"
 { double x1,x2; VERIFY_TYPE(yylsp[-2],yyvsp[-2].variant) VERIFY_TYPE(yylsp[0],yyvsp[0].variant) yyval.variant=yyvsp[-2].variant; yyval.variant->stringValue= strdup( anytype_to_string<double>(fmod(string_to_anytype<double>(yyval.variant->stringValue,x1),string_to_anytype<double>(yyvsp[0].variant->stringValue,x2))).c_str() ); delete yyvsp[0].variant; }
     break;
 case 37:
-#line 385 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 387 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 38:
-#line 386 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 388 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,+) }
     break;
 case 39:
-#line 387 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 389 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,-) }
     break;
 case 40:
-#line 392 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 394 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 41:
-#line 393 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 395 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,<=) }
     break;
 case 42:
-#line 394 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 396 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,>=) }
     break;
 case 43:
-#line 395 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 397 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,<) }
     break;
 case 44:
-#line 396 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 398 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,>) }
     break;
 case 45:
-#line 400 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 402 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 46:
-#line 401 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 403 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,==) }
     break;
 case 47:
-#line 402 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 404 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,!=) }
     break;
 case 48:
-#line 406 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 408 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 49:
-#line 407 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 409 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,&&) }
     break;
 case 50:
-#line 411 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 413 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 51:
-#line 412 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 414 "../../../src/misc/CNestedDataFile/cfg.y"
 { BINARY_EXPR(yyval.variant,yylsp[-2],yyvsp[-2].variant,yylsp[0],yyvsp[0].variant,||) }
     break;
 case 52:
-#line 417 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 419 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 53:
-#line 418 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 420 "../../../src/misc/CNestedDataFile/cfg.y"
 { double x; VERIFY_TYPE(yylsp[-4],yyvsp[-4].variant) yyval.variant=(string_to_anytype<double>(yyvsp[-4].variant->stringValue,x) ? ((delete yyvsp[0].variant),yyvsp[-2].variant) : ((delete yyvsp[-2].variant),yyvsp[0].variant)); delete yyvsp[-4].variant; }
     break;
 case 54:
-#line 423 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 425 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 55:
-#line 430 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 432 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=yyvsp[0].stringValue;
 	}
     break;
 case 56:
-#line 434 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 436 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		yyval.stringValue=(char *)realloc(yyval.stringValue,strlen(yyval.stringValue)+1+strlen(yyvsp[0].stringValue)+1);
 		strcat(yyval.stringValue,CNestedDataFile::delim.c_str());
@@ -1385,37 +1387,37 @@ case 56:
 	}
     break;
 case 57:
-#line 448 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 450 "../../../src/misc/CNestedDataFile/cfg.y"
 {}
     break;
 case 58:
-#line 449 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 451 "../../../src/misc/CNestedDataFile/cfg.y"
 {}
     break;
 case 59:
-#line 450 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 452 "../../../src/misc/CNestedDataFile/cfg.y"
 { YYABORT; }
     break;
 case 60:
-#line 455 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 457 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		CNestedDataFile::s2at_return_value.push_back(yyvsp[0].variant->stringValue);
 		delete yyvsp[0].variant;
 	}
     break;
 case 61:
-#line 460 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 462 "../../../src/misc/CNestedDataFile/cfg.y"
 {
 		CNestedDataFile::s2at_return_value.push_back(yyvsp[0].variant->stringValue);
 		delete yyvsp[0].variant;
 	}
     break;
 case 62:
-#line 468 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 470 "../../../src/misc/CNestedDataFile/cfg.y"
 { yyval.variant=yyvsp[0].variant; }
     break;
 case 63:
-#line 469 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 471 "../../../src/misc/CNestedDataFile/cfg.y"
 { YYABORT; }
     break;
 }
@@ -1651,7 +1653,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 473 "../../../src/misc/CNestedDataFile/cfg.y"
+#line 475 "../../../src/misc/CNestedDataFile/cfg.y"
 
 
 #include "cfg.lex.c"
