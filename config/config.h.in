@@ -98,6 +98,9 @@
 /* defined by ajv_CXX_CHECK_LIB */
 #undef HAVE_LIBFOX_1_5
 
+/* defined by ajv_CXX_CHECK_LIB */
+#undef HAVE_LIBFOX_1_6
+
 /* Define to 1 if you have the <libintl.h> header file. */
 #undef HAVE_LIBINTL_H
 
