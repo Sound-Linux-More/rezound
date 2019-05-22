@@ -19,7 +19,7 @@
 * License along with this library; if not, write to the Free Software           *
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.    *
 *********************************************************************************
-* $Id: FXBackBufferedCanvas.h,v 1.1 2003/10/07 18:39:32 ddurham Exp $                       *
+* $Id: FXBackBufferedCanvas.h 1652 2003-10-07 18:39:33Z ddurham $                       *
 ********************************************************************************/
 #ifndef FXBACKBUFFEREDCANVAS_H
 #define FXBACKBUFFEREDCANVAS_H

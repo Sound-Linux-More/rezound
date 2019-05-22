@@ -1,4 +1,4 @@
-$Id: ChangeLog_v0.1prealpha,v 1.4 2003/03/24 08:26:28 ddurham Exp $
+$Id: ChangeLog_v0.1prealpha 1313 2003-03-24 08:26:29Z ddurham $
 
 Mar 24, 2002 -- David W. Durham
 
@@ -78,7 +78,7 @@ ready to release on my end.
 ----------------------------------------------------
 Following are CVS Log entries
 
-$Log: ChangeLog_v0.1prealpha,v $
+$Log$
 Revision 1.4  2003/03/24 08:26:28  ddurham
 updated some of the docs as a result of the switch to autoconf-2.5x
 

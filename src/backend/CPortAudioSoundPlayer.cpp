@@ -23,6 +23,7 @@
 #ifdef ENABLE_PORTAUDIO
 
 #include <stdio.h>
+#include <string.h>
 
 #include <stdexcept>
 
@@ -70,6 +71,24 @@ void CPortAudioSoundPlayer::initialize()
 		
 
 		// open a PortAudio stream
+#ifdef ENABLE_PORTAUDIO_V19
+		PaStreamParameters output = { gPortAudioOutputDevice, 
+			gDesiredOutputChannelCount, 
+			sampleFormat,
+			Pa_GetDeviceInfo(gPortAudioOutputDevice)->defaultLowOutputLatency ,
+			NULL};
+
+		err = Pa_OpenStream(
+				&stream,
+				NULL,
+				&output,
+				gDesiredOutputSampleRate,
+				gDesiredOutputBufferSize * gDesiredOutputBufferCount,
+				paClipOff|paDitherOff,
+				CPortAudioSoundPlayer::PortAudioCallback,
+				this);
+
+#else
 		err = Pa_OpenStream(
 			&stream,
 			paNoDevice,			/* recording parameter, we're not recording */
@@ -86,6 +105,7 @@ void CPortAudioSoundPlayer::initialize()
 			paClipOff|paDitherOff,
 			CPortAudioSoundPlayer::PortAudioCallback,
 			this);
+#endif
 
 		if(err!=paNoError) 
 			throw runtime_error(string(__func__)+" -- error opening PortAudio stream -- "+Pa_GetErrorText(err));
@@ -109,6 +129,7 @@ void CPortAudioSoundPlayer::initialize()
 
 		ASoundPlayer::initialize();
 		initialized=true;
+		fprintf(stderr, "PortAudio player initialized\n");
 	}
 	else
 		throw runtime_error(string(__func__)+" -- already initialized");
@@ -134,6 +155,7 @@ void CPortAudioSoundPlayer::deinitialize()
 
 		stream=NULL;
 		initialized=false;
+		fprintf(stderr, "PortAudio player deinitialized\n");
 	}
 }
 
@@ -156,12 +178,21 @@ void CPortAudioSoundPlayer::doneRecording()
 }
 
 
+#ifdef ENABLE_PORTAUDIO_V19
+int CPortAudioSoundPlayer::PortAudioCallback(const void *inputBuffer,void *outputBuffer,unsigned long framesPerBuffer,const PaStreamCallbackTimeInfo* outTime, PaStreamCallbackFlags statusFlags, void *userData)
+#else
 int CPortAudioSoundPlayer::PortAudioCallback(void *inputBuffer,void *outputBuffer,unsigned long framesPerBuffer,PaTimestamp outTime,void *userData)
+#endif
 {
+	CPortAudioSoundPlayer* that = (CPortAudioSoundPlayer *)userData;
+	if(!that->initialized) {
+		return 0;
+	}
+
 	try
 	{
 		// no conversion necessary because we initialized it with the type of sample_t (if portaudio didn't support our sample_t type natively then we would need to do conversion here)
-		((CPortAudioSoundPlayer *)userData)->mixSoundPlayerChannels(gDesiredOutputChannelCount,(sample_t *)outputBuffer,framesPerBuffer);
+		that->mixSoundPlayerChannels(gDesiredOutputChannelCount,(sample_t *)outputBuffer,framesPerBuffer);
 	}
 	catch(exception &e)
 	{

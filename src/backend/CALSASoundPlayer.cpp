@@ -85,7 +85,7 @@ void CALSASoundPlayer::initialize()
 			if((err = snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &outSampleRate, 0)) < 0)
 				throw runtime_error(string(__func__)+" -- cannot set sample rate -- "+snd_strerror(err));
 			if(sampleRate!=outSampleRate)
-				fprintf(stderr,("warning: ALSA used a different sample rate ("+istring(outSampleRate)+") than what was asked for ("+istring(sampleRate)+"); will have to do extra calculations to compensate\n").c_str());
+				fprintf(stderr,"warning: ALSA used a different sample rate (%d) than what was asked for (%d); will have to do extra calculations to compensate\n", (int)outSampleRate, (int)sampleRate);
 			devices[0].sampleRate=outSampleRate; // make note of the sample rate for this device (??? which is only device zero for now)
 
 
@@ -214,10 +214,11 @@ void CALSASoundPlayer::initialize()
 
 			// start play thread
 			playThread.kill=false;
-			playThread.start();
 
 			ASoundPlayer::initialize();
 			initialized=true;
+			playThread.start();
+			fprintf(stderr, "ALSA player initialized\n");
 		}
 		catch(...)
 		{
@@ -254,6 +255,7 @@ void CALSASoundPlayer::deinitialize()
 		playback_handle=NULL;
 
 		initialized=false;
+		fprintf(stderr, "ALSA player deinitialized\n");
 	}
 }
 
@@ -283,11 +285,11 @@ void CALSASoundPlayer::CPlayThread::main()
 	try
 	{
 		int err;
-		TAutoBuffer<sample_t> buffer(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount*2); 
+		TAutoBuffer<sample_t> buffer(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount*2, true); 
 			// these are possibly used if sample format conversion is required
-		TAutoBuffer<int16_t> buffer__int16_t(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount);
-		TAutoBuffer<int32_t> buffer__int32_t(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount);
-		TAutoBuffer<float> buffer__float(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount);
+		TAutoBuffer<int16_t> buffer__int16_t(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount, true);
+		TAutoBuffer<int32_t> buffer__int32_t(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount, true);
+		TAutoBuffer<float> buffer__float(PERIOD_SIZE_FRAMES*parent->devices[0].channelCount, true);
 
 		snd_pcm_format_t format=parent->playback_format;
 

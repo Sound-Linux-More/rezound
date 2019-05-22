@@ -23,8 +23,9 @@
 # Place - Suite 330, Boston, MA  02111-1307, USA
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(rezound, 0.12.3beta, [http://sourceforge.net/tracker/?atid=105056&group_id=5056])
-AC_CONFIG_AUX_DIR(config)
+AC_INIT(rezound, 0.13.0beta, [https://sourceforge.net/p/rezound/bugs/])
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([config/m4])
 AM_CONFIG_HEADER([config/config.h])
 AM_INIT_AUTOMAKE
 AC_DISABLE_SHARED	# This makes libtool only build static libs 
@@ -79,15 +80,18 @@ AC_PATH_PROG(CDRDAO, cdrdao)
 
 
 
-
 ############################################################################
-# Set some compilter flags if they're available                            #
+# Set some compiler flags if they're available                             #
 ############################################################################
 ajv_CXX_FLAG(-g)
 ajv_CXX_FLAG(-Wall)
+ajv_CXX_FLAG(-std=c++0x)
+ajv_CXX_FLAG(-stdlib=libstdc++)
 ajv_CXX_FLAG(-Wno-unused-function)
 ajv_CXX_FLAG(-Wno-unused-variable)
 ajv_CXX_FLAG(-Wno-unused)
+ajv_CXX_FLAG(-fexceptions)
+ajv_CXX_FLAG(-fcolor-diagnostics)
 
 
 
@@ -129,7 +133,9 @@ AC_CHECK_HEADER(sstream,
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([fcntl.h limits.h stddef.h stdlib.h string.h sys/ioctl.h sys/vfs.h sys/statvfs.h sys/statfs.h unistd.h])
-
+AC_CHECK_HEADERS([boost/detail/atomic_count.hpp], [], [
+	AC_MSG_ERROR([boost header not found])
+])
 
 
 
@@ -213,7 +219,6 @@ AC_ARG_ENABLE(
 # Checks for library functions/classes                                     #
 ############################################################################
 AC_FUNC_FORK
-AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_FUNC_STAT
@@ -222,7 +227,7 @@ AC_FUNC_STAT
 AC_CHECK_LIB(m, sqrt,,AC_MSG_ERROR([compatible libc math library not found])) 
 
 AC_LANG_PUSH(C)
-AC_CHECK_FUNCS([floor ftruncate memmove memset mkdir modf pow realpath sqrt strchr strdup strerror strrchr strstr strtol statfs],[],[AC_MSG_WARN([Some functions not found.  Compile may fail.  Alternate methods may need to be implemented.])])
+AC_CHECK_FUNCS([floor ftruncate memmove memset mkdir modf pow realpath sqrt strchr strdup strerror strrchr strstr strtol statfs gettimeofday],[],[AC_MSG_WARN([Some functions not found.  Compile may fail.  Alternate methods may need to be implemented.])])
 AC_LANG_POP(C)
 
 
@@ -372,15 +377,63 @@ AC_ARG_ENABLE(
 
 # handle the --enable-portaudio flag
 AH_TEMPLATE(ENABLE_PORTAUDIO)
+AH_TEMPLATE(ENABLE_PORTAUDIO_V19)
 if test -z "$enable_standalone"; then
 	AC_ARG_ENABLE(
 		portaudio,
 		AC_HELP_STRING([--enable/disable-portaudio],[enable/disable ReZound to use PortAudio for audio I/O]),
 		[
 			if [[ "$enableval" = "yes" ]]
-			then 
+			then
 				# --enable-portaudio was given
-				# Require that the portaudio library can be found
+
+				PKG_CHECK_MODULES(PORTAUDIO_19,portaudio-2.0 >= 0.21 ,[portaudio_v19=yes],:)
+				if test "x$portaudio_v19" = "xyes"; then
+					AC_DEFINE(ENABLE_PORTAUDIO)
+					AC_DEFINE(ENABLE_PORTAUDIO_V19)
+					LIBS="$LIBS $PORTAUDIO_19_LIBS"
+					AC_MSG_RESULT([*** enabling libportaudio v19 for audio I/O])
+					using_portaudio=1
+				else
+					# Require that the portaudio library can be found
+					AC_CHECK_LIB(
+						portaudio,
+						Pa_Initialize,
+
+						origLIBS="$LIBS"
+						LIBS="-lportaudio $LIBS"
+						
+						# libportaudio found, now check for portaudio header file
+						[AC_CHECK_HEADER(
+							portaudio.h,
+							[
+								AC_DEFINE(ENABLE_PORTAUDIO)
+								AC_MSG_RESULT([*** enabling libportaudio for audio I/O])
+								using_portaudio=1
+							],
+							[
+								LIBS="$origLIBS"
+								AC_MSG_ERROR([***** portaudio.h header file not found (http://www.portaudio.com) *****])
+							]
+						)], 
+
+						AC_MSG_ERROR([***** libportaudio.a not found (http://www.portaudio.com) *****])
+					)
+				fi
+			else
+				AC_MSG_RESULT([*** disabling libportaudio for audio I/O])
+			fi
+		],
+		[ # action if neither enable or disable flag was given
+			# if libportaudio and portaudio.h are found, then enable it
+			PKG_CHECK_MODULES(PORTAUDIO_19,portaudio-2.0 >= 0.21 ,[portaudio_v19=yes],:)
+			if test "x$portaudio_v19" = "xyes"; then
+				AC_DEFINE(ENABLE_PORTAUDIO)
+				AC_DEFINE(ENABLE_PORTAUDIO_V19)
+				LIBS="$LIBS $PORTAUDIO_19_LIBS"
+				AC_MSG_RESULT([*** enabling libportaudio v19 for audio I/O])
+				using_portaudio=1
+			else
 				AC_CHECK_LIB(
 					portaudio,
 					Pa_Initialize,
@@ -398,38 +451,10 @@ if test -z "$enable_standalone"; then
 						],
 						[
 							LIBS="$origLIBS"
-							AC_MSG_ERROR([***** portaudio.h header file not found (http://www.portaudio.com) *****])
 						]
-					)], 
-
-					AC_MSG_ERROR([***** libportaudio.a not found (http://www.portaudio.com) *****])
+					)]
 				)
-			else
-				AC_MSG_RESULT([*** disabling libportaudio for audio I/O])
 			fi
-		],
-		[ # action if neither enable or disable flag was given
-			# if libportaudio and portaudio.h are found, then enable it
-			AC_CHECK_LIB(
-				portaudio,
-				Pa_Initialize,
-
-				origLIBS="$LIBS"
-				LIBS="-lportaudio $LIBS"
-				
-				# libportaudio found, now check for portaudio header file
-				[AC_CHECK_HEADER(
-					portaudio.h,
-					[
-						AC_DEFINE(ENABLE_PORTAUDIO)
-						AC_MSG_RESULT([*** enabling libportaudio for audio I/O])
-						using_portaudio=1
-					],
-					[
-						LIBS="$origLIBS"
-					]
-				)]
-			)
 		]
 	)
 else
@@ -477,6 +502,46 @@ AC_ARG_ENABLE(
 )
 
 
+# handle the --enable-pulse flag
+AH_TEMPLATE(ENABLE_PULSE)
+AC_ARG_ENABLE(
+	pulse,
+	AC_HELP_STRING([--enable/disable-pulse],[enable/disable ReZound to use PulseAudio for audio I/O]),
+	[ # action if either enable or disable flag is given
+		if [[ "$enableval" = "yes" ]]
+		then 
+			PKG_CHECK_MODULES(
+				PULSE,
+				libpulse-simple,
+				[
+					AC_DEFINE(ENABLE_PULSE)
+					AC_MSG_RESULT([*** enabling PulseAUdio for audio I/O])
+				],
+				AC_MSG_ERROR([***** libpulse-simple.a or pulse/simple.h not found (http://www.pulseaudio.org) *****])
+			)
+			
+		else
+			AC_MSG_RESULT([*** disabling PulseAudio for audio I/O])
+		fi
+	],
+	[ # action if neither enable or disable flag was given
+		# if the pulse lib is found, then enable it
+		PKG_CHECK_MODULES(
+			PULSE,
+			libpulse-simple,
+			[
+				AC_DEFINE(ENABLE_PULSE)
+				AC_MSG_RESULT([*** enabling PulseAudio for audio I/O])
+			],
+			[
+				# disable default action of exiting if not found
+				AC_MSG_RESULT([*** PulseAudio not enabled for audio I/O])
+			]
+		)
+	]
+)
+
+
 # ...
 # handle other possible audio I/O system flags here
 # ...
@@ -495,44 +560,68 @@ AC_ARG_ENABLE(
 
 # used to conditionally activate code in ClibaudiofileSoundTranslator.*
 AH_TEMPLATE(HAVE_LIBAUDIOFILE)
-# this macro detects libaudiofile and does an AC_SUBST on AUDIOFILE_CFLAGS and AUDIOFILE_LIBS, so I put these variables in src/backend/Makefile.am for substitution (also audiofile comes with with a pkg-config file, I could use that)
-AM_PATH_AUDIOFILE(0.2.2,AC_DEFINE(HAVE_LIBAUDIOFILE),AC_MSG_NOTICE([audiofile website: http://oss.sgi.com/projects/audiofile]))
-
+PKG_CHECK_MODULES(
+	[audiofile],
+	[audiofile >= 0.2.2],
+	[AC_DEFINE(HAVE_LIBAUDIOFILE)],
+	[AC_MSG_WARN(***** libaudiofile not found.  Many file audio formats will not be supported.)]
+)
 
 
 ### Ogg Vorbis Libraries ##################################################
 
-AC_LANG_PUSH(C) # xiph needs to include vorbisenc.h as well if C++ is going to compile the code
-
 AH_TEMPLATE(HAVE_LIBOGG)
-# this macro detects libogg and does an AC_SUBST on OGG_CFLAGS and OGG_LIBS, so I put these variables in src/backend/Makefile.am for substitution
-XIPH_PATH_OGG(AC_DEFINE(HAVE_LIBOGG),AC_MSG_NOTICE([Ogg Vorbis website: http://www.xiph.org]))
+PKG_CHECK_MODULES(
+	[ogg],
+	[ogg],
+	[AC_DEFINE(HAVE_LIBOGG)],
+	[AC_MSG_WARN(***** libogg not found.  The ogg file audio format will not be supported.)]
+)
 
 AH_TEMPLATE(HAVE_LIBVORBIS)
-# this macro detects libvorbis and does an AC_SUBST on VORBIS_CFLAGS, VORBIS_LIBS, VORBISFILE_LIBS and VORBISENC_LIBS, so I put these variables in src/backend/Makefile.am for substitution
-XIPH_PATH_VORBIS(AC_DEFINE(HAVE_LIBVORBIS),AC_MSG_NOTICE([Ogg Vorbis website: http://www.xiph.org]))
+PKG_CHECK_MODULES(
+	[vorbis],
+	[vorbis],
+	[AC_DEFINE(HAVE_LIBVORBIS)],
+	[AC_MSG_WARN(***** libvorbis not found.  The ogg file audio format will not be supported.)]
+)
 
-AC_LANG_POP(C)
+AH_TEMPLATE(HAVE_LIBVORBISENC)
+PKG_CHECK_MODULES(
+	[vorbisenc],
+	[vorbisenc],
+	[AC_DEFINE(HAVE_LIBVORBISENC)],
+	[AC_MSG_WARN(***** libvorbisenc not found.  The ogg file audio format will not be supported.)]
+)
 
+AH_TEMPLATE(HAVE_LIBVORBISFILE)
+PKG_CHECK_MODULES(
+	[vorbisfile],
+	[vorbisfile],
+	[AC_DEFINE(HAVE_LIBVORBISFILE)],
+	[AC_MSG_WARN(***** libvorbisfile not found.  The ogg file audio format will not be supported.)]
+)
 
 
 
 
 ### FLAC Library ##########################################################
 
-# used to conditionally activate code in CFLACSoundTranslator.*
-AH_TEMPLATE(HAVE_LIBFLACPP)
 AH_TEMPLATE(HAVE_LIBFLAC)
-
-# look for libFLAC and if it's found then look for libFLAC++
-AM_PATH_LIBFLAC(
-	[
-		AC_DEFINE(HAVE_LIBFLAC)
-		AM_PATH_LIBFLACPP(AC_DEFINE(HAVE_LIBFLACPP),AC_MSG_NOTICE([FLAC website: http://flac.sourceforge.net]))
-	],
-	AC_MSG_NOTICE([FLAC website: http://flac.sourceforge.net])
+PKG_CHECK_MODULES(
+	[flac],
+	[flac],
+	[AC_DEFINE(HAVE_LIBFLAC)],
+	[AC_MSG_WARN(***** libflac not found.  The flac file audio format will not be supported.)]
 )
 
+AH_TEMPLATE(HAVE_LIBFLACPP)
+PKG_CHECK_MODULES(
+	[flacpp],
+	[flac++],
+	[AC_DEFINE(HAVE_LIBFLACPP)],
+	[AC_MSG_WARN(***** libflac++ not found.  The flac file audio format will not be supported.)]
+)
 
 
 
@@ -541,23 +630,41 @@ AM_PATH_LIBFLAC(
 ############################################################################
 # Handle the flags for the FFTW library                                    #
 ############################################################################
-
-# check for the rfftw library installed.  Eventually this macro call
-# should define HAVE_FFTW and enable or disable the FFT based actions
-# if it's not found, then I should print a noticable warning that FFT
-# actions will be disabled and why
-#  ??? email about an official way to test for fftw
-		# ??? actually I don't think I need fftw, just rfftw.. remove fftw and see if that's so
-AC_CHECK_HEADER(
-	fftw.h,
-	AC_CHECK_LIB(fftw, fftw_create_plan, , AC_MSG_WARN([***** libfftw.a (version 2) not found -- any FFT based actions will be disabled (http://www.fftw.org) *****]),-lfftw),
-	AC_MSG_WARN([***** fftw.h (version 2) header file not found -- any FFT based actions will be disabled (http://www.fftw.org) *****])
-	)
-
-AC_CHECK_HEADER(
-	rfftw.h,
-	AC_CHECK_LIB(rfftw, rfftw_create_plan, , AC_MSG_WARN([***** librfftw.a (version 2) not found -- any FFT based actions will be disabled (http://www.fftw.org) *****]),-lrfftw),
-	AC_MSG_WARN([***** rfftw.h (version 2) header file not found -- any FFT based actions will be disabled (http://www.fftw.org) *****])
+AH_TEMPLATE(HAVE_FFTW)
+AC_ARG_ENABLE(
+	fftw3,
+	AC_HELP_STRING([--enable/disable-fftw3],[enable/disable ReZound to use fftw3 library (version 3 and later)]),
+	[ # action if either enable or disable flag is given
+		if [[ "$enableval" = "yes" ]]
+		then 
+			PKG_CHECK_MODULES(
+				fftw3,
+				fftw3 >= 3.0.0,
+				[
+					AC_DEFINE(HAVE_FFTW)
+					AC_MSG_RESULT([*** enabling FFTW])
+				],
+				AC_MSG_ERROR([***** libfftw3.a or fftw3.h not found (http://www.fftw.org) *****])
+			)
+		else
+			AC_MSG_RESULT([*** disabling fftw3])
+		fi
+	],
+	[ # action if neither enable or disable flag was given
+		# if the fftw3 lib is found, then enable it
+		PKG_CHECK_MODULES(
+			fftw3,
+			fftw3 >= 3.0.0,
+			[
+				AC_DEFINE(HAVE_FFTW)
+				AC_MSG_RESULT([*** enabling fftw3])
+			],
+			[
+				# disable default action of exiting if not found
+				AC_MSG_RESULT([*** fftw3 not enabled])
+			]
+		)
+	]
 )
 
 
@@ -600,10 +707,17 @@ AC_SUBST(MAYBE_LADSPA_LIB)
 
 
 
-dnl ############################################################################
-dnl # Handle the flags for a library to to tempo/pitch changing independantly  *
-dnl ############################################################################
-AM_PATH_SOUNDTOUCH([],[],AC_MSG_WARN([***** libSoundTouch not found -- tempo and pitch changing will be disabled (http://www.iki.fi/oparviai/soundtouch) *****]))
+############################################################################
+# Handle the flags for a library to to tempo/pitch changing independently  *
+############################################################################
+
+AH_TEMPLATE(HAVE_LIBSOUNDTOUCH)
+PKG_CHECK_MODULES(
+	[soundtouch],
+	[soundtouch >= 1.0],
+	[AC_DEFINE(HAVE_LIBSOUNDTOUCH)],
+	[AC_MSG_WARN(***** libsoundtouch not found.  Tempo and pitch changing will not be supported.)]
+)
 
 
 
@@ -613,49 +727,23 @@ AM_PATH_SOUNDTOUCH([],[],AC_MSG_WARN([***** libSoundTouch not found -- tempo and
 # Check for the Frontend GUI Library                                       #
 ############################################################################
 
-# This is a check for a class in a C++ library. To pinpoint the specific version we need we could change what class is linked.
-# it sets $1_CXXFLAGS and $1_LIBS to either something useful or nothing
-ajv_CXX_CHECK_LIB(FOX-1.6,FXApp,fox-1.6/fx.h,[http://fox-toolkit.org],[],false)
-if test -z "$FOX_1_6_LIBS"; then
-	ajv_CXX_CHECK_LIB(FOX-1.5,FXApp,fox-1.5/fx.h,[http://fox-toolkit.org],[],false)
-	if test -z "$FOX_1_5_LIBS"; then
-		ajv_CXX_CHECK_LIB(FOX-1.4,FXApp,fox-1.4/fx.h,[http://fox-toolkit.org],[],false)
-		if test -z "$FOX_1_4_LIBS"; then
-			ajv_CXX_CHECK_LIB(FOX-1.3,FXApp,fox-1.3/fx.h,[http://fox-toolkit.org],[],false)
-			if test -z "$FOX_1_3_LIBS"; then
-				ajv_CXX_CHECK_LIB(FOX-1.2,FXApp,fox-1.2/fx.h,[http://fox-toolkit.org],[],false)
-				if test -z "$FOX_1_2_LIBS"; then
-					# libFOX-1.2 was not found, now try libFOX-1.1
-					ajv_CXX_CHECK_LIB(FOX-1.1,FXApp,fox-1.1/fx.h,[http://fox-toolkit.org],[],false)
-					if test -z "$FOX_1_1_LIBS"; then
-						# libFOX-1.1 was not found, now try libFOX
-						ajv_CXX_CHECK_LIB(FOX,FXApp,fox/fx.h,[http://fox-toolkit.org],[],true)
-					fi
-				fi
-			fi
-		fi
-	fi
-fi
+AH_TEMPLATE(HAVE_LIBFOX)
+AX_PATH_GENERIC(
+	[fox],
+	[1.1.0],
+	,
+	[
+		AC_DEFINE(HAVE_LIBFOX)
+	],
+	[
+		AC_MSG_ERROR(***** libfox not found -- GUI library (http://fox-toolkit.org) *****) 
+	]
+)
 
-AC_SUBST(FOX_1_1_CXXFLAGS)
-AC_SUBST(FOX_1_1_LIBS)
-AC_SUBST(FOX_1_2_CXXFLAGS)
-AC_SUBST(FOX_1_2_LIBS)
-AC_SUBST(FOX_1_3_CXXFLAGS)
-AC_SUBST(FOX_1_3_LIBS)
-AC_SUBST(FOX_1_4_CXXFLAGS)
-AC_SUBST(FOX_1_4_LIBS)
-AC_SUBST(FOX_1_5_CXXFLAGS)
-AC_SUBST(FOX_1_5_LIBS)
-AC_SUBST(FOX_1_6_CXXFLAGS)
-AC_SUBST(FOX_1_6_LIBS)
-AC_SUBST(FOX_CXXFLAGS)
-AC_SUBST(FOX_LIBS)
 
 # Check for FOX's reswrap program. 
 AC_PATH_PROG(RESWRAP, reswrap)
 	test -z "$RESWRAP" && AC_MSG_ERROR([reswrap not found (it comes with fox) -- perhaps you need to add reswrap's location to your PATH])
-
 
 
 
@@ -728,6 +816,8 @@ AC_ARG_ENABLE(
 # Final                                                                    #
 ############################################################################
 
+# consider using scons.. and create pkg-config files for anything that doesn't already have them
+# TODO stop creating so many libs.. just have a list of cpp files to compile and let that be something the frontend can compile and link in
 #AC_CONFIG_FILES([
 #	Makefile
 #	src/Makefile
@@ -768,6 +858,12 @@ ln -s src/frontend_fox/rezound ./rezound
 
 
 rm -f a.out #autoconf  is leaving this around for some reason
+
+if [[ -z "$RESWRAP" ]]; then
+	RESWRAP=`which reswrap`/reswrap
+fi
+echo "Converting icons"
+src/frontend_fox/convert_images.sh "$RESWRAP" src/images
 
 
 echo

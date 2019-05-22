@@ -1,7 +1,7 @@
 # vim:tw=78
 # ReZound config/am_include.mk Written by Anthony Ventimiglia
 ## Process this file with automake to create Makefile.in
-## $Id: am_include.mk,v 1.15 2003/03/24 08:23:55 ddurham Exp $
+## $Id: am_include.mk 1980 2009-07-18 05:32:49Z ddurham $
 ##
 ## Copyright (C) 2002 - Anthony Ventimiglia
 ## 
@@ -45,7 +45,7 @@ CXXFLAGS=@CXXFLAGS@
 ## note that the -l flags are set by the LIBS macro that is set by configure
 ## This line doesn't need to be here, configure will add LDFLAGS on it's own,
 ## but I'm leaving here as a place to add LDFLAGS if so desired
-LDFLAGS=@LDFLAGS@
+LDFLAGS=@LDFLAGS@ -Xlinker --allow-multiple-definition
 
 
 # doc directory

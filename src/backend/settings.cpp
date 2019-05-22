@@ -93,6 +93,7 @@ string gLADSPAPath="";
 
 
 string gFallbackWorkDir="/tmp"; // ??? would be something else on non-unix platforms
+string gPrimaryWorkDir="";
 
 
 string gClipboardDir="/tmp"; // ??? would be something else on non-unix platforms
@@ -230,7 +231,7 @@ void readBackendSettings()
 	GET_SETTING("DesiredOutputBufferCount",gDesiredOutputBufferCount,int)
 		gDesiredOutputBufferCount=max(2,gDesiredOutputBufferCount);
 	GET_SETTING("DesiredOutputBufferSize",gDesiredOutputBufferSize,unsigned)
-		if(gDesiredOutputBufferSize<256 || (gDesiredOutputBufferSize & gDesiredOutputBufferSize-1))
+		if(gDesiredOutputBufferSize<256 || (gDesiredOutputBufferSize & (gDesiredOutputBufferSize-1)))
 			throw runtime_error(string(__func__)+" -- DesiredOutputBufferSize in "+gSettingsRegistry->getFilename()+" must be a power of 2 and >= than 256");
 
 
@@ -280,6 +281,7 @@ void readBackendSettings()
 
 	// where ReZound should fallback to put working files if it can't write to where it loaded a file from
 		// ??? This could be a vector where it would try multiple locations finding one that isn't full or close to full relative to the loaded file size
+	GET_SETTING("primaryWorkDir",gPrimaryWorkDir,string)
 	GET_SETTING("fallbackWorkDir",gFallbackWorkDir,string)
 
 	GET_SETTING("clipboardDir",gClipboardDir,string)
@@ -375,6 +377,7 @@ void writeBackendSettings()
 
 	gSettingsRegistry->setValue<string>("LADSPA_PATH",gLADSPAPath);
 
+	gSettingsRegistry->setValue<string>("primaryWorkDir",gPrimaryWorkDir);
 	gSettingsRegistry->setValue<string>("fallbackWorkDir",gFallbackWorkDir);
 
 	gSettingsRegistry->setValue<string>("clipboardDir",gClipboardDir);

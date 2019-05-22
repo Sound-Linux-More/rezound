@@ -28,15 +28,17 @@ SUBDIRS= \
 
 noinst_HEADERS=\
 		AThread.h \
+		CAtomicCounter.h \
 		CMutex.h \
 		CConditionVariable.h \
 		CPath.h \
-		CRWLock.h \
+		CRWMutex.h \
 		TAutoBuffer.h \
-		TRingBuffer.h \
 		TTempVarSetter.h \
 		TMemoryPipe.h \
-		TMemoryPipe.cpp		
+		TMemoryPipe.cpp \
+		clocks.h \
+		ScopedAutoReleasePool.h
 
 EXTRA_DIST= \
 	istring \
@@ -45,4 +47,14 @@ EXTRA_DIST= \
 	TTempVarSetter.h \
 	missing/sstream-missing \
 	missing/stdint.h-missing
+
+noinst_LTLIBRARIES=libmisc.la
+
+libmisc_la_SOURCES= \
+			CMutex.cpp  \
+			CRWMutex.cpp \
+			CConditionVariable.cpp  \
+			AThread.cpp \
+			clocks.cpp
+
 

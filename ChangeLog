@@ -1,0 +1,379 @@
+2013-12-27 05:01  ddurham
+
+	* [r2011] configure.ac, docs/INSTALL, docs/NEWS,
+	  docs/devel/TODO_release, packaging/generic_rpm/rezound.spec,
+	  po/POTFILES.in, po/cs.po, po/de.po, po/es.po, po/fi.po, po/fr.po,
+	  po/rezound.pot, po/ru.po, src/misc/Makefile.am: updates for
+	  0.13.0beta release
+
+2013-12-27 04:28  ddurham
+
+	* [r2010] src/frontend_fox/CCueDialog.cpp,
+	  src/frontend_fox/CMetersWindow.cpp: fixed a crash with Fox
+	  (unknown)
+	  and a crash in th stereo phase meter
+
+2013-12-27 04:10  ddurham
+
+	* [r2009] docs/AUTHORS, src/backend/CSoundPlayerChannel.cpp: [bug]
+	  fix for hang when using shuttle (esp. with a mouse)
+
+2013-12-27 03:58  ddurham
+
+	* [r2008] src/backend/CPortAudioSoundPlayer.cpp: fixed a reported
+	  compile error (could not repro)
+
+2013-12-27 03:54  ddurham
+
+	* [r2007] src/backend/COSSSoundPlayer.cpp,
+	  src/backend/CPulseSoundPlayer.cpp: [bug] WORDS_BIGENDIN -
+	  WORDS_BIGENDIAN
+
+2013-07-22 21:09  ddurham
+
+	* [r2006] config/common.h, src/backend/DSP/LevelDetector.h: fixing
+	  some compile errors
+
+2013-03-30 02:38  ddurham
+
+	* [r2005] config/common.h, configure.ac, docs/INSTALL,
+	  src/PoolFile/TStaticPoolAccesser.cpp,
+	  src/PoolFile/TStaticPoolAccesser.h,
+	  src/backend/CPluginMapping.cpp, src/backend/CSound_defs.h,
+	  src/backend/Generate/CGenerateNoiseAction.cpp,
+	  src/misc/TMemoryPipe.cpp, src/misc/TMemoryPipe.h: [clang]
+	  commiting changes to support compiling against clang (see
+	  docs/INSTALL, section 1)
+
+2013-02-11 06:18  ddurham
+
+	* [r2004] po/POTFILES.in, src/backend/ASoundPlayer.cpp,
+	  src/backend/ASoundPlayer.h, src/backend/CSoundPlayerChannel.cpp,
+	  src/frontend_fox/CMetersWindow.cpp, src/misc/CMutex.cpp,
+	  src/misc/CMutex.h, src/misc/Makefile.am,
+	  src/misc/TMemoryPipe.cpp, src/misc/TMemoryPipe.h,
+	  src/misc/TRingBuffer.h: fixing some multithread locking problems
+	  And using TMemoryPipe in place of TRingBuffer which both did
+	  nearly the same things
+
+2013-02-10 06:34  ddurham
+
+	* [r2003] configure.ac: now specifying to use c++0x for gcc
+
+2013-02-10 06:32  ddurham
+
+	* [r2002] config/common.h, docs/CVS-INSTALL, docs/INSTALL,
+	  docs/SVN-INSTALL, src/PoolFile/TPoolAccesser.cpp,
+	  src/PoolFile/TPoolFile.cpp, src/PoolFile/TPoolFile.h,
+	  src/PoolFile/TStaticPoolAccesser.h, src/backend/AAction.cpp,
+	  src/backend/ASoundPlayer.cpp, src/backend/CALSASoundPlayer.cpp,
+	  src/backend/CGraphParamValueNode.cpp,
+	  src/backend/CJACKSoundPlayer.cpp,
+	  src/backend/COSSSoundPlayer.cpp,
+	  src/backend/CPortAudioSoundPlayer.cpp,
+	  src/backend/CPulseSoundPlayer.cpp, src/backend/CSound.h,
+	  src/backend/CSoundPlayerChannel.cpp,
+	  src/backend/CSoundPlayerChannel.h,
+	  src/backend/CrezSoundTranslator.cpp, src/backend/DSP/Convolver.h,
+	  src/backend/Edits/CCueAction.cpp, src/backend/initialize.cpp,
+	  src/frontend_fox/FXPluginRoutingParamValue.cpp,
+	  src/frontend_fox/Makefile.am, src/misc/AThread.cpp,
+	  src/misc/AThread.h, src/misc/CAtomicCounter.h,
+	  src/misc/CConditionVariable.cpp, src/misc/CConditionVariable.h,
+	  src/misc/CMutex.cpp, src/misc/CMutex.h,
+	  src/misc/CNestedDataFile/CNestedDataFile.h,
+	  src/misc/CNestedDataFile/anytype.h, src/misc/CRWLock.h,
+	  src/misc/CRWMutex.cpp, src/misc/CRWMutex.h, src/misc/Makefile.am,
+	  src/misc/ScopedAutoReleasePool.h, src/misc/TAutoBuffer.h,
+	  src/misc/auto_array.h, src/misc/clocks.cpp, src/misc/clocks.h:
+	  much compiler cleanup and fixed some locking problems that didn't
+	  show up until running on SMP machines.. enhanced the locking
+	  mechanisms and threads, but should probably be using c++11 now
+
+2012-09-25 06:14  ddurham
+
+	* [r2001] src/backend/DSP/TPitchChanger.h: fixing some issues with
+	  PitchChanger. libsoundtouch's isEmpty() method seems to be
+	  completely broken, so I'm, using numSamples() instead.
+
+2012-09-25 05:22  ddurham
+
+	* [r2000] src/backend/CSoundPlayerChannel.h,
+	  src/misc/TMemoryPipe.cpp, src/misc/TMemoryPipe.h: removed some
+	  redundant code from TMemoryPipe
+
+2012-09-25 04:37  ddurham
+
+	* [r1999] bootstrap, configure.ac, docs/INSTALL,
+	  src/backend/CPortAudioSoundRecorder.cpp: minor compile fixes
+
+2012-04-14 05:53  ddurham
+
+	* [r1998] src/PoolFile/TPoolFile.cpp,
+	  src/backend/ASoundFileManager.h,
+	  src/backend/CALSASoundPlayer.cpp,
+	  src/backend/COSSSoundPlayer.cpp, src/backend/CPluginMapping.cpp,
+	  src/backend/Generate/CGenerateNoiseAction.cpp,
+	  src/backend/LADSPA/utils.cpp,
+	  src/backend/Remaster/CAdaptiveNormalizeAction.cpp,
+	  src/backend/settings.cpp, src/frontend_fox/CMainWindow.cpp,
+	  src/frontend_fox/main.cpp: fixing some more compiler warnings and
+	  some compiler errors submitted by Emanuel Rumpf
+
+2012-04-14 05:51  ddurham
+
+	* [r1997] configure.ac, src/frontend_fox/Makefile.am,
+	  src/frontend_fox/convert_images.sh: fixing a pesky build-time
+	  issue when parallel makes are used. I was trying to make
+	  CFOXIcons.cpp/h get regenerated when gif files changed so that
+	  generating them were just a natural part of the build process.
+	  However, I couldn't make it work (some weirdness with libtool,
+	  automatic dependancy checks, automake, etc). It would go ahead
+	  and start compiling source files that depend on CFOXIcon.h
+	  despite making every attempt to say that all object files
+	  depended on it.
+	  
+	  Now CFOXIcons.cpp/h are [re-]generated at configure-time and the
+	  developer will have to re-configure whenever alterting the gif
+	  files.
+
+2010-03-01 03:44  ddurham
+
+	* [r1996] src/misc/TMemoryPipe.cpp: now locking TMemoryPipe's data
+	  in RAM from swapping which I had an annoying #warning for because
+	  JACKs requires that
+
+2010-03-01 03:20  ddurham
+
+	* [r1995] src/backend/CActionSound.cpp,
+	  src/backend/CSoundPlayerChannel.h,
+	  src/frontend_fox/CSoundWindow.cpp: privatized a data-member that
+	  was unnecessarily public
+
+2010-02-28 06:45  ddurham
+
+	* [r1994] src/backend/CSound.cpp, src/backend/settings.cpp,
+	  src/backend/settings.h, src/misc/CPath.h: Added a new
+	  registry.dat setting, 'primaryWorkDir' which, if not "", is where
+	  the working files will be created rather than in the same
+	  directory as the file being opened.
+	  This has at least two purposes:
+	  1. when opening files on flash memory it would be almost deadly
+	  and slow for the flash memory to use it as working space with all
+	  the re-writes
+	  2. when opening files on vfat file systems, the ftruncate()
+	  function (used by rezound to allocate file space) is very slow
+	  causing rezound to stall until it returns. See bug:
+	  https://sourceforge.net/tracker/?func=detail&aid=882098&group_id=5056&atid=105056
+
+2010-02-27 22:32  ddurham
+
+	* [r1993] configure.ac, src/backend/AStatusComm.cpp,
+	  src/backend/AStatusComm.h: not using ftime() now unless we have
+	  to
+
+2010-02-27 22:00  ddurham
+
+	* [r1992] config/platform/bsd.h: removed unneeded bsd alias
+	  functions
+
+2010-02-27 19:49  ddurham
+
+	* [r1991] src/frontend_fox/CMainWindow.cpp,
+	  src/frontend_fox/CMp3Dialog.cpp, src/frontend_fox/COggDialog.cpp,
+	  src/frontend_fox/CPasteChannelsDialog.cpp: fixed some 64bit
+	  compile errors with the FOX UI
+
+2010-02-27 19:28  ddurham
+
+	* [r1990] configure.ac, src/backend/ASoundPlayer.cpp,
+	  src/backend/CALSASoundPlayer.cpp,
+	  src/backend/CJACKSoundPlayer.cpp,
+	  src/backend/COSSSoundPlayer.cpp,
+	  src/backend/CPortAudioSoundPlayer.cpp,
+	  src/backend/CPulseSoundPlayer.cpp,
+	  src/backend/CPulseSoundPlayer.h, src/backend/Makefile.am: Added a
+	  pulseaudio implementation for audio output. This should reduce
+	  the issues where pulse is running but has the device in an
+	  exclusive state so that ReZound cannot open the device. This is
+	  the "if you can't beat'em, join'em" solution.
+	  
+	  The latency is not great with pulse given its goals of networking
+	  audio, but it's okay. I have not tested in a network situation,
+	  it may fail miserably on audio dropouts.
+
+2010-02-27 19:07  ddurham
+
+	* [r1989] src/backend/AAction.cpp,
+	  src/backend/ASoundFileManager.cpp,
+	  src/backend/ASoundRecorder.cpp, src/backend/ASoundTranslator.cpp,
+	  src/backend/CRecordSoundClipboard.cpp, src/backend/CSound.h,
+	  src/backend/CSoundPlayerChannel.cpp,
+	  src/backend/Edits/CCopyCutToNewEdit.cpp,
+	  src/backend/Edits/CPasteAsNewEdit.cpp,
+	  src/frontend_fox/FXWaveCanvas.cpp: now using a CSoundLocker
+	  object to ensure that we don't forget to unlock. This would have
+	  an effect on dead-locks (hopefully for the better and not the
+	  worse)
+
+2010-02-24 04:36  ddurham
+
+	* [r1988] docs/INSTALL: [docs] updated for fftw3
+
+2010-02-24 04:31  ddurham
+
+	* [r1987] docs/AUTHORS: oops
+
+2010-02-24 04:30  ddurham
+
+	* [r1986] configure.ac, src/backend/ASoundPlayer.cpp,
+	  src/backend/ASoundPlayer.h, src/backend/DSP/Convolver.h,
+	  src/backend/Effects/CTestEffect.cpp,
+	  src/backend/Filters/CArbitraryFIRFilter.cpp,
+	  src/backend/Filters/CConvolutionFilter.cpp,
+	  src/backend/Filters/CMorphingArbitraryFIRFilter.cpp,
+	  src/backend/Makefile.am, src/frontend_fox/CMetersWindow.cpp:
+	  [enhancement] fftw2 is not more -> fftw3 (Thanks piem!)
+
+2010-02-24 03:04  ddurham
+
+	* [r1985] po/LINGUAS, po/POTFILES.in, po/cs.po: [language] Added a
+	  Czech translation (Thanks Pavel Fric)
+
+2010-02-23 03:52  ddurham
+
+	* [r1984] docs/AUTHORS, src/backend/CrawSoundTranslator.cpp,
+	  src/frontend_fox/CRawDialog.cpp, src/frontend_fox/CRawDialog.h:
+	  [bug] [save raw] fixing a UI issue with saving raw sound (Thanks
+	  cuse!)
+
+2010-02-23 03:23  ddurham
+
+	* [r1983] configure.ac, docs/AUTHORS,
+	  src/backend/CPortAudioSoundPlayer.cpp,
+	  src/backend/CPortAudioSoundPlayer.h,
+	  src/backend/CPortAudioSoundRecorder.cpp,
+	  src/backend/CPortAudioSoundRecorder.h: [enhancement] [patch
+	  1749539] support for port audio v19 added (Thanks aballier!)
+
+2010-02-22 07:56  ddurham
+
+	* [r1982] bootstrap, config/m4/audiofile.m4,
+	  config/m4/ax_compare_verion.m4, config/m4/ax_path_generic.m4,
+	  config/m4/cxx-lib.m4, config/m4/cxx.m4, config/m4/libFLAC++.m4,
+	  config/m4/libFLAC.m4, config/m4/ogg.m4, config/m4/soundtouch.m4,
+	  config/m4/vorbis.m4, configure.ac, src/backend/Makefile.am,
+	  src/backend/Remaster/Makefile.am, src/frontend_fox/Makefile.am,
+	  src/frontend_fox/fox_compat.h: bringing some of the autotools
+	  usage up to date with more recent versions
+
+2009-08-29 02:33  ddurham
+
+	* [r1981] config/common.h, docs/AUTHORS, src/backend/ALFO.h,
+	  src/backend/CGraphParamValueNode.h, src/backend/CPluginMapping.h,
+	  src/backend/CSound_defs.h,
+	  src/backend/Generate/CGenerateNoiseAction.cpp,
+	  src/misc/CNestedDataFile/anytype.h, src/misc/endian_util.h:
+	  [compile errors] checking in modified patch to fix compile errors
+	  with gcc-4.3
+
+2009-07-18 05:32  ddurham
+
+	* [r1980] config/am_include.mk, src/frontend_fox/CStatusComm.cpp,
+	  src/frontend_fox/CStatusComm.h,
+	  src/misc/CNestedDataFile/anytype.h: attempting to fix compile
+	  errors with newer compilers
+
+2008-06-08 19:46  ddurham
+
+	* [r1975] po/fi.po: temporarily changed the Finnish translation to
+	  8859-1
+
+2008-06-07 14:17  ddurham
+
+	* [r1974] po/fi.po: received new Finnish translation from Markus
+	  Kantola (Thanks!)
+
+2008-01-27 05:42  ddurham
+
+	* [r1973] src/images/WORK/graph_param_buttons.xcf: fixed another
+	  cvs2svn binary file problem
+
+2008-01-27 05:41  ddurham
+
+	* [r1972] src/images/ABS Sine Wave [ 0,1].gif, src/images/Square
+	  Wave [ 0,1].gif, src/images/Square Wave [-1,1].gif,
+	  src/images/graph_vert_flip.gif,
+	  src/images/play_selection_looped_skip_most.gif,
+	  src/images/small_play_selection_looped_gap_before_repeat.gif:
+	  fixed gif files corrupted by cvs2svn
+
+2008-01-27 05:39  ddurham
+
+	* [r1971] src/images/ABS Sine Wave [ 0,1].gif, src/images/Square
+	  Wave [ 0,1].gif, src/images/Square Wave [-1,1].gif,
+	  src/images/graph_vert_flip.gif,
+	  src/images/play_selection_looped_skip_most.gif,
+	  src/images/small_play_selection_looped_gap_before_repeat.gif:
+	  fixed cvs2svn mimetype oopsee
+
+2008-01-27 05:15  ddurham
+
+	* [r1970] src/backend/CFLACSoundTranslator.cpp: checking in a
+	  compile-error fix for newer FLAC++ libs.. This may break older
+	  versions, not sure
+
+2008-01-27 05:09  ddurham
+
+	* [r1969] src/backend/AStatusComm.cpp, src/backend/AStatusComm.h:
+	  minor
+
+2008-01-27 05:08  ddurham
+
+	* [r1968] src/misc/istring: now actually using a custom allocator
+	  in istring if one was given
+
+2008-01-27 05:07  ddurham
+
+	* [r1967] src/misc/CNestedDataFile/anytype.h: oops
+
+2008-01-27 05:05  ddurham
+
+	* [r1966] src/backend/AActionParamMapper.cpp,
+	  src/backend/AActionParamMapper.h,
+	  src/backend/ActionParamMappers.h, src/backend/Makefile.am,
+	  src/frontend_fox/AActionParamMapper.cpp,
+	  src/frontend_fox/AActionParamMapper.h,
+	  src/frontend_fox/ActionParamMappers.h,
+	  src/frontend_fox/CActionParamDialog.h,
+	  src/frontend_fox/CLADSPAActionDialog.cpp,
+	  src/frontend_fox/CPasteChannelsDialog.cpp,
+	  src/frontend_fox/EditActionDialogs.cpp,
+	  src/frontend_fox/EffectActionDialogs.cpp,
+	  src/frontend_fox/FXConstantParamValue.h,
+	  src/frontend_fox/FXGraphParamValue.h,
+	  src/frontend_fox/FXLFOParamValue.cpp,
+	  src/frontend_fox/FilterActionDialogs.cpp,
+	  src/frontend_fox/GenerateActionDialogs.cpp,
+	  src/frontend_fox/LoopingActionDialogs.cpp,
+	  src/frontend_fox/Makefile.am,
+	  src/frontend_fox/RemasterActionDialogs.cpp: moved
+	  AActionParamMapper.* and ActionParamMappers.h from frontend_fox
+	  to backend so that it can be shared with another frontend
+	  implementation
+
+2008-01-27 04:51  ddurham
+
+	* [r1965] src/backend/CGraphParamValueNode.cpp,
+	  src/backend/CGraphParamValueNode.h: added debug print function
+
+2008-01-27 04:50  ddurham
+
+	* [r1964] src/backend/File/CBurnToCDAction.cpp: fixed type-o
+
+2007-06-26 05:19  ddurham
+
+	* [r1962] src/misc/CNestedDataFile/anytype.h: Fixed a bug with
+	  infinity values being deserialized improperly which seriously
+	  affects the Distortion effect
+

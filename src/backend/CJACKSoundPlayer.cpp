@@ -136,6 +136,7 @@ void CJACKSoundPlayer::initialize()
 
 			ASoundPlayer::initialize();
 			initialized=true;
+			fprintf(stderr, "JACK player initialized\n");
 		}
 		catch(...)
 		{
@@ -165,6 +166,7 @@ void CJACKSoundPlayer::deinitialize()
 	}
 
 	initialized=false;
+	fprintf(stderr, "JACK player deinitialized\n");
 }
 
 void CJACKSoundPlayer::aboutToRecord()
@@ -185,6 +187,10 @@ int CJACKSoundPlayer::processAudio(jack_nframes_t nframes,void *arg)
  */
 
 	CJACKSoundPlayer *that=(CJACKSoundPlayer *)arg;
+	if(!that->initialized) {
+		return 0;
+	}
+
 	try
 	{
 		sample_t *tempBuffer=that->tempBuffer;

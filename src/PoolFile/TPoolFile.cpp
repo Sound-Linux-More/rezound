@@ -115,7 +115,8 @@
 // lock on the pool file ( exclusiveLock() ).  When a routine is not going to change
 // the size of a pool, it can get a shared lock ( sharedLock() ) which allows multiple locks
 // to be obtained while only one exclusive lock can be obtained at a time, only when no shared
-// locks are existing.
+// locks are existing.  There are exceptions of course.  Anything that calls backupSAT() should
+// obtain an exclusive lock.
 
 // -- I still have yet to resolve all the places where we find an inconsistance and printf-then-exit
 // Some of these could be converted to exceptions where it's on startup (like constructing the SAT)
@@ -751,7 +752,7 @@ template<class l_addr_t,class p_addr_t>
 			return i->first;
 	}
 
-	printf("uh oh.. pool name not found for pool id: %u\n",poolId);
+	printf("uh oh.. pool name not found for pool id: %u\n",(unsigned)poolId);
 	exit(0);
 	return "";
 }
@@ -901,7 +902,7 @@ template<class l_addr_t,class p_addr_t>
 			if(logicalBlock.logicalStart!=expectedStart)
 			{
 				printSAT();
-				printf("pool: %u -- logical start wasn't what was expected in logical block: %lld\n",poolId,(long long)expectedStart);
+				printf("pool: %u -- logical start wasn't what was expected in logical block: %lld\n",(unsigned)poolId,(long long)expectedStart);
 				logicalBlock.print();
 				exit(1);
 			}
@@ -909,7 +910,7 @@ template<class l_addr_t,class p_addr_t>
 			if(!pasm.isAlloced(logicalBlock.physicalStart))
 			{
 				printSAT();
-				printf("pool: %u -- physicalStart isn't allocated\n",poolId);
+				printf("pool: %u -- physicalStart isn't allocated\n",(unsigned)poolId);
 				logicalBlock.print();
 				exit(1);
 			}
@@ -917,7 +918,7 @@ template<class l_addr_t,class p_addr_t>
 			if(pasm.getAllocedSize(logicalBlock.physicalStart)!=logicalBlock.size)
 			{
 				printSAT();
-				printf("pool: %u physical block's size isn't the same as the logical block's:\n",poolId);
+				printf("pool: %u physical block's size isn't the same as the logical block's:\n",(unsigned)poolId);
 				logicalBlock.print();
 				printf("physical block's size: %lld\n",(long long)pasm.getAllocedSize(logicalBlock.physicalStart));
 				exit(1);
@@ -930,7 +931,7 @@ template<class l_addr_t,class p_addr_t>
 				if((logicalBlock.physicalStart+logicalBlock.size)==nextLogicalBlock.physicalStart && 
 				   (logicalBlock.size+nextLogicalBlock.size)<=maxBlockSize)
 				{
-					printf("NOTE: two blocks could be joined: %u and %u\n",t,t+1);
+					printf("NOTE: two blocks could be joined: %u and %u\n",(unsigned)t,(unsigned)t+1);
 					logicalBlock.print();
 					nextLogicalBlock.print();
 				}
@@ -946,9 +947,9 @@ template<class l_addr_t,class p_addr_t>
 					if(CPhysicalAddressSpaceManager::overlap(logicalBlock.physicalStart,logicalBlock.size,SAT[x][y].physicalStart,SAT[x][y].size))
 					{
 						printSAT();
-						printf("pool: %u -- two blocks are occupying the same physical space\n",poolId);
+						printf("pool: %u -- two blocks are occupying the same physical space\n",(unsigned)poolId);
 						logicalBlock.print();
-						printf("and pool: %u\n",x);
+						printf("and pool: %u\n",(unsigned)x);
 						SAT[x][y].print();
 						exit(1);
 					}
@@ -962,7 +963,7 @@ template<class l_addr_t,class p_addr_t>
 			if((b.logicalStart+b.size)!=getPoolSize(poolId))
 			{
 				printSAT();
-				printf("pool: %u -- last address doesn't equal up to poolSize\n",poolId);
+				printf("pool: %u -- last address doesn't equal up to poolSize\n",(unsigned)poolId);
 				exit(1);
 			}
 
@@ -1436,10 +1437,10 @@ template<class l_addr_t,class p_addr_t>
 		if(!pools[poolId].isValid)
 			continue;
 
-		printf("\t%-4u Pool: '%s' size: %lld alignment: %lld\n",poolId,getPoolNameById(poolId).c_str(),(long long)getPoolSize(poolId),(long long)getPoolAlignment(poolId));
+		printf("\t%-4u Pool: '%s' size: %lld alignment: %lld\n",(unsigned)poolId,getPoolNameById(poolId).c_str(),(long long)getPoolSize(poolId),(long long)getPoolAlignment(poolId));
 		for(size_t t=0;t<SAT[poolId].size();t++)
 		{
-			printf("\t\t%-4u ",t);
+			printf("\t\t%-4u ",(unsigned)t);
 			SAT[poolId][t].print();
 		}
 
@@ -2407,6 +2408,8 @@ template<class l_addr_t,class p_addr_t>
 template<class l_addr_t,class p_addr_t>
 	void TPoolFile<l_addr_t,p_addr_t>::invalidateAllCachedBlocks(bool allPools,poolId_t poolId)
 {
+	CMutexLocker lock(accesserInfoMutex);
+
 	for(typename set<RCachedBlock *>::iterator i=activeCachedBlocks.begin();i!=activeCachedBlocks.end();)
 	{
 		typename set<RCachedBlock *>::iterator ii=i;
@@ -2480,10 +2483,10 @@ template<class l_addr_t,class p_addr_t>
 }
 
 template<class l_addr_t,class p_addr_t>
-	void TPoolFile<l_addr_t,p_addr_t>::RPoolInfo::writeToFile(CMultiFile *f,CMultiFile::RHandle &multiFileHandle) /*const  makes typeof create const types */
+	void TPoolFile<l_addr_t,p_addr_t>::RPoolInfo::writeToFile(CMultiFile *f,CMultiFile::RHandle &multiFileHandle) const
 {
 	p_addr_t tSize=size; // always write size as a p_addr_t because l_addr_t can change in ReZound
-	typeof(alignment) tAlignment=alignment;
+	alignment_t tAlignment=alignment;
 
 	hetle(&tSize);
 	f->write(&tSize,sizeof(tSize),multiFileHandle);
@@ -2602,19 +2605,19 @@ template<class l_addr_t,class p_addr_t>
 }
 
 template<class l_addr_t,class p_addr_t>
-	void TPoolFile<l_addr_t,p_addr_t>::RLogicalBlock::writeToMem(uint8_t *mem,size_t &offset) /*const  makes typeof cause const types */
+	void TPoolFile<l_addr_t,p_addr_t>::RLogicalBlock::writeToMem(uint8_t *mem,size_t &offset) const
 {
 	p_addr_t _logicalStart=logicalStart;
 	memcpy(mem+offset,&_logicalStart,sizeof(_logicalStart));
-	hetle((typeof(_logicalStart) *)(mem+offset));
+	hetle((p_addr_t *)(mem+offset));
 	offset+=sizeof(_logicalStart);
 
 	memcpy(mem+offset,&size,sizeof(size));
-	hetle((typeof(size) *)(mem+offset));
+	hetle((size_t *)(mem+offset));
 	offset+=sizeof(size);
 	
 	memcpy(mem+offset,&physicalStart,sizeof(physicalStart));
-	hetle((typeof(physicalStart) *)(mem+offset));
+	hetle((p_addr_t *)(mem+offset));
 	offset+=sizeof(physicalStart);
 }
 

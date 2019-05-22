@@ -27,7 +27,6 @@
 class CSoundPlayerChannel;
 
 #include <CMutex.h>
-#include <CRWLock.h>
 #include <CConditionVariable.h>
 #include <AThread.h>
 #include <TMemoryPipe.h>
@@ -43,7 +42,6 @@ public:
 	virtual ~CSoundPlayerChannel();
 
 	CSound *getSound() const;
-	CSound * const sound;
 
 	enum LoopTypes
 	{
@@ -66,7 +64,7 @@ public:
 	void setSeekSpeed(float _seekSpeed);
 	float getSeekSpeed() const;
 
-	// really play position
+	// really is the "play position"
 	sample_pos_t getPosition() const { return playing ? playPosition : 0; }
 	void setPosition(sample_pos_t newPosition);
 
@@ -86,17 +84,19 @@ public:
 
 	const vector<int16_t> getOutputRoutes() const;
 
-	// pass and empty vector if this is not to restore, but possibly recreate the output routes
+	// pass an empty vector if this is not to restore, but possibly recreate the output routes
 	void updateAfterEdit(const vector<int16_t> &restoreOutputRoutes);
 
-private:
-
+private: /* for ASoundPlayer only */
 	friend class ASoundPlayer;
+	CSoundPlayerChannel(ASoundPlayer *_player,CSound *_sound);
 
 	// - called by ASoundPlayer
 	// - nChannels is the number of channels buffer represents (i.e 1 mono, 2 stereo, etc)
 	// - bufferSize is in sample frames
 	void mixOntoBuffer(const unsigned nChannels,sample_t * const buffer,const size_t bufferSize);
+
+	CSound * const sound;
 
 	volatile mutable bool somethingWantsToClearThePrebufferQueue;
 				// ??? perhaps everywhere that I set the prebufferPosition I also write/clear the pipe
@@ -146,7 +146,6 @@ private:
 	void createGapSignal();
 
 	ASoundPlayer *player;
-	CSoundPlayerChannel(ASoundPlayer *_player,CSound *_sound);
 
 	// Playing Status and Play Positions
 	volatile bool prebuffering,playing,paused,playSelectionOnly;
@@ -154,7 +153,8 @@ private:
 	bool lastBufferWasGapSignal; // true if the last buffer that was processed in mixOntoBuffer had its isGap flag turned on (if this is the case, then I have to handle setting the play position in the setSeekSpeed() method a little different)
 	sample_pos_t playPosition;
 	float seekSpeed;
-		float playSpeedForMixer; int playSpeedForPrebuffering;
+	float playSpeedForMixer;
+	int playSpeedForPrebuffering;
 	volatile sample_pos_t startPosition,stopPosition;
 
 	// Mute
@@ -166,7 +166,6 @@ private:
 	CTrigger playTrigger,pauseTrigger;
 
 	void deinit();
-	void init();
 
 	// by examining the data currently in queue, this returns the most likely position of the oldest frame in the prebuffered pipe.  It is best to call this method with the prebufferReadingMutex locked
 	sample_pos_t estimateOldestPrebufferedPosition(float origSeekSpeed,sample_pos_t origStartPosition,sample_pos_t origStopPosition);

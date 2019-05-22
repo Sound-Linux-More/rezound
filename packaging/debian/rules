@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.1 2003/02/12 18:22:38 lergnom Exp $
+# $Id: rules 1219 2003-02-12 18:22:39Z lergnom $
 #
 # Sample debian/rules that uses debhelper.
 # GNU copyright 1997 to 1999 by Joey Hess.

@@ -22,8 +22,10 @@
 
 #include <stdexcept>
 #include <string>
+#include <stdio.h>
 
 #include <istring>
+#include <cmath>
 
 
 CGraphParamValueNode::CGraphParamValueNode()
@@ -204,6 +206,12 @@ const CGraphParamValueNodeList smoothGraphNodes(const CGraphParamValueNodeList &
 	return tmp;
 }
 
+void printCGraphParamValueNodeList(const CGraphParamValueNodeList &nodes)
+{
+	for(unsigned t=0;t<nodes.size();t++)
+		printf("node %03u: (%6.3f, %6.3f)\n",t,nodes[t].x,nodes[t].y);
+}
+
 // ------------------------------------
 
 CGraphParamValueIterator::CGraphParamValueIterator(const CGraphParamValueNodeList &_nodes,const sample_pos_t _iterationLength) :
@@ -225,7 +233,7 @@ const double CGraphParamValueIterator::next()
 	{
 			// ??? this multiplication may cause problems when the values are very large
 		const double d=segmentStartValue+(((segmentStopValueStartValueDiff)*(t++))/(segmentLengthSub1));
-		return isnan(d) ? segmentStartValue : d;
+		return std::isnan(d) ? segmentStartValue : d;
 	}
 	else
 	{

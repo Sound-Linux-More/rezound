@@ -29,11 +29,14 @@ class ASoundPlayer;
 
 #include <vector>
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 #include <map>
-#include <rfftw.h>
+#include <fftw3.h>
 #include <CMutex.h>
 #include <TAutoBuffer.h>
+
+typedef double fftw_real;
+
 #endif
 
 
@@ -63,7 +66,7 @@ class ASoundPlayer;
 class CSoundPlayerChannel;
 
 #include "DSP/LevelDetector.h"
-#include "../misc/TRingBuffer.h"
+#include "../misc/TMemoryPipe.h"
 	
 #define MAX_OUTPUT_DEVICES 16
 class ASoundPlayer
@@ -152,6 +155,7 @@ private:
 
 	friend class CSoundPlayerChannel;
 
+	CMutex m; // protects soundPlayerChannels
 	set<CSoundPlayerChannel *> soundPlayerChannels; // ??? might as well be a vector
 	void addSoundPlayerChannel(CSoundPlayerChannel *soundPlayerChannel);
 	void removeSoundPlayerChannel(CSoundPlayerChannel *soundPlayerChannel);
@@ -165,14 +169,15 @@ private:
 	mutable sample_t peakLevels[MAX_CHANNELS];
 	mutable bool resetPeakLevels[MAX_CHANNELS]; // a bool that is flagged if the next buffer processed should start with a new max or max with the current one (since it hasn't been obtained from the get method yet)
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	#define ASP_ANALYSIS_BUFFER_SIZE 8192
 	mutable CMutex frequencyAnalysisBufferMutex;
 	mutable bool frequencyAnalysisBufferPrepared;
 	mutable fftw_real frequencyAnalysisBuffer[ASP_ANALYSIS_BUFFER_SIZE];
 	size_t frequencyAnalysisBufferLength; // the amount of data that mixSoundPlayerChannels copied into the buffer
 	mutable map<size_t,TAutoBuffer<fftw_real> *> hammingWindows; // create and save Hamming windows for any length needed
-	rfftw_plan analyzerPlan;
+	fftw_plan analyzerPlan;
+	fftw_real data[ASP_ANALYSIS_BUFFER_SIZE];
 	mutable vector<size_t> bandLowerIndexes; // mutable because calculateAnalyzerBandIndexRanges is called from getFrequencyAnalysis
 	mutable vector<size_t> bandUpperIndexes;
 
@@ -180,7 +185,7 @@ private:
 	static TAutoBuffer<fftw_real> *createHammingWindow(size_t windowSize);
 #endif
 
-	mutable TRingBuffer<sample_t> samplingForStereoPhaseMeters;
+	mutable TMemoryPipe<sample_t> samplingForStereoPhaseMeters;
 };
 
 

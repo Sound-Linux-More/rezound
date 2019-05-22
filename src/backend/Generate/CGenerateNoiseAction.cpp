@@ -19,9 +19,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
 
+#include <stdlib.h>
+
 #include "CGenerateNoiseAction.h"
 
 #include "../CActionParameters.h"
+#include <cstdlib>
 
 CGenerateNoiseAction::CGenerateNoiseAction(const AActionFactory *factory,const CActionSound *actionSound,const double _noiseLength,const double _volume,const NoiseTypes _noiseType,const StereoImage _stereoImage,const double _maxParticleVelocity):
 	AAction(factory,actionSound),
@@ -200,7 +203,7 @@ bool CGenerateNoiseAction::doActionSizeSafe(CActionSound *actionSound,bool prepa
 				switch(stereoImage) 
 				{
 					case siMono: 
-						randval=randval; 
+						//randval=randval; 
 						break;
 
 					case siInverse: 

@@ -23,11 +23,13 @@
 #endif
 
 #include <string.h>
+#include <sys/mman.h>
 
 #include <stdexcept>
 #include <algorithm>
 
 #include <istring>
+
 
 template <class type> TMemoryPipe<type>::TMemoryPipe(int pipeSize) :
 	readOpened(false),
@@ -43,25 +45,33 @@ template <class type> TMemoryPipe<type>::~TMemoryPipe()
 {
 	closeRead();
 	closeWrite();
-	delete [] buffer;
+
+	if(buffer) {
+		munlock(buffer, bufferSize);
+		delete [] buffer;
+	}
 }
 
 template <class type> void TMemoryPipe<type>::setSize(int pipeSize)
 {
-	if(isReadOpened())
-		throw runtime_error(string(__func__)+" -- read end is opened");
-	if(isWriteOpened())
-		throw runtime_error(string(__func__)+" -- write end is opened");
+	CMutexLocker ml(waitStateMutex);
 
 	if(pipeSize<=0)
 		throw runtime_error(string(__func__)+" -- invalid pipeSize: "+istring(pipeSize));
 
-#warning need to do something to prevent this data from getting swapped to disk (for JACK)
+	if(buffer) {
+		// release lock on not-swapping memory
+		munlock(buffer, bufferSize);
+	}
+
 	type *temp=new type[pipeSize+1];
 	delete [] buffer;
 	buffer=temp;
 
 	bufferSize=pipeSize+1;
+
+	// lock memory for being swapped (for JACK's sake)
+	mlock(buffer, bufferSize);
 }
 
 template <class type> void TMemoryPipe<type>::open()
@@ -74,266 +84,35 @@ template <class type> void TMemoryPipe<type>::open()
 }
 
 
-/*
- * If this method is updated, update peek() and skip() as well
- */
 template <class type> int TMemoryPipe<type>::read(type *dest,int size,bool block)
 {
-	if(size<=0)
-		return 0;
-
-	CMutexLocker l(readerMutex,block); // protect from more than one reader
-	if(! l.didLock())
-		return 0;
-
-	CMutexLocker wsl(waitStateMutex);
-
-	int _writePos;
-
-	int sizeNeeded=size;
-	int totalRead=0;
-
-	restart:
-	
-	if(!readOpened) // closed while we were in this method
-		throw EPipeClosed(string(__func__)+" -- read end is not open");
-
-	if(!writeOpened)
-	{
-		if(getSize()<=0)
-		{
-			if(totalRead>0)
-				goto done;
-			else
-			{
-				totalRead=EOP;
-				goto done;
-			}
-		}
-	}
-
-	_writePos=writePos;
-
-	if(readPos<_writePos)
-	{
-		const int sizeAvailable=_writePos-readPos;
-
-		if(sizeAvailable==0)
-		{
-			if(!block)	
-				goto done;
-
-			fullCond.signal();
-			emptyCond.wait(waitStateMutex);
-			goto restart;
-		}
-
-		const int readAmount=min(sizeNeeded,sizeAvailable);
-
-		memcpy(dest+totalRead,buffer+readPos,readAmount*sizeof(type));
-
-		totalRead+=readAmount;
-		readPos+=readAmount;
-		sizeNeeded-=readAmount;
-	}
-	else if(readPos>_writePos)
-	{
-		const int sizeAvailable1=bufferSize-readPos; // size available till end of buffer
-		const int sizeAvailable2=_writePos; // size available from start of buffer
-
-		if((sizeAvailable1+sizeAvailable2)==0)
-		{
-			if(!block)	
-				goto done;
-
-			fullCond.signal();
-			emptyCond.wait(waitStateMutex);
-			goto restart;
-		}
-
-		// copy from last part of buffer
-		const int readAmount=min(sizeNeeded,sizeAvailable1);
-
-		memcpy(dest+totalRead,buffer+readPos,readAmount*sizeof(type));
-
-		totalRead+=readAmount;
-		readPos=(readPos+readAmount)%bufferSize;
-		sizeNeeded-=readAmount;
-
-		if(sizeNeeded>0)
-		{
-			// copy from first part of buffer
-			const int readAmount=min(sizeNeeded,sizeAvailable2);
-
-			memcpy(dest+totalRead,buffer,readAmount*sizeof(type));
-
-			totalRead+=readAmount;
-			readPos+=readAmount;
-			sizeNeeded-=readAmount;
-		}
-	}
-	else // buffer is empty
-	{
-		if(!block)
-			goto done;
-
-		fullCond.signal();
-		emptyCond.wait(waitStateMutex);
-		goto restart;
-	}
-
-	if(sizeNeeded>0 && block)
-	{
-		fullCond.signal();
-		emptyCond.wait(waitStateMutex);
-		goto restart;
-	}
-
-	done:
-
-	fullCond.signal();
-	return totalRead;
+	return privateRead(dest, size, block, readPos);
 }
 
-/*
- * This method is simply a duplicate of read() except at the beginning where it makes 
- * a copy of readPos and makes sure that the requested size isn't larger than the pipe 
- * was allocated for.   So if read() changes, update this method too.
- */
 template <class type> int TMemoryPipe<type>::peek(type *dest,int size,bool block)
 {
 	if(readOpened && size>bufferSize-1)
 			// ??? not really an error, just return what we can I suppose
 		throw runtime_error(string(__func__)+" -- cannot peek for more data than the pipe can hold: "+istring(size)+">"+istring(bufferSize-1));
 
-	int readPos=this->readPos;
-
-	if(size<=0)
-		return 0;
-
-	CMutexLocker l(readerMutex,block); // protect from more than one reader
-	if(! l.didLock())
-		return 0;
-
-	CMutexLocker wsl(waitStateMutex);
-
-	int _writePos;
-
-	int sizeNeeded=size;
-	int totalRead=0;
-
-	restart:
-	
-	if(!readOpened) // closed while we were in this method
-		throw EPipeClosed(string(__func__)+" -- read end is not open");
-
-	if(!writeOpened)
-	{
-		if(getSize()<=0)
-		{
-			if(totalRead>0)
-				goto done;
-			else
-			{
-				totalRead=EOP;
-				goto done;
-			}
-		}
-	}
-
-	_writePos=writePos;
-
-	if(readPos<_writePos)
-	{
-		const int sizeAvailable=_writePos-readPos;
-
-		if(sizeAvailable==0)
-		{
-			if(!block)	
-				goto done;
-
-			fullCond.signal();
-			emptyCond.wait(waitStateMutex);
-			goto restart;
-		}
-
-		const int readAmount=min(sizeNeeded,sizeAvailable);
-
-		memcpy(dest+totalRead,buffer+readPos,readAmount*sizeof(type));
-
-		totalRead+=readAmount;
-		readPos+=readAmount;
-		sizeNeeded-=readAmount;
-	}
-	else if(readPos>_writePos)
-	{
-		const int sizeAvailable1=bufferSize-readPos; // size available till end of buffer
-		const int sizeAvailable2=_writePos; // size available from start of buffer
-
-		if((sizeAvailable1+sizeAvailable2)==0)
-		{
-			if(!block)	
-				goto done;
-
-			fullCond.signal();
-			emptyCond.wait(waitStateMutex);
-			goto restart;
-		}
-
-		// copy from last part of buffer
-		const int readAmount=min(sizeNeeded,sizeAvailable1);
-
-		memcpy(dest+totalRead,buffer+readPos,readAmount*sizeof(type));
-
-		totalRead+=readAmount;
-		readPos=(readPos+readAmount)%bufferSize;
-		sizeNeeded-=readAmount;
-
-		if(sizeNeeded>0)
-		{
-			// copy from first part of buffer
-			const int readAmount=min(sizeNeeded,sizeAvailable2);
-
-			memcpy(dest+totalRead,buffer,readAmount*sizeof(type));
-
-			totalRead+=readAmount;
-			readPos+=readAmount;
-			sizeNeeded-=readAmount;
-		}
-	}
-	else // buffer is empty
-	{
-		if(!block)
-			goto done;
-
-		fullCond.signal();
-		emptyCond.wait(waitStateMutex);
-		goto restart;
-	}
-
-	if(sizeNeeded>0 && block)
-	{
-		fullCond.signal();
-		emptyCond.wait(waitStateMutex);
-		goto restart;
-	}
-
-	done:
-
-	fullCond.signal();
-	return totalRead;
+	int tmpReadPos=readPos;
+	return privateRead(dest, size, block, tmpReadPos);
 }
 
-/*
- * This is simply a copy of the read() method with the memcpy()'s take out
- * So if read() changes update this method too.
- */
 template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 {
+	return privateRead(NULL, size, block, readPos);
+}
+
+// Private implemention of a read operation. 
+// If dest is NULL, then no data is really copied (thus, making it a peek)
+// readPos is passed to use the data-member or not (thus, making it a skip)
+template <class type> int TMemoryPipe<type>::privateRead(type *dest,int size,bool block,int &readPos)
+{
 	if(size<=0)
 		return 0;
 
-	CMutexLocker l(readerMutex,block); // protect from more than one reader
+	CMutexLocker l(readerMutex, (block ? -1 : 0)); // prevent multiple simultaneous read()s
 	if(! l.didLock())
 		return 0;
 
@@ -371,8 +150,9 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 
 		if(sizeAvailable==0)
 		{
-			if(!block)	
+			if(!block) {
 				goto done;
+			}
 
 			fullCond.signal();
 			emptyCond.wait(waitStateMutex);
@@ -380,6 +160,10 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 		}
 
 		const int readAmount=min(sizeNeeded,sizeAvailable);
+
+		if(dest) {
+			memcpy(dest+totalRead,buffer+readPos,readAmount*sizeof(type));
+		}
 
 		totalRead+=readAmount;
 		readPos+=readAmount;
@@ -392,8 +176,9 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 
 		if((sizeAvailable1+sizeAvailable2)==0)
 		{
-			if(!block)	
+			if(!block) {
 				goto done;
+			}
 
 			fullCond.signal();
 			emptyCond.wait(waitStateMutex);
@@ -402,6 +187,10 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 
 		// copy from last part of buffer
 		const int readAmount=min(sizeNeeded,sizeAvailable1);
+
+		if(dest) {
+			memcpy(dest+totalRead,buffer+readPos,readAmount*sizeof(type));
+		}
 
 		totalRead+=readAmount;
 		readPos=(readPos+readAmount)%bufferSize;
@@ -412,6 +201,10 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 			// copy from first part of buffer
 			const int readAmount=min(sizeNeeded,sizeAvailable2);
 
+			if(dest) {
+				memcpy(dest+totalRead,buffer,readAmount*sizeof(type));
+			}
+
 			totalRead+=readAmount;
 			readPos+=readAmount;
 			sizeNeeded-=readAmount;
@@ -419,8 +212,9 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 	}
 	else // buffer is empty
 	{
-		if(!block)
+		if(!block) {
 			goto done;
+		}
 
 		fullCond.signal();
 		emptyCond.wait(waitStateMutex);
@@ -440,13 +234,12 @@ template <class type> int TMemoryPipe<type>::skip(int size,bool block)
 	return totalRead;
 }
 
-
-template <class type> int TMemoryPipe<type>::write(const type *_src,int size)
+template <class type> int TMemoryPipe<type>::write(const type *_src,int size,bool block)
 {
 	if(size<=0)
 		return 0;
 
-	CMutexLocker l(writerMutex); // protect from more than one writer
+	CMutexLocker l(writerMutex); // prevent multiple simultaneous write()s
 	CMutexLocker wsl(waitStateMutex);
 
 	const type *src=(const type *)_src;
@@ -471,8 +264,11 @@ template <class type> int TMemoryPipe<type>::write(const type *_src,int size)
 	if(writePos<_readPos)
 	{
 		const int spaceAvailable=(_readPos-writePos)-1;
-		if(spaceAvailable==0)
+		if(spaceAvailable<=0)
 		{ // buffer is full
+			if(!block) {
+				goto done;
+			} 
 			emptyCond.signal();
 			fullCond.wait(waitStateMutex);
 			goto restart;
@@ -494,8 +290,11 @@ template <class type> int TMemoryPipe<type>::write(const type *_src,int size)
 
 		const int spaceAvailable=spaceAvailable1+spaceAvailable2;
 
-		if(spaceAvailable==0)
+		if(spaceAvailable<=0)
 		{ // buffer is full
+			if(!block) {
+				goto done;
+			} 
 			emptyCond.signal();
 			fullCond.wait(waitStateMutex);
 			goto restart;
@@ -588,7 +387,6 @@ template <class type> int TMemoryPipe<type>::getSize() const
 
 template <class type> int TMemoryPipe<type>::clear()
 {
-	CMutexLocker l(readerMutex);
 	CMutexLocker l2(waitStateMutex);
 	const int len=getSize();
 	readPos=writePos=0;

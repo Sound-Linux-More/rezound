@@ -1,4 +1,4 @@
-/* $Id: common.h,v 1.19 2003/12/27 18:49:27 ddurham Exp $
+/* $Id: common.h 2006 2013-07-22 21:09:37Z ddurham $
  * 
  * Copyright (C) 2002 - Anthony Ventimiglia
  * 
@@ -18,18 +18,44 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
  */
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef rezound_COMMON_H
+#define rezound_COMMON_H
+
+/* for things like UINT64_C() and PRIx64 from stdint.h */
+#define __STDC_CONSTANT_MACROS
+#define __STDC_FORMAT_MACROS
 
 /* common.h -- This file will deal with low-level portability problems. It
  * should be includede at the top of every package file. */
 
 //This is added for g++-3.0 and later, which requires it
+// TODO work to remove this global namespace directive and support things properly in the .h and .cpp
+namespace std {}
 using namespace std;
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <stddef.h>
+
+#if defined(__clang__)
+#	define STATIC_TPL
+
+#elif defined(__GNUC__)
+#	ifndef GCC_VERSION
+#		define GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__)
+#	endif
+
+// requirement of static template functions changed in gcc-4.3
+#	if GCC_VERSION >= 403
+#		define STATIC_TPL
+#	else
+#		define STATIC_TPL static
+#	endif
+#endif
+
+
 
 /* Redefine PACKAGE TO REZOUND_PACKAGE to clear up possible conflicts with
  * other autoconfed packages 

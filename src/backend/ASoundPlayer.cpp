@@ -34,14 +34,14 @@
 
 ASoundPlayer::ASoundPlayer()
 {
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	analyzerPlan=NULL;
 #endif
 }
 
 ASoundPlayer::~ASoundPlayer()
 {
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	for(map<size_t,TAutoBuffer<fftw_real> *>::iterator i=hammingWindows.begin();i!=hammingWindows.end();i++)
 		delete i->second;
 #endif
@@ -62,12 +62,12 @@ void ASoundPlayer::initialize()
 
 
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	frequencyAnalysisBufferPrepared=false;
 	for(size_t t=0;t<ASP_ANALYSIS_BUFFER_SIZE;t++)
 		frequencyAnalysisBuffer[t]=0.0;
 
-	analyzerPlan=rfftw_create_plan(ASP_ANALYSIS_BUFFER_SIZE, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+	analyzerPlan = fftw_plan_r2r_1d(ASP_ANALYSIS_BUFFER_SIZE, frequencyAnalysisBuffer, data, FFTW_HC2R, FFTW_ESTIMATE);
 
 	// this causes calculateAnalyzerBandIndexRanges() to be called later when getting the analysis
 	bandLowerIndexes.clear();
@@ -79,10 +79,10 @@ void ASoundPlayer::deinitialize()
 {
 	stopAll();
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	if(analyzerPlan!=NULL)
 	{
-		rfftw_destroy_plan(analyzerPlan);
+		fftw_destroy_plan(analyzerPlan);
 		analyzerPlan=NULL;
 	}
 #endif
@@ -95,12 +95,15 @@ CSoundPlayerChannel *ASoundPlayer::newSoundPlayerChannel(CSound *sound)
 
 void ASoundPlayer::addSoundPlayerChannel(CSoundPlayerChannel *soundPlayerChannel)
 {
+	CMutexLocker ml(m);
 	if(!soundPlayerChannels.insert(soundPlayerChannel).second)
 		throw(runtime_error(string(__func__)+" -- sound player channel already in list"));
 }
 
 void ASoundPlayer::removeSoundPlayerChannel(CSoundPlayerChannel *soundPlayerChannel)
 {
+	CMutexLocker ml(m);
+
 	soundPlayerChannel->stop();
 	
 	set<CSoundPlayerChannel *>::const_iterator i=soundPlayerChannels.find(soundPlayerChannel);
@@ -115,8 +118,11 @@ void ASoundPlayer::mixSoundPlayerChannels(const unsigned nChannels,sample_t * co
 	// ??? it might be nice that if no sound player channel object is playing that this method would not return
 	// so that the caller wouldn't eat any CPU time doing anything with the silence returned
 
-	for(set<CSoundPlayerChannel *>::iterator i=soundPlayerChannels.begin();i!=soundPlayerChannels.end();i++)
-		(*i)->mixOntoBuffer(nChannels,buffer,bufferSize);
+	{
+		CMutexLocker ml(m);
+		for(set<CSoundPlayerChannel *>::iterator i=soundPlayerChannels.begin();i!=soundPlayerChannels.end();i++)
+			(*i)->mixOntoBuffer(nChannels,buffer,bufferSize);
+	}
 
 
 // ??? could just schedule this to occur (by making a copy of the buffer) the next time getLevel or getAnalysis is called rather than doing it here in the callback for mixing audio
@@ -161,9 +167,9 @@ void ASoundPlayer::mixSoundPlayerChannels(const unsigned nChannels,sample_t * co
 	}
 
 	if(gStereoPhaseMetersEnabled)
-		samplingForStereoPhaseMeters.write(buffer,bufferSize*nChannels); // NOTE: nChannels is supposed to equal devices[0].channelCount
+		samplingForStereoPhaseMeters.write(buffer,bufferSize*nChannels, false); // NOTE: nChannels is supposed to equal devices[0].channelCount
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	if(gFrequencyAnalyzerEnabled)
 	{
 		CMutexLocker l(frequencyAnalysisBufferMutex);
@@ -198,6 +204,7 @@ void ASoundPlayer::mixSoundPlayerChannels(const unsigned nChannels,sample_t * co
 
 void ASoundPlayer::stopAll()
 {
+	CMutexLocker ml(m);
 	for(set<CSoundPlayerChannel *>::iterator i=soundPlayerChannels.begin();i!=soundPlayerChannels.end();i++)
 		(*i)->stop();
 }
@@ -226,10 +233,10 @@ const sample_t ASoundPlayer::getPeakLevel(unsigned channel) const
 
 const size_t ASoundPlayer::getSamplingForStereoPhaseMeters(sample_t *buffer,size_t bufferSizeInSamples) const
 {
-	return samplingForStereoPhaseMeters.read(buffer,min(bufferSizeInSamples,(size_t)(gStereoPhaseMeterPointCount*devices[0].channelCount)))/devices[0].channelCount; // ??? only device zero
+	return samplingForStereoPhaseMeters.read(buffer,min(bufferSizeInSamples,(size_t)(gStereoPhaseMeterPointCount*devices[0].channelCount)), false)/devices[0].channelCount; // ??? only device zero
 }
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 
 // NOTE: when I say 'band', a band is expressed in terms of an 
 // octave (where octave is a real number) and each band is a 
@@ -318,7 +325,7 @@ void ASoundPlayer::calculateAnalyzerBandIndexRanges() const
 TAutoBuffer<fftw_real> *ASoundPlayer::createHammingWindow(size_t windowSize)
 {
 //printf("creating for length %d\n",windowSize);
-	TAutoBuffer<fftw_real> *h=new TAutoBuffer<fftw_real>(windowSize);
+	TAutoBuffer<fftw_real> *h=new TAutoBuffer<fftw_real>(windowSize, true);
 	
 	for(size_t t=0;t<windowSize;t++)
 		(*h)[t]=0.54-0.46*cos(2.0*M_PI*t/windowSize);
@@ -337,7 +344,7 @@ const vector<float> ASoundPlayer::getFrequencyAnalysis() const
 	if(!isInitialized())
 		return v;
 
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	CMutexLocker l(frequencyAnalysisBufferMutex);
 
 	if(!frequencyAnalysisBufferPrepared)
@@ -378,8 +385,7 @@ for(int t=0;t<ASP_ANALYSIS_BUFFER_SIZE;t++)
 }
 */
 
-	fftw_real data[ASP_ANALYSIS_BUFFER_SIZE];
-	rfftw_one(analyzerPlan,(fftw_real *)frequencyAnalysisBuffer,data);
+	fftw_execute(analyzerPlan);
 	
 	for(size_t t=0;t<bandLowerIndexes.size();t++)
 	{
@@ -449,7 +455,7 @@ for(int t=0;t<ASP_ANALYSIS_BUFFER_SIZE;t++)
 
 const size_t ASoundPlayer::getFrequency(size_t index) const
 {
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	return (size_t)freqAtOctave((float)index/(float)octaveStride);
 #else
 	return 0;
@@ -458,7 +464,7 @@ const size_t ASoundPlayer::getFrequency(size_t index) const
 
 const size_t ASoundPlayer::getFrequencyAnalysisOctaveStride() const
 {
-#ifdef HAVE_LIBRFFTW
+#ifdef HAVE_FFTW
 	return octaveStride;
 #else
 	return 1;
@@ -477,6 +483,7 @@ const size_t ASoundPlayer::getFrequencyAnalysisOctaveStride() const
 #include "CALSASoundPlayer.h"
 #include "CPortAudioSoundPlayer.h"
 #include "CJACKSoundPlayer.h"
+#include "CPulseSoundPlayer.h"
 
 #include "AStatusComm.h"
 
@@ -488,6 +495,7 @@ ASoundPlayer *ASoundPlayer::createInitializedSoundPlayer()
 	if(gSettingsRegistry->keyExists("AudioOutputMethods")!=CNestedDataFile::ktValue)
 	{
 		vector<string> methods;
+		methods.push_back("pulse");
 		methods.push_back("oss");
 		methods.push_back("alsa");
 		methods.push_back("jack");
@@ -546,6 +554,12 @@ ASoundPlayer *ASoundPlayer::createInitializedSoundPlayer()
 			{
 #ifdef ENABLE_PORTAUDIO
 				INITIALIZE_PLAYER(CPortAudioSoundPlayer)
+#endif
+			}
+			else if(method=="pulse")
+			{
+#ifdef ENABLE_PULSE
+				INITIALIZE_PLAYER(CPulseSoundPlayer)
 #endif
 			}
 			else if(method=="null")

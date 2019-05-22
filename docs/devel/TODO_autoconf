@@ -1,4 +1,4 @@
-$Id: TODO_autoconf,v 1.35 2002/04/17 15:04:57 ddurham Exp $
+$Id: TODO_autoconf 279 2002-04-17 15:04:57Z ddurham $
 
 - might ought to verify that bootstrap is running within the toplevel directory
 and move it into config
