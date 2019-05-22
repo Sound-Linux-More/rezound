@@ -10,7 +10,7 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-# ReZound misc/Makefile.am Written by Anthony Ventimiglia
+# ReZound backend/DSP/Makefile.am Written by Anthony Ventimiglia
 
 
 # vim:tw=78
@@ -44,7 +44,7 @@ pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 
-top_builddir = ../..
+top_builddir = ../../..
 AUTOCONF = @AUTOCONF@
 
 INSTALL = @INSTALL@
@@ -87,7 +87,7 @@ AUTOHEADER = @AUTOHEADER@ -l config
 ACLOCAL = @ACLOCAL@ -I config/m4
 AUTOMAKE = @AUTOMAKE@ --foreign
 
-INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing 	 -I$(top_srcdir)/src/PoolFile 	 -I$(top_srcdir)/src/PoolFile/DiskTable
+INCLUDES =  	 -I$(top_srcdir)/src/misc 	 -I$(top_srcdir)/src/misc/cc++ 	 -I$(top_srcdir)/src/misc/missing/generated 	 -I$(top_srcdir)/src/PoolFile
 
 
 CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
@@ -96,12 +96,15 @@ CXXFLAGS = -Wall -g -D_GNU_SOURCE @CXXFLAGS@
 LDFLAGS = @LDFLAGS@
 
 # doc directory
-pkgdocdir = $(prefix)/doc/rezound
+pkgdocdir = $(prefix)/doc/@PACKAGE@
 
-EXTRA_DIST = $(top_srcdir)/src/images/*.gif
+noinst_HEADERS =  	Compressor.h 	Convolver.h 	DelayEffect.h 	Delay.h 	FlangeEffect.h 	LevelDetector.h 	NoiseGate.h 	Quantizer.h 	SinglePoleFilters.h 	TSoundStretcher.h
+
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_HEADER = ../../config/config.h
+CONFIG_HEADER = ../../../config/config.h
 CONFIG_CLEAN_FILES = 
+HEADERS =  $(noinst_HEADERS)
+
 DIST_COMMON =  Makefile.am Makefile.in
 
 
@@ -112,27 +115,47 @@ GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/config/am_include.mk
-	cd $(top_srcdir) && $(AUTOMAKE) --foreign src/images/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --foreign --include-deps src/backend/DSP/Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
-tags: TAGS
-TAGS:
 
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $$unique $(LISP)
+
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+
+mostlyclean-tags:
+
+clean-tags:
+
+distclean-tags:
+	-rm -f TAGS ID
+
+maintainer-clean-tags:
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = src/images
+subdir = src/backend/DSP
 
 distdir: $(DISTFILES)
-	here=`cd $(top_builddir) && pwd`; \
-	top_distdir=`cd $(top_distdir) && pwd`; \
-	distdir=`cd $(distdir) && pwd`; \
-	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --foreign src/images/Makefile
-	$(mkinstalldirs) $(distdir)/$(top_srcdir)/src/images
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -162,7 +185,7 @@ install-am: all-am
 install: install-am
 uninstall-am:
 uninstall: uninstall-am
-all-am: Makefile
+all-am: Makefile $(HEADERS)
 all-redirect: all-am
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
@@ -178,26 +201,28 @@ distclean-generic:
 	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
 
 maintainer-clean-generic:
-mostlyclean-am:  mostlyclean-generic
+mostlyclean-am:  mostlyclean-tags mostlyclean-generic
 
 mostlyclean: mostlyclean-am
 
-clean-am:  clean-generic mostlyclean-am
+clean-am:  clean-tags clean-generic mostlyclean-am
 
 clean: clean-am
 
-distclean-am:  distclean-generic clean-am
+distclean-am:  distclean-tags distclean-generic clean-am
 	-rm -f libtool
 
 distclean: distclean-am
 
-maintainer-clean-am:  maintainer-clean-generic distclean-am
+maintainer-clean-am:  maintainer-clean-tags maintainer-clean-generic \
+		distclean-am
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
 maintainer-clean: maintainer-clean-am
 
-.PHONY: tags distdir info-am info dvi-am dvi check check-am \
+.PHONY: tags mostlyclean-tags distclean-tags clean-tags \
+maintainer-clean-tags distdir info-am info dvi-am dvi check check-am \
 installcheck-am installcheck install-exec-am install-exec \
 install-data-am install-data install-am install uninstall-am uninstall \
 all-redirect all-am all installdirs mostlyclean-generic \

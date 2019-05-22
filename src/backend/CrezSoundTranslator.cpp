@@ -22,6 +22,8 @@
 #include "CSound.h"
 #include "AStatusComm.h"
 
+#include <stdio.h>
+
 #include <stdexcept>
 #include <typeinfo>
 
@@ -33,6 +35,9 @@ CrezSoundTranslator::~CrezSoundTranslator()
 {
 }
 
+// need to include this I use some of the template *methods* for types that are no where else
+// so the explicit instantation at the bottom of CSound.cpp doesn't instantiate everything
+#include <TPoolFile.cpp>
 
 struct RFormatInfo1
 {
@@ -54,7 +59,7 @@ typedef TPoolAccesser<RFormatInfo1,CSound::PoolFile_t > CFormat1InfoPoolAccesser
 
 enum PCMTypes
 {
-	pcmSigned16Bit=1
+	pcmSigned16BitInteger=1
 };
 
 struct RFormatInfo2
@@ -78,7 +83,7 @@ typedef TPoolAccesser<RFormatInfo2,CSound::PoolFile_t > CFormat2InfoPoolAccesser
 
 
 
-void CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
+bool CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 {
 	// after the "Format Info" pool is read, these will be populated with data from the file
 	sample_pos_t size=0;
@@ -108,7 +113,7 @@ void CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 			size=r.size;
 			sampleRate=r.sampleRate;
 			channelCount=r.channelCount;
-			PCMType=pcmSigned16Bit;
+			PCMType=pcmSigned16BitInteger;
 		}
 		else if(version==2)
 		{
@@ -180,11 +185,11 @@ void CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 	// read the audio
 	{
 		// ??? need to do convertions to the native type
-		if((PCMType==pcmSigned16Bit && typeid(sample_t)==typeid(int16_t)) )
+		if((PCMType==pcmSigned16BitInteger && typeid(sample_t)==typeid(int16_t)) )
 		{
 			for(unsigned i=0;i<channelCount;i++)
 			{
-				BEGIN_PROGRESS_BAR("Loading Channel "+istring(i),0,99);
+				CStatusBar statusBar("Loading Channel "+istring(i),0,99,true);
 
 				CSound::CInternalRezPoolAccesser dest=sound->getAudioInternal(i);
 
@@ -195,12 +200,11 @@ void CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 					for(unsigned int t=0;t<100;t++)
 					{
 						dest.copyData(t*chunkSize,loadFromFile.getPoolAccesser<sample_t>("Channel "+istring(i+1)),t*chunkSize,chunkSize);
-						UPDATE_PROGRESS_BAR(t);
+						if(statusBar.update(t))
+							return false; // cancelled
 					}
 				}
 				dest.copyData(100*chunkSize,loadFromFile.getPoolAccesser<sample_t>("Channel "+istring(i+1)),100*chunkSize,size%100);
-
-				END_PROGRESS_BAR();
 			}
 		}
 		else
@@ -208,6 +212,7 @@ void CrezSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 	}
 
 	loadFromFile.closeFile(false,false);
+	return true;
 }
 
 bool CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
@@ -218,7 +223,7 @@ bool CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 	saveToFile.openFile(filename,true);
 	saveToFile.clear();
 
- 	PCMTypes PCMType=pcmSigned16Bit; // ??? or what the user asked as export format 
+ 	PCMTypes PCMType=pcmSigned16BitInteger; // ??? or what the user asked as export format 
 
 	// write the meta data pool
 	{
@@ -259,11 +264,11 @@ bool CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 		// ??? need to make sure it's going to fit before I start writing... a convertion in sample format could as much as double the size
 
 		// need to do conversions from the native type ???
-		if((PCMType==pcmSigned16Bit && typeid(sample_t)==typeid(int16_t)) )
+		if((PCMType==pcmSigned16BitInteger && typeid(sample_t)==typeid(int16_t)) )
 		{
 			for(unsigned i=0;i<sound->getChannelCount();i++)
 			{
-				BEGIN_PROGRESS_BAR("Saving Channel "+istring(i),0,99);
+				CStatusBar statusBar("Saving Channel "+istring(i),0,99,true);
 
 				TPoolAccesser<sample_t,CSound::PoolFile_t> dest=saveToFile.createPool<sample_t>("Channel "+istring(i+1));
 
@@ -274,22 +279,24 @@ bool CrezSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 					for(unsigned int t=0;t<100;t++)
 					{
 						dest.copyData(t*chunkSize,sound->getAudio(i),t*chunkSize,chunkSize,true);
-						UPDATE_PROGRESS_BAR(t);
+
+						if(statusBar.update(t))
+						{ // cancelled
+							saveToFile.closeFile(false,true);
+							return false;
+						}
 					}
 				}
 				dest.copyData(100*chunkSize,sound->getAudio(i),100*chunkSize,sound->getLength()%100,true);
-
-				END_PROGRESS_BAR();
 			}
 		}
 		else
 			throw(runtime_error(string(__func__)+" -- unhandled format conversion while saving"));
 	}
-	
 
 	saveToFile.closeFile(false,false);
 
-	return(true);
+	return true;
 }
 
 

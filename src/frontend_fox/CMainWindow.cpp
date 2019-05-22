@@ -410,6 +410,7 @@ void CMainWindow::createMenus()
 		new CActionMenuCommand(new CChangeRateEffectFactory(gChannelSelectDialog,new CNormalRateChangeDialog(this),new CAdvancedRateChangeDialog(this)),menu,"");
 		new CActionMenuCommand(new CFlangeEffectFactory(gChannelSelectDialog,new CFlangeDialog(this)),menu,"");
 		new CActionMenuCommand(new CSimpleDelayEffectFactory(gChannelSelectDialog,new CSimpleDelayDialog(this)),menu,"");
+		new CActionMenuCommand(new CQuantizeEffectFactory(gChannelSelectDialog,new CQuantizeDialog(this)),menu,"");
 		new CActionMenuCommand(new CStaticReverbEffectFactory(gChannelSelectDialog),menu,"");
 		new CActionMenuCommand(new CVariedRepeatEffectFactory(gChannelSelectDialog,new CVariedRepeatDialog(this)),menu,"");
 
@@ -432,6 +433,7 @@ void CMainWindow::createMenus()
 		new CActionMenuCommand(new CRemoveDCActionFactory(gChannelSelectDialog),menu,"");
 		new CActionMenuCommand(new CNoiseGateActionFactory(gChannelSelectDialog,new CNoiseGateDialog(this)),menu,"");
 		new CActionMenuCommand(new CCompressorActionFactory(gChannelSelectDialog,new CCompressorDialog(this)),menu,"");
+		new CActionMenuCommand(new CNormalizeActionFactory(gChannelSelectDialog,new CNormalizeDialog(this)),menu,"");
 
 
 	create(); // re-call create for this window which will call it for all new child windows

@@ -54,7 +54,7 @@ public:
 	// call if the tick labels, slider position, or edit box value need to be reevaluated
 	void updateNumbers();
 
-	void setUnits(const FXString units,const FXString helpText="");
+	void setUnits(const FXString units);
 
 	const double getValue() const;
 	void setValue(const double value);
@@ -67,15 +67,18 @@ public:
 
 	const string getTitle() const;
 
-	void setHelpText(const FXString &text);
-	FXString getHelpText() const;
+	void setTipText(const FXString &text);
+	FXString getTipText() const;
+
+	void enable();
+	void disable();
 
 	void readFromFile(const string &prefix,CNestedDataFile *f);
 	void writeToFile(const string &prefix,CNestedDataFile *f) const;
 
 	enum
 	{
-		ID_SLIDER=FXPacker::ID_LAST,
+		ID_SLIDER=FXVerticalFrame::ID_LAST,
 
 		ID_VALUE_TEXTBOX,
 		ID_SCALAR_SPINNER,

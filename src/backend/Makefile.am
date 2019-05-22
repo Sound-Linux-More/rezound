@@ -27,6 +27,7 @@ include $(top_srcdir)/config/am_include.mk
 ## first we'll dive into the subs to make everything in there
 ##
 SUBDIRS=\
+	DSP  \
 	Edits  \
 	Effects \
 	Filters \
@@ -51,6 +52,8 @@ noinst_HEADERS= \
 	   CGraphParamValueNode.h \
 	   CLoadedSound.h \
 	   CNativeSoundClipboard.h \
+	   CPortAudioSoundPlayer.h \
+	   CPortAudioSoundRecorder.h \
 	   COSSSoundPlayer.h \
 	   COSSSoundRecorder.h \
 	   CRecordSoundClipboard.h \
@@ -64,8 +67,6 @@ noinst_HEADERS= \
 	   Cold_rezSoundTranslator.h \
 	   CrawSoundTranslator.h \
 	   CrezSoundTranslator.h \
-	   DSPBlocks.h \
-	   TSoundStretcher.h \
 	   initialize.h \
 	   main_controls.h \
 	   settings.h \
@@ -88,11 +89,14 @@ libbackend_la_SOURCES= \
 			ASoundPlayer.cpp  \
 			ASoundRecorder.cpp \
 			AStatusComm.cpp \
+	   		ALFO.cpp \
 			ASoundClipboard.cpp \
 			CNativeSoundClipboard.cpp \
 			CRecordSoundClipboard.cpp \
 			CGraphParamValueNode.cpp \
 			CLoadedSound.cpp  \
+	   		CPortAudioSoundPlayer.cpp \
+	   		CPortAudioSoundRecorder.cpp \
 			COSSSoundPlayer.cpp \
 			COSSSoundRecorder.cpp \
 			CSoundPlayerChannel.cpp \

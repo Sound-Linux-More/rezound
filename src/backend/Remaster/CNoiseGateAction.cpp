@@ -23,7 +23,7 @@
 #include "../CActionSound.h"
 #include "../CActionParameters.h"
 
-#include "../DSPBlocks.h"
+#include "../DSP/NoiseGate.h"
 #include "../unit_conv.h"
 
 CNoiseGateAction::CNoiseGateAction(const CActionSound &actionSound,const float _windowTime,const float _threshold,const float _gainAttackTime,const float _gainReleaseTime) :
@@ -66,7 +66,7 @@ bool CNoiseGateAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 			if(prepareForUndo)
 				a.copyData(start,actionSound.sound->getTempAudio(tempAudioPoolKey,i),0,selectionLength);
 
-			BEGIN_PROGRESS_BAR("Noise Gating -- Channel "+istring(i),start,stop);
+			CStatusBar statusBar("Noise Gating -- Channel "+istring(i),start,stop);
 
 			CDSPNoiseGate gate(
 				ms_to_samples(windowTime,actionSound.sound->getSampleRate()),
@@ -89,10 +89,8 @@ bool CNoiseGateAction::doActionSizeSafe(CActionSound &actionSound,bool prepareFo
 				if(s1!=s2) // avoid writing the sample to disk if it didn't change
 					a[t]=s2;
 
-				UPDATE_PROGRESS_BAR(t);
+				statusBar.update(t);
 			}
-
-			END_PROGRESS_BAR();
 
 			actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
 		}
@@ -121,12 +119,13 @@ CNoiseGateActionFactory::CNoiseGateActionFactory(AActionDialog *channelSelectDia
 
 CNoiseGateAction *CNoiseGateActionFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
-	return(new CNoiseGateAction(actionSound,
-		actionParameters->getDoubleParameter(0),
-		actionParameters->getDoubleParameter(1),
-		actionParameters->getDoubleParameter(2),
-		actionParameters->getDoubleParameter(3)
-		));
+	return(new CNoiseGateAction(
+		actionSound,
+		actionParameters->getDoubleParameter("Window Time"),
+		actionParameters->getDoubleParameter("Threshold"),
+		actionParameters->getDoubleParameter("Gain Attack Time"),
+		actionParameters->getDoubleParameter("Gain Release Time")
+	));
 }
 
 

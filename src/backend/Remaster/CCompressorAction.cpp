@@ -2,7 +2,9 @@
 
 #include <algorithm>
 
-#include "../DSPBlocks.h"
+#include "../DSP/Compressor.h"
+#include "../unit_conv.h"
+
 #include "../CActionParameters.h"
 
 CCompressorAction::CCompressorAction(const CActionSound &actionSound,float _windowTime,float _threshold,float _ratio,float _attackTime,float _releaseTime,float _inputGain,float _outputGain,bool _syncChannels) :
@@ -37,7 +39,7 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 		{
 			if(actionSound.doChannel[i])
 			{
-				BEGIN_PROGRESS_BAR("Compressor -- Channel "+istring(i),start,stop); 
+				CStatusBar statusBar("Compressor -- Channel "+istring(i),start,stop); 
 
 				sample_pos_t srcPos=prepareForUndo ? 0 : start;
 				const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
@@ -62,14 +64,12 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 					
 					const mix_sample_t s=(mix_sample_t)(src[srcPos++]*inputGain);
 					dest[destPos]=ClipSample(compressor.processSample(s,s)*outputGain);
-					UPDATE_PROGRESS_BAR(destPos);
+					statusBar.update(destPos);
 					destPos++;
 				}
 
 				if(!prepareForUndo)
 					actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
-
-				END_PROGRESS_BAR();
 			}
 		}
 	}
@@ -102,7 +102,7 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 
 		try
 		{
-			BEGIN_PROGRESS_BAR("Compressor ",start,stop); 
+			CStatusBar statusBar("Compressor ",start,stop); 
 
 			// initialize the compressor's level detector
 			//while((destPos++)<min(stop,4000))
@@ -120,7 +120,7 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 				for(unsigned t=0;t<channelCount;t++)
 					(*(dests[t]))[destPos]=ClipSample(inputFrame[t]*outputGain);
 		
-				UPDATE_PROGRESS_BAR(destPos);
+				statusBar.update(destPos);
 				destPos++;
 			}
 
@@ -132,8 +132,6 @@ bool CCompressorAction::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 				delete srces[t];
 				delete dests[t];
 			}
-
-			END_PROGRESS_BAR();
 		}
 		catch(...)
 		{
@@ -174,15 +172,15 @@ CCompressorAction *CCompressorActionFactory::manufactureAction(const CActionSoun
 {
 	return(new CCompressorAction(
 		actionSound,
-		actionParameters->getDoubleParameter(0),	// windowTime
-		actionParameters->getDoubleParameter(1),	// threshold
-		actionParameters->getDoubleParameter(2),	// ratio
-		actionParameters->getDoubleParameter(3),	// attackTime
-		actionParameters->getDoubleParameter(4),	// releaseTime
-		actionParameters->getDoubleParameter(5),	// inputGain
-		actionParameters->getDoubleParameter(6),	// outputGain
-		true//actionParameters->getBoolParameter(7) ??? need to implement a checkbox parameter on the frontend
-		));
+		actionParameters->getDoubleParameter("Window Time"),
+		actionParameters->getDoubleParameter("Threshold"),
+		actionParameters->getDoubleParameter("Ratio"),
+		actionParameters->getDoubleParameter("Attack Time"),
+		actionParameters->getDoubleParameter("Release Time"),
+		actionParameters->getDoubleParameter("Input Gain"),
+		actionParameters->getDoubleParameter("Output Gain"),
+		true//actionParameters->getBoolParameter("Lock Channels") ??? need to implement a checkbox parameter on the frontend --> I've done this now.. now I need to use it!
+	));
 }
 
 

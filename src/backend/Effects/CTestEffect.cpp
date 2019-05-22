@@ -20,7 +20,10 @@
 
 #include "CTestEffect.h"
 
-#include "../DSPBlocks.h"
+#include <TAutoBuffer.h>
+
+#include <math.h>
+#include "../DSP/Convolver.h"
 
 CTestEffect::CTestEffect(const CActionSound &actionSound) :
 	AAction(actionSound)
@@ -33,9 +36,125 @@ bool CTestEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo
 	const sample_pos_t stop=actionSound.stop;
 	const sample_pos_t selectionLength=actionSound.selectionLength();
 
+	// ??? since the convolution creates a signal that is N+M-1 points in length at the end, I should have a couple of options
+	// 	- 1) if the stop == getLength()-1 then add M samples of space at the end
+	// 	- 2) if the stop != getLength()-1 then maybe let the M extra samples bleed into the region after the stop position.. possibly adding space to the end of the sound if necessary (perform one check at the beginning for this)
+	// 		- this would require me to back up M sample more data for the saving for undo... and now.. crossfading is either not applicable at all.. or at least not at the end of the selection.. or maybe it is
+
 	if(prepareForUndo)
 		moveSelectionToTempPools(actionSound,mmSelection,actionSound.selectionLength());
 
+#if 0
+	// load impulse response of reverb
+	#define IMPULSE_LENGTH (sizeof(impulse)/sizeof(*impulse))
+	#include "/home/ddurham/impulse/impulse.h"
+	
+	const sample_pos_t M=IMPULSE_LENGTH; // length of filter kernel
+	TAutoBuffer<float> filter_kernel(M);
+	for(sample_pos_t t=0;t<M;t++)
+		filter_kernel[t]=impulse[t];
+
+#elif 0
+	// create the time-domain filter kernel
+	const float freq=(float)100/(float)actionSound.sound->getSampleRate(); // cutoff frequency of this low-pass filter (fraction of the sample rate 0..0.5)
+	const sample_pos_t M=200; // length of filter kernel
+	float filter_kernel[M];
+	for(sample_pos_t i=0;i<M;i++) 
+	{
+		if(i!=M/2)
+			filter_kernel[i]=sinf(2*M_PI*freq*(i-M/2))/(i-M/2);
+		else // avoid div by 0
+			filter_kernel[i]=2*M_PI*freq;
+	}
+#elif 0
+	
+	// create the time-domain filter kernel
+	const sample_pos_t M=1000; // length of filter kernel
+	float filter_kernel[M];
+	for(sample_pos_t i=0;i<M;i++) 
+	{
+		filter_kernel[i]=(sinf((i+10)/50.0)/3.0)*cos((i-13)/10.0)/3;
+		//filter_kernel[i]=(sinf(i/50.0)/3.0)*(cos(i/10.0)/(i/(M/10.0)+1));
+		//filter_kernel[i]=sinf(i/50.0)*cos(i/10.0)/(cos((float)i/M*M_PI)+2.0);
+	}
+#else
+	
+	// create the time-domain filter kernel
+	const sample_pos_t M=200; // length of filter kernel
+	float filter_kernel[M];
+	for(sample_pos_t i=0;i<M;i++) 
+	{
+		filter_kernel[i]=pow((float)(i)/M,2)+sinf(i/10);
+	}
+#endif
+
+	// apply the blackman window to the kernel
+	for(sample_pos_t i=0;i<M;i++) 
+		filter_kernel[i]*=(0.42-0.5*cos(2*M_PI*i/M)+0.08*cos(4*M_PI*i/M));
+
+
+#if 1
+	// normalize the time-domain filter kernel
+	double sum=0;
+	for(sample_pos_t i=0;i<M;i++)
+		sum+=filter_kernel[i];
+	for(sample_pos_t i=0;i<M;i++)
+		filter_kernel[i]/=sum;
+#endif
+
+#if 0
+	// convert a time-domain low-pass filter kernel to a high-pass
+	for(sample_pos_t i=0;i<M;i++) 
+		filter_kernel[i]=-filter_kernel[i];
+	filter_kernel[M/2]+=1.0;
+#endif
+
+#ifdef HAVE_LIBRFFTW
+	TFFTConvolver<sample_t,float> c(filter_kernel,M);
+
+	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
+	{
+		if(actionSound.doChannel[i])
+		{
+			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
+			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
+			sample_pos_t srcOffset=prepareForUndo ? 0 : start;
+
+			c.reset();
+
+			CStatusBar statusBar("Filtering -- Channel "+istring(i),start,stop); 
+
+			sample_pos_t srcPos=srcOffset;
+			sample_pos_t destPos=start;
+			while(destPos<=stop)
+			{
+				const sample_pos_t count=min(c.getChunkSize(),stop-destPos+1);
+
+				// write to the convolver
+				c.beginWrite();
+				for(sample_pos_t t=0;t<count;t++)
+					c.writeSample(src[srcPos++]);
+
+				// read from the convolver
+				c.beginRead();
+				for(sample_pos_t t=0;t<count;t++)
+					dest[destPos++]=ClipSample(c.readSample());
+
+				statusBar.update(destPos);
+			}
+
+			/* could do this.. but would need to back that data up too for undo
+			// read M-1 extra samples from convolution
+			for(sample_pos_t t=0;t<M-1;t++,destPos++)
+				dest[destPos]=ClipSample(dest[destPos]+c.readSample());
+			*/
+
+
+			if(!prepareForUndo)
+				actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
+		}
+	}
+#else
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
@@ -44,117 +163,21 @@ bool CTestEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
 			sample_pos_t srcOffset=prepareForUndo ? start : 0;
 
-// --- Insert your test effect here -- BEGIN --------------------------------------------
+			TSimpleConvolver<mix_sample_t,float> convolver(filter_kernel,M);
 
-/* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
-   Command line: /www/usr/fisher/helpers/mkshape -c 1.3605442177e-03 5.0000000000e-01 255 -b 16 -l */
+			CStatusBar statusBar("Filtering -- Channel "+istring(i),start,stop); 
 
-#define NZEROS 254
-#define GAIN   2.318215027e+02
-
-static float xcoeffs[] =
-  { +0.7397766113, +0.7434692383, +0.7471313477, +0.7507934570,
-    +0.7544250488, +0.7580566406, +0.7616577148, +0.7652282715,
-    +0.7687988281, +0.7723388672, +0.7758789062, +0.7793884277,
-    +0.7828674316, +0.7863159180, +0.7897644043, +0.7931823730,
-    +0.7966003418, +0.7999877930, +0.8033447266, +0.8066711426,
-    +0.8099975586, +0.8132934570, +0.8165588379, +0.8198242188,
-    +0.8230285645, +0.8262329102, +0.8294372559, +0.8325805664,
-    +0.8357238770, +0.8388366699, +0.8419189453, +0.8449707031,
-    +0.8480224609, +0.8510437012, +0.8540039062, +0.8569641113,
-    +0.8599243164, +0.8628234863, +0.8657226562, +0.8685607910,
-    +0.8713989258, +0.8742065430, +0.8769836426, +0.8797607422,
-    +0.8824768066, +0.8851623535, +0.8878479004, +0.8905029297,
-    +0.8931274414, +0.8956909180, +0.8982543945, +0.9007873535,
-    +0.9032897949, +0.9057922363, +0.9082336426, +0.9106445312,
-    +0.9130249023, +0.9154052734, +0.9177246094, +0.9200134277,
-    +0.9223022461, +0.9245300293, +0.9267578125, +0.9289245605,
-    +0.9310607910, +0.9331970215, +0.9352722168, +0.9373474121,
-    +0.9393615723, +0.9413757324, +0.9433288574, +0.9452514648,
-    +0.9471740723, +0.9490356445, +0.9508666992, +0.9526672363,
-    +0.9544372559, +0.9561767578, +0.9578857422, +0.9595642090,
-    +0.9612121582, +0.9628295898, +0.9644165039, +0.9659423828,
-    +0.9674682617, +0.9689331055, +0.9703979492, +0.9718017578,
-    +0.9731750488, +0.9745178223, +0.9758300781, +0.9771118164,
-    +0.9783630371, +0.9795532227, +0.9807434082, +0.9818725586,
-    +0.9829711914, +0.9840698242, +0.9851074219, +0.9860839844,
-    +0.9870605469, +0.9880065918, +0.9888916016, +0.9897766113,
-    +0.9906005859, +0.9913940430, +0.9921569824, +0.9928894043,
-    +0.9935607910, +0.9942321777, +0.9948425293, +0.9954223633,
-    +0.9959716797, +0.9964904785, +0.9969787598, +0.9974060059,
-    +0.9978332520, +0.9981994629, +0.9985351562, +0.9988403320,
-    +0.9990844727, +0.9993286133, +0.9995117188, +0.9996948242,
-    +0.9998168945, +0.9999084473, +0.9999389648, +0.9999694824,
-    +0.9999389648, +0.9999084473, +0.9998168945, +0.9996948242,
-    +0.9995117188, +0.9993286133, +0.9990844727, +0.9988403320,
-    +0.9985351562, +0.9981994629, +0.9978332520, +0.9974060059,
-    +0.9969787598, +0.9964904785, +0.9959716797, +0.9954223633,
-    +0.9948425293, +0.9942321777, +0.9935607910, +0.9928894043,
-    +0.9921569824, +0.9913940430, +0.9906005859, +0.9897766113,
-    +0.9888916016, +0.9880065918, +0.9870605469, +0.9860839844,
-    +0.9851074219, +0.9840698242, +0.9829711914, +0.9818725586,
-    +0.9807434082, +0.9795532227, +0.9783630371, +0.9771118164,
-    +0.9758300781, +0.9745178223, +0.9731750488, +0.9718017578,
-    +0.9703979492, +0.9689331055, +0.9674682617, +0.9659423828,
-    +0.9644165039, +0.9628295898, +0.9612121582, +0.9595642090,
-    +0.9578857422, +0.9561767578, +0.9544372559, +0.9526672363,
-    +0.9508666992, +0.9490356445, +0.9471740723, +0.9452514648,
-    +0.9433288574, +0.9413757324, +0.9393615723, +0.9373474121,
-    +0.9352722168, +0.9331970215, +0.9310607910, +0.9289245605,
-    +0.9267578125, +0.9245300293, +0.9223022461, +0.9200134277,
-    +0.9177246094, +0.9154052734, +0.9130249023, +0.9106445312,
-    +0.9082336426, +0.9057922363, +0.9032897949, +0.9007873535,
-    +0.8982543945, +0.8956909180, +0.8931274414, +0.8905029297,
-    +0.8878479004, +0.8851623535, +0.8824768066, +0.8797607422,
-    +0.8769836426, +0.8742065430, +0.8713989258, +0.8685607910,
-    +0.8657226562, +0.8628234863, +0.8599243164, +0.8569641113,
-    +0.8540039062, +0.8510437012, +0.8480224609, +0.8449707031,
-    +0.8419189453, +0.8388366699, +0.8357238770, +0.8325805664,
-    +0.8294372559, +0.8262329102, +0.8230285645, +0.8198242188,
-    +0.8165588379, +0.8132934570, +0.8099975586, +0.8066711426,
-    +0.8033447266, +0.7999877930, +0.7966003418, +0.7931823730,
-    +0.7897644043, +0.7863159180, +0.7828674316, +0.7793884277,
-    +0.7758789062, +0.7723388672, +0.7687988281, +0.7652282715,
-    +0.7616577148, +0.7580566406, +0.7544250488, +0.7507934570,
-    +0.7471313477, +0.7434692383, +0.7397766113,
-  };
-
-/*
-	//#define NC 11025
-	#define NC 3000
-	float coeffs[NC];
-
-	for(int t=0;t<NC;t++)
-	{
-		coeffs[t]=((((float)rand()/(float)RAND_MAX)*400.0)-200.0)+pow((1.0-(float)t/(float)NC),2.0);
-		if(t>0)
-			coeffs[t]/=2;
-		else
-			coeffs[t]=1.0;
-	}
-*/
-
-			BEGIN_PROGRESS_BAR("Filtering -- Channel "+istring(i),start,stop); 
-			TDSPConvolver<mix_sample_t,float> convolver(xcoeffs,sizeof(xcoeffs)/sizeof(*xcoeffs));
-			//TDSPConvolver<mix_sample_t,float> convolver(coeffs,NC);
 			for(sample_pos_t t=start;t<=stop;t++)
 			{
-				//dest[t]=ClipSample(convolver.processSample(src[t-srcOffset])/NC);
-				dest[t]=ClipSample(convolver.processSample(src[t-srcOffset])/GAIN);
-				UPDATE_PROGRESS_BAR(t);
+				dest[t]=ClipSample(convolver.processSample(src[t-srcOffset]));
+				statusBar.update(t);
 			}
-
-		
-			END_PROGRESS_BAR();
-
-
-// --- Insert your test effect here -- END ----------------------------------------------
-
 
 			if(!prepareForUndo)
 				actionSound.sound->invalidatePeakData(i,actionSound.start,actionSound.stop);
 		}
 	}
+#endif
 
 	return(true);
 }

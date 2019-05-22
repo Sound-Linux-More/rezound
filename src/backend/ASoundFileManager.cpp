@@ -97,18 +97,31 @@ CLoadedSound *ASoundFileManager::prvCreateNew(bool askForLength)
 	return(NULL);
 }
 
-void ASoundFileManager::open(const string _filename)
+void ASoundFileManager::open(const string _filename,bool asRaw)
 {
+	vector<string> filenames;
 	string filename=_filename;
 	bool readOnly=false;
 	if(filename=="")
 	{
-		if(!gFrontendHooks->promptForOpenSoundFilename(filename,readOnly))
+		if(!gFrontendHooks->promptForOpenSoundFilenames(filenames,readOnly))
 			return;
 	}
+	else
+		filenames.push_back(filename);
 
-	prvOpen(filename,readOnly,true);
-	updateReopenHistory(filename);
+	for(size_t t=0;t<filenames.size();t++)
+	{
+		try
+		{
+			prvOpen(filenames[t],readOnly,true,asRaw);
+			updateReopenHistory(filenames[t]);
+		}
+		catch(runtime_error &e)
+		{
+			Error(e.what());
+		}
+	}
 }
 
 /*
@@ -116,10 +129,13 @@ void ASoundFileManager::open(const string _filename)
  * when we are loading the registered files from a previous sessions, so they would already be
  * in the registry
  */
-void ASoundFileManager::prvOpen(const string &filename,bool readOnly,bool doRegisterFilename,const ASoundTranslator *translatorToUse)
+void ASoundFileManager::prvOpen(const string &filename,bool readOnly,bool doRegisterFilename,bool asRaw,const ASoundTranslator *translatorToUse)
 {
 	if(doRegisterFilename && isFilenameRegistered(filename))
 		throw(runtime_error(string(__func__)+" -- file already opened"));
+
+	if(readOnly)
+		throw(runtime_error(string(__func__)+" -- readOnly is true -- read only loading is not implemented yet"));
 
 	CSound *sound=NULL;
 	CSoundPlayerChannel *channel=NULL;
@@ -128,9 +144,15 @@ void ASoundFileManager::prvOpen(const string &filename,bool readOnly,bool doRegi
 	try
 	{
 		if(translatorToUse==NULL)
-			translatorToUse=getTranslator(filename,/*isRaw*/false);
+			translatorToUse=getTranslator(filename,asRaw);
 		sound=new CSound;
-		translatorToUse->loadSound(filename,sound);
+
+		if(!translatorToUse->loadSound(filename,sound))
+		{ // cancelled
+			delete sound;
+			return;
+		}
+
 		channel=soundPlayer->newSoundPlayerChannel(sound);
 		loaded=new CLoadedSound(filename,channel,readOnly,translatorToUse);
 
@@ -288,12 +310,14 @@ void ASoundFileManager::revert()
 
 		// could be more effecient by not destroying then creating the sound window
 		close(ctSaveNone); // ??? I need a way to know not to defrag since we're not attempting to save any results... altho.. I may never want to defrag.. perhaps on open... 
-		prvOpen(filename,readOnly,true,translatorToUse);
+		prvOpen(filename,readOnly,true,translatorToUse->handlesRaw(),translatorToUse);
 		// should I remember the selection positions and use them if they're valid? ???
 	}
 }
 
-#include <COSSSoundRecorder.h> // ??? when porting we need to somehow choose which implementation to instantiate and use
+// one or the other of these two will ifdef itself in or out based on HAVE_LIBPORTAUDIO
+#include "CPortAudioSoundRecorder.h"
+#include "COSSSoundRecorder.h"
 
 void ASoundFileManager::recordToNew()
 {
@@ -305,8 +329,11 @@ void ASoundFileManager::recordToNew()
 	try
 	{
 
-		// need to somehow choose an implementation ???
+#ifdef HAVE_LIBPORTAUDIO
+		CPortAudioSoundRecorder recorder;
+#else
 		COSSSoundRecorder recorder;
+#endif
 		try
 		{
 			recorder.initialize(loaded->getSound());
@@ -385,8 +412,8 @@ const vector<string> ASoundFileManager::loadFilesInRegistry()
 			filename=loadedRegistryFile->getArrayValue(LOADED_REG_KEY,t);
 			if(Question("Load sound from previous session?\n   "+filename,yesnoQues)==yesAns)
 			{
-						// ??? readOnly (really needs to be whatever the last value was, when it was originally loaded)
-				prvOpen(filename,false,false);
+						// ??? readOnly and asRaw really need to be whatever the last value was, when it was originally loaded
+				prvOpen(filename,false,false,false);
 			}
 			else
 			{

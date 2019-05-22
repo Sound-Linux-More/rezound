@@ -51,6 +51,7 @@ CChangeRateEffect::CChangeRateEffect(const CActionSound &actionSound,const CGrap
 	}
 }
 
+#include <stdio.h> // ??? just for the printf below
 bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
 {
 	const sample_pos_t oldLength=actionSound.selectionLength();
@@ -69,7 +70,7 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 	{
 		if(actionSound.doChannel[i])
 		{
-			BEGIN_PROGRESS_BAR("Changing Rate -- Channel "+istring(i),actionSound.start,actionSound.start+newLength); 
+			CStatusBar statusBar("Changing Rate -- Channel "+istring(i),actionSound.start,actionSound.start+newLength); 
 	
 			// here, we're using the undo data as a source from which to calculate the new data
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempAudioPoolKey,i);
@@ -115,7 +116,7 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 						// here the fudgeFactor is used with iReadPos+1 when we made the undo backup
 						dest[writePos++]=(sample_t)(p1*src[iReadPos]+p2*src[iReadPos+1]);
 		
-						UPDATE_PROGRESS_BAR(writePos);
+						statusBar.update(writePos);
 					}
 				}
 				else
@@ -133,7 +134,7 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 							// here the fudgeFactor is used with iReadPos+1 when we made the undo backup
 							dest[writePos++]=(sample_t)(p1*src[iReadPos]+p2*src[iReadPos+1]);
 
-							UPDATE_PROGRESS_BAR(writePos);
+							statusBar.update(writePos);
 						}
 					}
 					else
@@ -156,7 +157,6 @@ bool CChangeRateEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareF
 			else
 				printf("YEAH NO SAMPLES OFF!!!\n");
 
-			END_PROGRESS_BAR();
 		}
 	}
 
@@ -223,10 +223,16 @@ CChangeRateEffectFactory::CChangeRateEffectFactory(AActionDialog *channelSelectD
 
 CChangeRateEffect *CChangeRateEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
-	if(actionParameters->getGraphParameter(0).size()<2)
+	string parameterName;
+	if(actionParameters->containsParameter("Rate Change")) // it's just that the frontend uses two different names for the same parameter because the dialog is different
+		parameterName="Rate Change";
+	else
+		parameterName="Rate Curve";
+
+	if(actionParameters->getGraphParameter(parameterName).size()<2)
 		throw(runtime_error(string(__func__)+" -- nodes contains less than 2 nodes"));
 
-	return(new CChangeRateEffect(actionSound,actionParameters->getGraphParameter(0)));
+	return(new CChangeRateEffect(actionSound,actionParameters->getGraphParameter(parameterName)));
 }
 
 

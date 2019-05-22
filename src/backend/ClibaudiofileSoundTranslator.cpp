@@ -72,14 +72,16 @@ static void errorFunction(long code,const char *msg)
 
 	// ??? could just return a CSound object an have used the one constructor that takes the meta info
 	// ??? but, then how would I be able to have createWorkingPoolFileIfExists
-void ClibaudiofileSoundTranslator::onLoadSound(const string filename,CSound *sound) const
+bool ClibaudiofileSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 {
 	// passing AF_NULL_FILESETUP makes it detect the parameters from the file itself
-	loadSoundGivenSetup(filename,sound,AF_NULL_FILESETUP);
+	return loadSoundGivenSetup(filename,sound,AF_NULL_FILESETUP);
 }
 
-void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup) const
+bool ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup) const
 {
+	bool ret=true;
+
 	errorMessage="";
 	afSetErrorHandler(errorFunction);
 
@@ -89,18 +91,18 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 
 
 	// ??? this if set may not completly handle all possibilities
-	int ret;
+	int err;
 	if(typeid(sample_t)==typeid(int16_t))
-		ret=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8);
+		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8);
 	else if(typeid(sample_t)==typeid(float))
-		ret=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8);
+		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8);
 	else
 	{
 		afCloseFile(h);
 		throw(runtime_error(string(__func__)+" -- unhandled sample_t format"));
 	}
 
-	if(ret!=0)
+	if(err!=0)
 		throw(runtime_error(string(__func__)+" -- error setting virtual format -- "+errorMessage));
 		
 	if(afSetVirtualByteOrder(h,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN))
@@ -218,7 +220,7 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 		TAutoBuffer<sample_t> buffer((size_t)(afGetVirtualFrameSize(h,AF_DEFAULT_TRACK,1)*4096/sizeof(sample_t)));
 		sample_pos_t pos=0;
 		AFframecount count=size/4096+1;
-		BEGIN_PROGRESS_BAR("Loading Sound",0,size);
+		CStatusBar statusBar("Loading Sound",0,size,true);
 		for(AFframecount t=0;t<count;t++)
 		{
 			const int chunkSize=  (t==count-1 ) ? size%4096 : 4096;
@@ -239,10 +241,14 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 				pos+=chunkSize;
 			}
 
-			UPDATE_PROGRESS_BAR(pos);
+			if(statusBar.update(pos))
+			{ // cancelled
+				ret=false;
+				goto cancelled;
+			}
 		}
 
-		END_PROGRESS_BAR();
+		cancelled:
 
 		afCloseFile(h);
 
@@ -254,12 +260,11 @@ void ClibaudiofileSoundTranslator::loadSoundGivenSetup(const string filename,CSo
 	}
 	catch(...)
 	{
-		endAllProgressBars();
-
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
 			delete accessers[t];
 		throw;
 	}
+	return ret;
 }
 
 bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,CSound *sound) const
@@ -292,22 +297,24 @@ bool ClibaudiofileSoundTranslator::onSaveSound(const string filename,CSound *sou
 			//afInitInitCompressionParams(setup,AF_DEFAULT_TRACK, ... );
 		afInitFrameCount(setup,AF_DEFAULT_TRACK,sound->getLength());				// ??? I suppose I could allow the user to specify something shorter on the dialog
 
-		saveSoundGivenSetup(filename,sound,setup,fileType);
+		const bool ret=saveSoundGivenSetup(filename,sound,setup,fileType);
 
 		afFreeFileSetup(setup);
+
+		return ret;
 	}
 	catch(...)
 	{
 		afFreeFileSetup(setup);
 		throw;
 	}
-
-	return(true);
 }
 
 
-void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup,int fileFormatType) const
+bool ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSound *sound,AFfilesetup initialSetup,int fileFormatType) const
 {
+	bool ret=true;
+
 	errorMessage="";
 	afSetErrorHandler(errorFunction);
 
@@ -372,18 +379,18 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 		throw(runtime_error(string(__func__)+" -- error opening '"+filename+"' for writing -- "+errorMessage));
 
 	// ??? this if set may not completly handle all possibilities
-	int ret;
+	int err;
 	if(typeid(sample_t)==typeid(int16_t))
-		ret=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8);
+		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_TWOSCOMP,sizeof(sample_t)*8);
 	else if(typeid(sample_t)==typeid(float))
-		ret=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8);
+		err=afSetVirtualSampleFormat(h,AF_DEFAULT_TRACK,AF_SAMPFMT_FLOAT,sizeof(sample_t)*8);
 	else
 	{
 		afCloseFile(h);
 		throw(runtime_error(string(__func__)+" -- unhandled sample_t format"));
 	}
 
-	if(ret!=0)
+	if(err!=0)
 		throw(runtime_error(string(__func__)+" -- error setting virtual format -- "+errorMessage));
 
 	if(afSetVirtualByteOrder(h,AF_DEFAULT_TRACK,AF_BYTEORDER_LITTLEENDIAN))
@@ -400,7 +407,7 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 		TAutoBuffer<sample_t> buffer((size_t)(channelCount*4096));
 		sample_pos_t pos=0;
 		AFframecount count=size/4096+1;
-		BEGIN_PROGRESS_BAR("Saving Sound",0,size);
+		CStatusBar statusBar("Saving Sound",0,size,true);
 		for(AFframecount t=0;t<count;t++)
 		{
 			const int chunkSize=  (t==count-1 ) ? size%4096 : 4096;
@@ -416,11 +423,12 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 				pos+=chunkSize;
 			}
 
-			UPDATE_PROGRESS_BAR(pos);
+			if(statusBar.update(pos))
+			{ // cancelled
+				ret=false;
+				goto cancelled;
+			}
 		}
-
-		END_PROGRESS_BAR();
-
 
 #ifdef HANDLE_CUES_AND_MISC
 		
@@ -446,6 +454,7 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 
 #endif // HANDLE_CUES_AND_MISC
 
+		cancelled:
 
 		afCloseFile(h);
 
@@ -459,14 +468,16 @@ void ClibaudiofileSoundTranslator::saveSoundGivenSetup(const string filename,CSo
 	{
 		// attempt to close the file ??? and free the setup???
 
-		endAllProgressBars();
-
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
 			delete accessers[t];
 
 		throw;
 	}
 
+	if(!ret)
+		unlink(filename.c_str()); // remove the cancelled file
+
+	return ret;
 }
 
 

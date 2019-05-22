@@ -127,9 +127,6 @@ CSound::CSound(const string &_filename,const unsigned _sampleRate,const unsigned
 
 CSound::~CSound()
 {
-    // destructor of descendent should saveSound???
-
-
     // going away, so release all read locks
     // ??? add back, but implement correctly
 /*
@@ -1055,7 +1052,7 @@ void CSound::silenceSound(unsigned channel,sample_pos_t where,sample_pos_t lengt
 		invalidatePeakData(channel,where,where+length);
 }
 
-#include "TSoundStretcher.h"
+#include "DSP/TSoundStretcher.h"
 
 void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser src,sample_pos_t srcWhere,unsigned srcSampleRate,sample_pos_t length,MixMethods mixMethod,bool doInvalidatePeakData,bool showProgressBar)
 {
@@ -1085,13 +1082,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=srcStretcher.getSample();
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{
@@ -1108,14 +1104,13 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=ClipSample((mix_sample_t)dest[t]+(mix_sample_t)src[srcWhere++]);
 
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{
@@ -1129,13 +1124,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=ClipSample((mix_sample_t)dest[t]+(mix_sample_t)srcStretcher.getSample());
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{
@@ -1152,14 +1146,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)src[srcWhere++]);
-
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{	
@@ -1173,13 +1165,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=ClipSample((mix_sample_t)dest[t]*(mix_sample_t)srcStretcher.getSample());
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{
@@ -1196,14 +1187,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=((mix_sample_t)dest[t]+(mix_sample_t)src[srcWhere++])/2;
-
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{
@@ -1217,13 +1206,12 @@ void CSound::mixSound(unsigned channel,sample_pos_t where,const CRezPoolAccesser
 			const sample_pos_t last=where+length;
 			if(showProgressBar)
 			{
-				BEGIN_PROGRESS_BAR("Mixing Data -- Channel "+istring(channel),where,last);
+				CStatusBar statusBar("Mixing Data -- Channel "+istring(channel),where,last);
 				for(sample_pos_t t=where;t<last;t++)
 				{
 					dest[t]=((mix_sample_t)dest[t]+(mix_sample_t)srcStretcher.getSample())/2;
-					UPDATE_PROGRESS_BAR(t);
+					statusBar.update(t);
 				}
-				END_PROGRESS_BAR();
 			}
 			else
 			{
@@ -2049,4 +2037,7 @@ void CSound::setUserNotes(const string &notes)
 }
 
 
+// this is the explicit instantiation of the TPoolFile for CSound's purposes
+#include <TPoolFile.cpp>
+template class TPoolFile<sample_pos_t,uint64_t>;
 

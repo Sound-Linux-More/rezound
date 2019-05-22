@@ -108,7 +108,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ./config/config.h
 CONFIG_CLEAN_FILES = 
-DIST_COMMON =  README Makefile.am Makefile.in aclocal.m4 \
+DIST_COMMON =  README ChangeLog Makefile.am Makefile.in aclocal.m4 \
 config/config.h.in config/stamp-h.in configure configure.in
 
 

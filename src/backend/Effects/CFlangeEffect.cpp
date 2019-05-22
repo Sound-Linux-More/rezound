@@ -21,15 +21,16 @@
 #include "CFlangeEffect.h"
 
 #include <stdexcept>
+#include <memory>
 
-#include "../DSPBlocks.h"
+#include "../DSP/FlangeEffect.h"
 #include "../unit_conv.h"
 
 #include "../CActionParameters.h"
 #include "../CActionSound.h"
 
 // LFO Speed is in Hertz, LFO Depth is in ?,LFO Phase is in degrees, Delay is in milliseconds
-CFlangeEffect::CFlangeEffect(const CActionSound &actionSound,float _delayTime,float _wetGain,float _dryGain,float _LFOFreq,float _LFODepth,float _LFOPhase,float _feedback) :
+CFlangeEffect::CFlangeEffect(const CActionSound &actionSound,float _delayTime,float _wetGain,float _dryGain,const CLFODescription &_flangeLFO,float _feedback) :
 	AAction(actionSound),
 
 	// ??? perhaps I should do these conversions down in the code because I might someday be able to stream the action to disk for later use and the sampleRate would not necessarily be the same
@@ -39,18 +40,14 @@ CFlangeEffect::CFlangeEffect(const CActionSound &actionSound,float _delayTime,fl
 	wetGain(_wetGain),
 	dryGain(_dryGain),
 
-	LFOFreq(_LFOFreq),
-
-	LFODepth(_LFODepth),
-
-	LFOPhase(_LFOPhase),
+	flangeLFO(_flangeLFO),
 
 	feedback(_feedback)
 {
 	if(_delayTime<0.0)
 		throw(runtime_error(string(__func__)+" -- _delayTime is negative"));
-	if(_LFODepth<0.0)
-		throw(runtime_error(string(__func__)+" -- _LFODepth is negative"));
+	if(flangeLFO.amp<0.0)
+		throw(runtime_error(string(__func__)+" -- flangeLFO.amp is negative"));
 }
 
 bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUndo)
@@ -65,21 +62,19 @@ bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUn
 	{
 		if(actionSound.doChannel[i])
 		{
-			BEGIN_PROGRESS_BAR("Flange -- Channel "+istring(i),start,stop); 
+			CStatusBar statusBar("Flange -- Channel "+istring(i),start,stop); 
 
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 			const CRezPoolAccesser src=prepareForUndo ? actionSound.sound->getTempAudio(tempAudioPoolKey,i) : actionSound.sound->getAudio(i);
 
-			CPosSinLFO LFO(LFOFreq,LFOPhase,actionSound.sound->getSampleRate());
+			auto_ptr<ALFO> LFO(gLFORegistry.createLFO(flangeLFO,actionSound.sound->getSampleRate()));
 
 			CDSPFlangeEffect flangeEffect(
 				ms_to_samples(delayTime,actionSound.sound->getSampleRate()),
 				wetGain,
 				dryGain,
-				//LFOFreq,actionSound.sound->getSampleRate(),
-				&LFO,
-				ms_to_samples(LFODepth,actionSound.sound->getSampleRate()),
-				//LFOPhase,
+				LFO.get(),
+				ms_to_samples(flangeLFO.amp,actionSound.sound->getSampleRate()),
 				feedback
 				);
 
@@ -87,10 +82,16 @@ bool CFlangeEffect::doActionSizeSafe(CActionSound &actionSound,bool prepareForUn
 			for(sample_pos_t t=start;t<=stop;t++)
 			{
 				dest[t]=ClipSample(flangeEffect.processSample(src[srcP++]));
+				statusBar.update(t);
+			}
+			
+/* This code can be used to test what the LFOs actually look like
+			for(sample_pos_t t=start;t<=stop;t++)
+			{
+				dest[t]=ClipSample(LFO->nextValue()*10000);
 				UPDATE_PROGRESS_BAR(t);
 			}
-
-			END_PROGRESS_BAR();
+*/
 		}
 	}
 
@@ -118,13 +119,11 @@ CFlangeEffectFactory::CFlangeEffectFactory(AActionDialog *channelSelectDialog,AA
 CFlangeEffect *CFlangeEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
 	return(new CFlangeEffect(actionSound,
-		(float)actionParameters->getDoubleParameter(0),	// delay time
-		(float)actionParameters->getDoubleParameter(1),	// wet gain
-		(float)actionParameters->getDoubleParameter(2),	// dry gain
-		(float)actionParameters->getDoubleParameter(3),	// LFO freq
-		(float)actionParameters->getDoubleParameter(4),	// LFO depth
-		(float)actionParameters->getDoubleParameter(5),	// LFO phase
-		(float)actionParameters->getDoubleParameter(6)	// feedback
+		(float)actionParameters->getDoubleParameter("Delay"),
+		(float)actionParameters->getDoubleParameter("Wet Gain"),
+		(float)actionParameters->getDoubleParameter("Dry Gain"),
+		actionParameters->getLFODescription("Flange LFO"),
+		(float)actionParameters->getDoubleParameter("Feedback")
 	));
 }
 

@@ -11,8 +11,11 @@ public:
         CFOXIcons(FXApp *app);
         virtual ~CFOXIcons();
 
+        FXIcon *getByName(const char *name) const;
+
 	FXIcon *advanced_action_buff;
 	FXIcon *advanced_action;
+	FXIcon *Constant;
 	FXIcon *edit_copy;
 	FXIcon *edit_crop;
 	FXIcon *edit_cut;
@@ -20,6 +23,8 @@ public:
 	FXIcon *edit_paste;
 	FXIcon *edit_redo;
 	FXIcon *edit_undo;
+	FXIcon *Falling_Sawtooth_Wave___0_1_;
+	FXIcon *Falling_Sawtooth_Wave___1_1_;
 	FXIcon *file_close;
 	FXIcon *file_new;
 	FXIcon *file_open;
@@ -48,6 +53,10 @@ public:
 	FXIcon *RedLED1;
 	FXIcon *RedMinus1;
 	FXIcon *RedX1;
+	FXIcon *Rising_Sawtooth_Wave___0_1_;
+	FXIcon *Rising_Sawtooth_Wave___1_1_;
+	FXIcon *Sine_Wave___0_1_;
+	FXIcon *Sine_Wave___1_1_;
 	FXIcon *stop;
 	FXIcon *YellowLED1;
 	int dummy;

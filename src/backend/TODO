@@ -1,14 +1,19 @@
 
 --- THINGS TO DO FOR SURE ---
 
-	- change ASoundFileManager to cancel closing if the close asks to save an mp3 file.. then it asks for the save parameters, then they hit cancel on the mp3 parameters dialog... just return the bool value back up.. this should also top a close all on exit and stop the exit
+	- change CLoadedSound->sound to be public and a *const if after looking at things it could be.. then I could elimintate loadedSound->getSound() everywhere
 
+	- change ASoundFileManager to cancel closing if the close asks to save an mp3 file.. then it asks for the save parameters, then they hit cancel on the mp3 parameters dialog... just return the bool value back up.. this should also top a close all on exit and stop the exit
+	
 	- create separate CDSPLevelDetectorRMS and CDSPPeakLevelDetectorPeak dsp blocks
 
 	- create a template method in DSPBlocks which is a mean finder given an accessor and a range to find the mean for removing DC
 		- it would handle avoiding overflow by use of recursion and also should be give an accuracy parameter to avoid looking at every value
 
 	- distortion would be an easy effect
+		- create the same widget as the curved amplitude or rate change has and make both axies dBFS and the user can create a mapping for sample values to follow
+
+	- create an effects->pan action where two chosen channels (or default if stereo) can be crossfaded/mixed in every combination I can think of
 
 	- figure out what to do with the 4 bogus cues that appear in an aiff file when the file had no cues in it, itself
 		- libaudiofile is doing this and the author insists that it's correct for some reason
@@ -28,14 +33,6 @@
 
 	- Warn the user if saving to a file format that doesn't save more than 31bits worth of sound and the sound file is longer than that
 
-	- I need to eventually handle command line arguments.
-		- I should implement handling them in the backend so that I wouldn't have to reimplement parsing them for each frontend.
-		- I need to check that when I pass argv to fox's initialize function that it either does or does not remove the X arguments.
-		- --help should be detected by all processers of command line arguement and add to the stdout the arguments that they handle.
-		- I suppose I should use popt because it is packaged for most all rpm abd deb based distros.. I need to find URL of popt's homepage and refer to that on error in configure
-
-	- Eventually, I need to have the frontend make use of the backend's ability for some of the actions to use different LFO implementations
-
 	- There may be some more formats that libaudiofile supports... I just didn't see them in the docs... work with the author to include any others
 	
 	- implement a windowed FFT DSP block... I'm not quite sure what the interface should be
@@ -43,10 +40,15 @@
 			- well, actually, this is probably what the interface to an FFT convolver would look like, except I wouldn't call it FFT, that would just be the implementation it used
 			- oooooo I can't wait to hear what a reverb will sound like using FFT convolution
 
+	- add   PCM to PWM  and  PWM to PCM  actions... I'm not sure if they would really fall under Effects... Maybe a new category should be created.  If a new one, then plan other new actions related to these.
+
 
 
 
 --- POSSIBLE THINGS TO DO ---
+
+	- add a "antialias" check button to the gain or volume change effects
+		- this would just make it add random noise to the sound when making the sound louder
 
 	- could warn the user if they are saving a file that was loaded from a lossy format then saving again to a lossy format that the loss will start to build up and become quite audible rather quickly
 
@@ -70,6 +72,7 @@
 			- Plus, it would be possible to use in realtime applications eventually
 			- I could do the same for the rate change (I could construct the CDSPBlock with the graph parameter object, and the length of the sound)
 				 - DONE: Except for the performance hit of virtual functions or pointers to functions in the algorithm, I could create an LFO object which some of the CDSP-blocks could use... Constant LFOs would exist, and an LFO for the CGraphParameterNodes (given a length until repeat) could be given
+					- might not take a performance hit of virtual functions if I precalculate a table for the LFOs
 				 - (I did this already and the performance hit was actually quite acceptable)
 			- The same could go for CChangeAmplitudeRate, flange(done) and Echo(done) effect
 
@@ -260,4 +263,23 @@
 		- DONE (but no frontend control yet): when I do implement the more than 2 channels, I need to have a way to route the multiple channels of a sound to the 2 (or more) channels of sound card output
 		- DONE the default (when a sound is loaded) should be just to assign each channel to the lesser number of sound card channels in a rotating fashion
 		- DONE the routing should be assigned per CSoundPlayerChannel object, but the routing information should also be saved in a pool in the sound object
+
+	- Eventually, I need to have the frontend make use of the backend's ability for some of the actions to use different LFO implementations
+
+	- make SAMPLE_RATE and CHANNELS registry settings
+
+	- quantize would be a pretty easy effect.. it would need to have a parameter to define the number of values from 0 to 0dBFS
+		- then I could have presets for 1bit 2bit 3bit 4bit 5bit ... which would be 1 value, 2 values, ... 32678 values
+		- but I should probably pop up a notice if the bitrate they are choosing is more values than the native format which wouldn't change anything
+		- to implement, I just map the 0 to MAX value to 0 to NEW_MAX with floating point calculations and floor the integer values
+			- I think this would even work with sample_t being float
+
+	- I need to eventually handle command line arguments.
+		- I should implement handling them in the backend so that I wouldn't have to reimplement parsing them for each frontend.
+		- I need to check that when I pass argv to fox's initialize function that it either does or does not remove the X arguments.
+		- --help should be detected by all processers of command line arguement and add to the stdout the arguments that they handle.
+		NOT FOR NOW - I suppose I should use popt because it is packaged for most all rpm and deb based distros.. I need to find URL of popt's homepage and refer to that on error in configure
+
+	- change the use of the macros for progress bars to an object so that on destruction if can automatically undisplay the progress bar and I can get just the same speed increase from inlined functions and I can enhance the funcitonality with cancellable progress bars too
+		- this also removes the need for endAllStatusBars()
 

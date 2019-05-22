@@ -45,6 +45,7 @@
 #include <stdexcept>
 
 #include <CPath.h>
+#include <TAutoBuffer.h>
 
 #include "CSound.h"
 #include "AStatusComm.h"
@@ -114,7 +115,7 @@ static const string fixEscapes(const string _filename)
 
 	// ??? could just return a CSound object an have used the one constructor that takes the meta info
 	// ??? but, then how would I be able to have createWorkingPoolFileIfExists
-void ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) const
+bool ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 {
 	if(gPathToLame=="")
 		throw(runtime_error(string(__func__)+" -- path to 'lame' not set"));
@@ -203,7 +204,7 @@ void ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 
 				// ??? in order to do a status bar I would need to be able to capture the stderr from the process (which I could do by using and modifying my own popen)
 				// ??? or I could tell peopen to redirect the ouptut to a temp file and maybe read that temp file
-			//BEGIN_PROGRESS_BAR("Loading Sound",ftell(f),count);
+			//CStatusBar statusBar("Loading Sound",ftell(f),count);
 			for(;;)
 			{
 				size_t chunkSize=fread((void *)((sample_t *)buffer),sizeof(sample_t)*channelCount,BUFFER_SIZE,p);
@@ -220,9 +221,8 @@ void ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 				}
 				pos+=chunkSize;
 
-				//UPDATE_PROGRESS_BAR(ftell(f));
+				//statusBar.update(ftell(f));
 			}
-			//END_PROGRESS_BAR();
 
 			// remove any extra allocated space
 			if(sound->getLength()>pos)
@@ -245,10 +245,14 @@ void ClameSoundTranslator::onLoadSound(const string filename,CSound *sound) cons
 	
 		throw;
 	}
+
+	return true;
 }
 
 bool ClameSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 {
+	bool ret=true;
+
 	if(gPathToLame=="")
 		throw(runtime_error(string(__func__)+" -- path to 'lame' not set"));
 
@@ -371,7 +375,7 @@ bool ClameSoundTranslator::onSaveSound(const string filename,CSound *sound) cons
 			TAutoBuffer<sample_t> buffer(BUFFER_SIZE*channelCount);
 			sample_pos_t pos=0;
 
-			BEGIN_PROGRESS_BAR("Saving Sound",0,size);
+			CStatusBar statusBar("Saving Sound",0,size,true);
 			while(pos<size)
 			{
 				size_t chunkSize=BUFFER_SIZE;
@@ -390,12 +394,17 @@ bool ClameSoundTranslator::onSaveSound(const string filename,CSound *sound) cons
 				if(fwrite((void *)((sample_t *)buffer),sizeof(sample_t)*channelCount,chunkSize,p)!=chunkSize)
 					fprintf(stderr,"%s -- dropped some data while writing\n",__func__);
 
-				UPDATE_PROGRESS_BAR(pos);
+				if(statusBar.update(pos))
+				{ // cancelled
+					ret=false;
+					goto cancelled;
+				}
 			}
-			END_PROGRESS_BAR();
 		}
 		else
 			throw(runtime_error(string(__func__)+" -- internal error -- an unhandled sample_t type"));
+
+		cancelled:
 
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
 			delete accessers[t];
@@ -418,7 +427,10 @@ bool ClameSoundTranslator::onSaveSound(const string filename,CSound *sound) cons
 		throw;
 	}
 
-	return(true);
+	if(!ret)
+		unlink(filename.c_str()); // remove the cancelled file
+
+	return ret;
 }
 
 

@@ -31,6 +31,7 @@
 #include "CReverseEffect.h"
 #include "CStaticReverbEffect.h"
 #include "CVariedRepeatEffect.h"
+#include "CQuantizeEffect.h"
 
 #include "CTestEffect.h"
 

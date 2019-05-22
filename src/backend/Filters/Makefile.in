@@ -255,14 +255,12 @@ CSinglePoleFilter.lo CSinglePoleFilter.o : CSinglePoleFilter.cpp \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h ../DSPBlocks.h ../unit_conv.h \
-	../ALFO.h
+	../ALFO.h ../CGraphParamValueNode.h ../DSP/SinglePoleFilters.h \
+	../unit_conv.h
 
 info-am:
 info: info-am

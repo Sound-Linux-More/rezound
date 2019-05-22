@@ -1,21 +1,16 @@
 #include "CVariedRepeatEffect.h"
 
 #include <stdexcept>
+#include <memory>
 
-//#include "../CActionSound.h"
 #include "../CActionParameters.h"
 
 #include "../unit_conv.h"
-#include "../ALFO.h"
 
 
-CVariedRepeatEffect::CVariedRepeatEffect(const CActionSound &actionSound,float _LFOFreq,float _LFOPhase,float _time) :
+CVariedRepeatEffect::CVariedRepeatEffect(const CActionSound &actionSound,const CLFODescription &_LFODescription,float _time) :
 	AAction(actionSound),
-
-	LFOFreq(_LFOFreq),
-
-	LFOPhase(_LFOPhase),
-	
+	LFODescription(_LFODescription),
 	time(_time),
 
 	origTotalLength(0)
@@ -37,40 +32,25 @@ bool CVariedRepeatEffect::doActionSizeSafe(CActionSound &actionSound,bool prepar
 
 	moveSelectionToTempPools(actionSound,mmSelection,lTime);
 
-/*
-	origTotalLength=actionSound.sound->getLength();
-
-	if(lTime>selectionLength)
-		actionSound.sound->addSpace(actionSound.doChannel,stop,lTime-selectionLength);
-*/
-
 	for(unsigned i=0;i<actionSound.sound->getChannelCount();i++)
 	{
 		if(actionSound.doChannel[i])
 		{
-
-			BEGIN_PROGRESS_BAR("Varied Repeat -- Channel "+istring(i),0,lTime); 
+			CStatusBar statusBar("Varied Repeat -- Channel "+istring(i),0,lTime); 
 
 			const CRezPoolAccesser src=actionSound.sound->getTempAudio(tempAudioPoolKey,i);
 			CRezPoolAccesser dest=actionSound.sound->getAudio(i);
 
-/*
-			if(prepareForUndo)
-				a.copyData(start,actionSound.sound->getTempAudio(tempAudioPoolKey,i),0,selectionLength);
-*/
-
-			CPosSinLFO LFO(LFOFreq,LFOPhase,actionSound.sound->getSampleRate());
-
+			auto_ptr<ALFO> LFO(gLFORegistry.createLFO(LFODescription,actionSound.sound->getSampleRate()));
+			
 			for(sample_pos_t t=0;t<lTime;t++)
 			{
-				const sample_pos_t repeat=(sample_pos_t)(LFO.getValue(t)*(selectionLength));
+				const sample_pos_t repeat=(sample_pos_t)(LFO->getValue(t)*(selectionLength));
 				for(sample_pos_t p=0;p<repeat && t<lTime;p++,t++)
 					dest[start+t]=src[p];
 
-				UPDATE_PROGRESS_BAR(t);
+				statusBar.update(t);
 			}
-
-			END_PROGRESS_BAR();
 		}
 	}
 
@@ -95,7 +75,7 @@ void CVariedRepeatEffect::undoActionSizeSafe(const CActionSound &actionSound)
 
 
 // --------------------------------------------------
-//
+
 CVariedRepeatEffectFactory::CVariedRepeatEffectFactory(AActionDialog *channelSelectDialog,AActionDialog *normalDialog) :
 	AActionFactory("Varied Repeat","Varied Repeat",false,channelSelectDialog,normalDialog,NULL)
 {
@@ -103,8 +83,12 @@ CVariedRepeatEffectFactory::CVariedRepeatEffectFactory(AActionDialog *channelSel
 
 CVariedRepeatEffect *CVariedRepeatEffectFactory::manufactureAction(const CActionSound &actionSound,const CActionParameters *actionParameters,bool advancedMode) const
 {
-	//return(new CVariedRepeatEffect(actionSound,0.1,280.0,5.0));
-	return(new CVariedRepeatEffect(actionSound,actionParameters->getDoubleParameter(0),actionParameters->getDoubleParameter(1),actionParameters->getDoubleParameter(2)));
+	return(new CVariedRepeatEffect(
+		actionSound,
+		actionParameters->getLFODescription("LFO"),
+		actionParameters->getDoubleParameter("Time")
+		)
+	);
 }
 
 

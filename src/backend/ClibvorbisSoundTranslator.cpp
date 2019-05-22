@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <string.h>	// for strerror()
 #include <ctype.h>
+#include <unistd.h>	// for unlink
 
 #include <time.h>	// for time()
 #include <stdlib.h>	// for rand() and atoll
@@ -112,9 +113,11 @@ const string OVstrerror(int e)
 
 	// ??? could just return a CSound object an have used the one constructor that takes the meta info
 	// ??? but, then how would I be able to have createWorkingPoolFileIfExists
-void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound) const
+bool ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound) const
 {
 #ifdef HAVE_LIBVORBISFILE
+	bool ret=true;
+
 	int e;
 	FILE *f=fopen(filename.c_str(),"rb");
 	int err=errno;
@@ -269,7 +272,6 @@ void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound)
 		for(unsigned t=0;t<channelCount;t++)
 			accessers[t]=new CRezPoolAccesser(sound->getAudio(t));
 
-
 		// ??? if sample_t is not the bit type that ogg is going to return I should write some convertion functions... that are overloaded to go to and from several types to and from sample_t
 			// ??? this needs to match the type of sample_t
 			// ??? float is supported by ov_read_float
@@ -279,21 +281,21 @@ void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound)
 		sample_pos_t pos=0;
 
 		unsigned long count=CPath(filename).getSize();
-		BEGIN_PROGRESS_BAR("Loading Sound",ftell(f),count);
+		CStatusBar statusBar("Loading Sound",ftell(f),count,true);
 
 		int eof=0;
 		int current_section;
 		for(;;)
 		{
-			const long ret=ov_read(&vf,(char *)((sample_t *)buffer),buffer.getSize()*sizeof(sample_t),ENDIAN,BIT_RATE/8,1,&current_section);
-			if(ret==0)
+			const long readLength=ov_read(&vf,(char *)((sample_t *)buffer),buffer.getSize()*sizeof(sample_t),ENDIAN,BIT_RATE/8,1,&current_section);
+			if(readLength==0)
 				break;
-			else if(ret<0)
+			else if(readLength<0)
 			{ // error in the stream... may not be fatal however
 			}
-			else // if(ret>0)
+			else // if(readLength>0)
 			{
-				const int chunkSize= ret/((BIT_RATE/8)*channelCount);
+				const int chunkSize= readLength/((BIT_RATE/8)*channelCount);
 
 				if((pos+REALLOC_FILE_SIZE)>sound->getLength())
 					sound->addSpace(sound->getLength(),REALLOC_FILE_SIZE);
@@ -306,14 +308,18 @@ void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound)
 				pos+=chunkSize;
 			}
 
-			UPDATE_PROGRESS_BAR(ftell(f));
+			if(statusBar.update(ftell(f)))
+			{ // cancelled
+				ret=false;
+				goto cancelled;
+			}
 		}
 
 		// remove any extra allocated space
 		if(sound->getLength()>pos)
 			sound->removeSpace(pos,sound->getLength()-pos);
 
-		END_PROGRESS_BAR();
+		cancelled:
 
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
 		{
@@ -323,8 +329,6 @@ void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound)
 	}
 	catch(...)
 	{
-		endAllProgressBars();
-
 		ov_clear(&vf); // closes file too
 
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
@@ -333,6 +337,8 @@ void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound)
 	}
 
 	ov_clear(&vf); // closes file too
+
+	return ret;
 #else
 	throw(runtime_error(string(__func__)+" -- loading Ogg Vorbis is not enabled -- missing libvorbisfile"));
 #endif
@@ -341,6 +347,7 @@ void ClibvorbisSoundTranslator::onLoadSound(const string filename,CSound *sound)
 bool ClibvorbisSoundTranslator::onSaveSound(const string filename,CSound *sound) const
 {
 #ifdef HAVE_LIBVORBISENC
+	bool ret=true;
 
 	vorbis_info vi;
 
@@ -467,7 +474,7 @@ bool ClibvorbisSoundTranslator::onSaveSound(const string filename,CSound *sound)
 
 		const sample_pos_t chunkCount= (size/CHUNK_SIZE) + ((size%CHUNK_SIZE)!=0 ? 1 : 0);
 
-		BEGIN_PROGRESS_BAR("Saving Sound",0,chunkCount);
+		CStatusBar statusBar("Saving Sound",0,chunkCount,true);
 
 		for(sample_pos_t t=0;t<=chunkCount;t++)
 		{
@@ -526,10 +533,14 @@ bool ClibvorbisSoundTranslator::onSaveSound(const string filename,CSound *sound)
 				}
 			}
 
-			UPDATE_PROGRESS_BAR(t);
+			if(statusBar.update(t))
+			{
+				ret=false;
+				goto cancelled;
+			}
 		}
 
-		END_PROGRESS_BAR();
+		cancelled:
 
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
 		{
@@ -556,18 +567,19 @@ bool ClibvorbisSoundTranslator::onSaveSound(const string filename,CSound *sound)
 
 		fclose(f);
 
-		endAllProgressBars();
-
 		for(unsigned t=0;t<MAX_CHANNELS;t++)
 			delete accessers[t];
 
 		throw;
 	}
 
+	if(!ret)
+		unlink(filename.c_str()); // remove the cancelled file
+
+	return ret;
 #else
 	throw(runtime_error(string(__func__)+" -- saving Ogg Vorbis is not enabled -- missing libvorbisenc"));
 #endif
-	return(true);
 }
 
 

@@ -99,10 +99,10 @@ LDFLAGS = @LDFLAGS@
 pkgdocdir = $(prefix)/doc/@PACKAGE@
 
 noinst_LTLIBRARIES = libEffects.la
-libEffects_la_SOURCES =  		CChangeAmplitudeEffect.cpp 		CChangeRateEffect.cpp 		CDelayEffect.cpp 		CFlangeEffect.cpp 		CReverseEffect.cpp 		CStaticReverbEffect.cpp 		CVariedRepeatEffect.cpp 		CTestEffect.cpp
+libEffects_la_SOURCES =  		CChangeAmplitudeEffect.cpp 		CChangeRateEffect.cpp 		CDelayEffect.cpp 		CFlangeEffect.cpp 		CReverseEffect.cpp 		CStaticReverbEffect.cpp 		CVariedRepeatEffect.cpp 		CQuantizeEffect.cpp 		CTestEffect.cpp
 
 
-noinst_HEADERS =  		CChangeAmplitudeEffect.h 		CChangeRateEffect.h 		CDelayEffect.h 		CFlangeEffect.h 		CReverseEffect.h 		CStaticReverbEffect.h 		CVariedRepeatEffect.h 		CTestEffect.h 		EffectActions.h
+noinst_HEADERS =  		CChangeAmplitudeEffect.h 		CChangeRateEffect.h 		CDelayEffect.h 		CFlangeEffect.h 		CReverseEffect.h 		CStaticReverbEffect.h 		CVariedRepeatEffect.h 		CQuantizeEffect.h 		CTestEffect.h 		EffectActions.h
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../../config/config.h
@@ -117,7 +117,8 @@ libEffects_la_LDFLAGS =
 libEffects_la_LIBADD = 
 libEffects_la_OBJECTS =  CChangeAmplitudeEffect.lo CChangeRateEffect.lo \
 CDelayEffect.lo CFlangeEffect.lo CReverseEffect.lo \
-CStaticReverbEffect.lo CVariedRepeatEffect.lo CTestEffect.lo
+CStaticReverbEffect.lo CVariedRepeatEffect.lo CQuantizeEffect.lo \
+CTestEffect.lo
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -258,65 +259,66 @@ CChangeAmplitudeEffect.lo CChangeAmplitudeEffect.o : \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp \
-	../CGraphParamValueNode.h ../CActionParameters.h
+	../CGraphParamValueNode.h ../CActionParameters.h ../ALFO.h
 CChangeRateEffect.lo CChangeRateEffect.o : CChangeRateEffect.cpp \
 	CChangeRateEffect.h ../../../config/common.h \
 	../../../config/config.h ../AAction.h ../settings.h \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp \
-	../CGraphParamValueNode.h ../CActionParameters.h
+	../CGraphParamValueNode.h ../CActionParameters.h ../ALFO.h
 CDelayEffect.lo CDelayEffect.o : CDelayEffect.cpp CDelayEffect.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h ../DSPBlocks.h ../unit_conv.h \
-	../ALFO.h
+	../ALFO.h ../CGraphParamValueNode.h ../DSP/DelayEffect.h \
+	../DSP/Delay.h ../unit_conv.h
 CFlangeEffect.lo CFlangeEffect.o : CFlangeEffect.cpp CFlangeEffect.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
-	../../../src/PoolFile/TPoolAccesser.cpp ../DSPBlocks.h \
-	../unit_conv.h ../ALFO.h ../CActionParameters.h \
-	../CGraphParamValueNode.h
+	../../../src/PoolFile/TPoolAccesser.cpp ../ALFO.h \
+	../DSP/FlangeEffect.h ../DSP/Delay.h ../unit_conv.h \
+	../CActionParameters.h ../CGraphParamValueNode.h
+CQuantizeEffect.lo CQuantizeEffect.o : CQuantizeEffect.cpp \
+	CQuantizeEffect.h ../../../config/common.h \
+	../../../config/config.h ../AAction.h ../settings.h \
+	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
+	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
+	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.h \
+	../../../src/PoolFile/TStaticPoolAccesser.cpp \
+	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
+	../ALFO.h ../CGraphParamValueNode.h ../DSP/Quantizer.h
 CReverseEffect.lo CReverseEffect.o : CReverseEffect.cpp CReverseEffect.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp
 CStaticReverbEffect.lo CStaticReverbEffect.o : CStaticReverbEffect.cpp \
 	CStaticReverbEffect.h ../../../config/common.h \
@@ -324,11 +326,9 @@ CStaticReverbEffect.lo CStaticReverbEffect.o : CStaticReverbEffect.cpp \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp
 CTestEffect.lo CTestEffect.o : CTestEffect.cpp CTestEffect.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
@@ -336,26 +336,23 @@ CTestEffect.lo CTestEffect.o : CTestEffect.cpp CTestEffect.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
-	../../../src/PoolFile/TPoolAccesser.cpp ../DSPBlocks.h \
-	../unit_conv.h ../ALFO.h
+	../../../src/PoolFile/TPoolAccesser.cpp \
+	../../../src/misc/TAutoBuffer.h ../DSP/Convolver.h \
+	../DSP/Delay.h
 CVariedRepeatEffect.lo CVariedRepeatEffect.o : CVariedRepeatEffect.cpp \
 	CVariedRepeatEffect.h ../../../config/common.h \
 	../../../config/config.h ../AAction.h ../settings.h \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
-	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h ../unit_conv.h ../ALFO.h
+	../../../src/PoolFile/TPoolAccesser.cpp ../ALFO.h \
+	../CActionParameters.h ../CGraphParamValueNode.h ../unit_conv.h
 
 info-am:
 info: info-am

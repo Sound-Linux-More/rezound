@@ -42,24 +42,11 @@ public:
 
 	const string getTitle() const;
 
-	void setHelpText(const FXString &text);
-	FXString getHelpText() const;
+	void setTipText(const FXString &text);
+	FXString getTipText() const;
 
 	void readFromFile(const string &prefix,CNestedDataFile *f);
 	void writeToFile(const string &prefix,CNestedDataFile *f);
-
-/*
-	enum
-	{
-		ID_SLIDER=FXPacker::ID_LAST,
-
-		ID_VALUE_TEXTBOX,
-		ID_VALUE_SPINNER,
-
-		ID_LAST
-	};
-*/
-
 
 protected:
 	FXCheckBoxParamValue() {}

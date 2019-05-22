@@ -258,13 +258,11 @@ CAddChannelsEdit.lo CAddChannelsEdit.o : CAddChannelsEdit.cpp \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h ../CLoadedSound.h \
+	../ALFO.h ../CGraphParamValueNode.h ../CLoadedSound.h \
 	../CSoundPlayerChannel.h ../../../src/misc/CConditionVariable.h \
 	../../../src/misc/AThread.h ../../../src/misc/TMemoryPipe.h \
 	../../../src/misc/TMemoryPipe.cpp ../CTrigger.h
@@ -274,11 +272,9 @@ CCopyCutDeleteEdit.lo CCopyCutDeleteEdit.o : CCopyCutDeleteEdit.cpp \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../ASoundClipboard.h
 CCropEdit.lo CCropEdit.o : CCropEdit.cpp CCropEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
@@ -286,11 +282,9 @@ CCropEdit.lo CCropEdit.o : CCropEdit.cpp CCropEdit.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp
 CCueAction.lo CCueAction.o : CCueAction.cpp CCueAction.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
@@ -298,37 +292,31 @@ CCueAction.lo CCueAction.o : CCueAction.cpp CCueAction.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h
+	../ALFO.h ../CGraphParamValueNode.h
 CInsertSilenceEdit.lo CInsertSilenceEdit.o : CInsertSilenceEdit.cpp \
 	CInsertSilenceEdit.h ../../../config/common.h \
 	../../../config/config.h ../AAction.h ../settings.h \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h
+	../ALFO.h ../CGraphParamValueNode.h
 CMuteEdit.lo CMuteEdit.o : CMuteEdit.cpp CMuteEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp
 CPasteEdit.lo CPasteEdit.o : CPasteEdit.cpp CPasteEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
@@ -336,11 +324,9 @@ CPasteEdit.lo CPasteEdit.o : CPasteEdit.cpp CPasteEdit.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../AActionDialog.h \
 	../ASoundClipboard.h
 CRemoveChannelsEdit.lo CRemoveChannelsEdit.o : CRemoveChannelsEdit.cpp \
@@ -349,13 +335,11 @@ CRemoveChannelsEdit.lo CRemoveChannelsEdit.o : CRemoveChannelsEdit.cpp \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h ../CLoadedSound.h \
+	../ALFO.h ../CGraphParamValueNode.h ../CLoadedSound.h \
 	../CSoundPlayerChannel.h ../../../src/misc/CConditionVariable.h \
 	../../../src/misc/AThread.h ../../../src/misc/TMemoryPipe.h \
 	../../../src/misc/TMemoryPipe.cpp ../CTrigger.h
@@ -365,24 +349,20 @@ CRotateEdit.lo CRotateEdit.o : CRotateEdit.cpp CRotateEdit.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CActionParameters.h \
-	../CGraphParamValueNode.h
+	../ALFO.h ../CGraphParamValueNode.h
 CSelectionEdit.lo CSelectionEdit.o : CSelectionEdit.cpp CSelectionEdit.h \
 	../../../config/common.h ../../../config/config.h ../AAction.h \
 	../settings.h ../CActionSound.h ../CSound_defs.h \
 	../AStatusComm.h ../CSound.h ../../../src/PoolFile/TPoolFile.h \
 	../../../src/misc/CMutex.h ../../../src/misc/CRWLock.h \
 	../../../src/PoolFile/CMultiFile.h ../../../src/misc/istring \
-	../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp
 CSwapChannelsEdit.lo CSwapChannelsEdit.o : CSwapChannelsEdit.cpp \
 	CSwapChannelsEdit.h ../../../config/common.h \
@@ -390,13 +370,11 @@ CSwapChannelsEdit.lo CSwapChannelsEdit.o : CSwapChannelsEdit.cpp \
 	../CActionSound.h ../CSound_defs.h ../AStatusComm.h ../CSound.h \
 	../../../src/PoolFile/TPoolFile.h ../../../src/misc/CMutex.h \
 	../../../src/misc/CRWLock.h ../../../src/PoolFile/CMultiFile.h \
-	../../../src/misc/istring ../../../src/PoolFile/TPoolFile.cpp \
+	../../../src/misc/istring ../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.h \
 	../../../src/PoolFile/TStaticPoolAccesser.cpp \
-	../../../src/misc/TAutoBuffer.h \
-	../../../src/PoolFile/TPoolAccesser.h \
 	../../../src/PoolFile/TPoolAccesser.cpp ../CLoadedSound.h \
-	../CActionParameters.h ../CGraphParamValueNode.h
+	../CActionParameters.h ../ALFO.h ../CGraphParamValueNode.h
 
 info-am:
 info: info-am

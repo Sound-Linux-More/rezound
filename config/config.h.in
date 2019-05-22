@@ -22,6 +22,8 @@
 /* Define if lex declares yytext as a char * by default, not a char[].  */
 #undef YYTEXT_POINTER
 
+#undef HAVE_LIBPORTAUDIO
+
 #undef HAVE_LIBOGG
 
 #undef HAVE_LIBVORBIS
@@ -34,11 +36,17 @@
 /* Define if you have the audiofile library (-laudiofile).  */
 #undef HAVE_LIBAUDIOFILE
 
+/* Define if you have the fftw library (-lfftw).  */
+#undef HAVE_LIBFFTW
+
 /* Define if you have the m library (-lm).  */
 #undef HAVE_LIBM
 
 /* Define if you have the pthread library (-lpthread).  */
 #undef HAVE_LIBPTHREAD
+
+/* Define if you have the rfftw library (-lrfftw).  */
+#undef HAVE_LIBRFFTW
 
 /* Define if you have the vorbisenc library (-lvorbisenc).  */
 #undef HAVE_LIBVORBISENC

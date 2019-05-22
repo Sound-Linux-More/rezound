@@ -47,6 +47,7 @@ FXDEFMAP(FXConstantParamValue) FXConstantParamValueMap[]=
 	FXMAPFUNC(SEL_COMMAND,			FXConstantParamValue::ID_VALUE_TEXTBOX,		FXConstantParamValue::onValueTextBoxChange),
 
 	FXMAPFUNC(SEL_COMMAND,			FXConstantParamValue::ID_SCALAR_SPINNER,	FXConstantParamValue::onScalarSpinnerChange),
+	FXMAPFUNC(SEL_CHANGED,			FXConstantParamValue::ID_SCALAR_SPINNER,	FXConstantParamValue::onScalarSpinnerChange),
 
 	FXMAPFUNC(SEL_COMMAND,			FXConstantParamValue::ID_INVERSE_BUTTON,	FXConstantParamValue::onInverseButton),
 };
@@ -84,10 +85,9 @@ FXConstantParamValue::FXConstantParamValue(f_at_xs _interpretValue,f_at_xs _unin
 
 	if(minScalar!=maxScalar)
 	{
-		scalarPanel=new FXHorizontalFrame(this,LAYOUT_BOTTOM|LAYOUT_FILL_X | JUSTIFY_CENTER_X | FRAME_SUNKEN, 0,0,0,0, 4,4,4,4, 2,2);
+		scalarPanel=new FXHorizontalFrame(this,LAYOUT_BOTTOM|LAYOUT_FILL_X | JUSTIFY_CENTER_X, 0,0,0,0, 4,4,4,4, 2,2);
 			scalarLabel=new FXLabel(scalarPanel,"Scalar",NULL, LAYOUT_CENTER_Y);
-			scalarSpinner=new FXSpinner(scalarPanel,5,this,ID_SCALAR_SPINNER,SPIN_NORMAL | LAYOUT_CENTER_Y);
-			//scalarSpinner->isEditable(false);
+			scalarSpinner=new FXSpinner(scalarPanel,5,this,ID_SCALAR_SPINNER,SPIN_NORMAL | LAYOUT_CENTER_Y | FRAME_SUNKEN|FRAME_THICK);
 
 		scalarSpinner->setRange(minScalar,maxScalar);
 		scalarSpinner->setValue(initScalar);
@@ -103,12 +103,11 @@ FXConstantParamValue::FXConstantParamValue(f_at_xs _interpretValue,f_at_xs _unin
 	updateNumbers();
 }
 
-void FXConstantParamValue::setUnits(const FXString _units,const FXString helpText)
+void FXConstantParamValue::setUnits(const FXString _units)
 {
 	units=_units;
 
 	unitsLabel->setText(units);
-	unitsLabel->setTipText(helpText);
 	updateNumbers();
 }
 
@@ -205,29 +204,63 @@ const string FXConstantParamValue::getTitle() const
 	return(titleLabel->getText().text());
 }
 
-void FXConstantParamValue::setHelpText(const FXString &text)
+void FXConstantParamValue::setTipText(const FXString &text)
 {
-	titleLabel->setHelpText(text);	
-	//inverseButtonFrame->setHelpText(text);	
-		inverseButton->setHelpText(text);	
-	slider->setHelpText(text);	
-	//tickLableFrame->setHelpText(text);	
-		maxLabel->setHelpText(text);	
-		halfLabel->setHelpText(text);	
-		minLabel->setHelpText(text);	
-	//valuePanel->setHelpText(text);
-		valueTextBox->setHelpText(text);
-		unitsLabel->setHelpText(text);
+	titleLabel->setTipText(text);	
+	//inverseButtonFrame->setTipText(text);	
+	if(inverseButton)
+		inverseButton->setTipText(text);	
+	slider->setTipText(text);	
+	//tickLableFrame->setTipText(text);	
+		maxLabel->setTipText(text);	
+		halfLabel->setTipText(text);	
+		minLabel->setTipText(text);	
+	//valuePanel->setTipText(text);
+		valueTextBox->setTipText(text);
+		unitsLabel->setTipText(text);
 	if(scalarPanel)
 	{
-		//scalarPanel->setHelpText(text);
-			scalarLabel->setHelpText(text);
+		//scalarPanel->setTipText(text);
+			scalarLabel->setTipText(text);
 	}
 }
 
-FXString FXConstantParamValue::getHelpText() const
+FXString FXConstantParamValue::getTipText() const
 {
-	return(titleLabel->getHelpText());	
+	return(titleLabel->getTipText());	
+}
+
+/* ??? I might want to move this into a common place so that other action parameter widgets can use them */
+// recursively call enable for all descendants of a given window
+static void enableAllChildren(FXWindow *w)
+{
+	for(int t=0;t<w->numChildren();t++)
+	{
+		w->childAtIndex(t)->enable();
+		enableAllChildren(w->childAtIndex(t));
+	}
+}
+
+// recursively call disable for all descendants of a given window
+static void disableAllChildren(FXWindow *w)
+{
+	for(int t=0;t<w->numChildren();t++)
+	{
+		w->childAtIndex(t)->disable();
+		disableAllChildren(w->childAtIndex(t));
+	}
+}
+
+void FXConstantParamValue::enable()
+{
+	FXVerticalFrame::enable();
+	enableAllChildren(this);
+}
+
+void FXConstantParamValue::disable()
+{
+	FXVerticalFrame::disable();
+	disableAllChildren(this);
 }
 
 void FXConstantParamValue::readFromFile(const string &prefix,CNestedDataFile *f)
